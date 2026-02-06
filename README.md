@@ -236,7 +236,7 @@ Based on OpenAI pricing (as of 2024-2026):
 The module is built with a clean OOP architecture:
 
 ```
-narrator-master/
+./
 ├── module.json           # Module manifest
 ├── scripts/
 │   ├── main.js          # Entry point & NarratorMaster controller

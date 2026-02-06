@@ -17,7 +17,7 @@ This document provides context for AI assistants working on the Narrator Master 
 ## Architecture
 
 ```
-narrator-master/
+./
 ├── module.json              # Foundry VTT manifest
 ├── scripts/
 │   ├── main.js             # Entry point, NarratorMaster controller, Hooks
@@ -270,12 +270,12 @@ ErrorNotificationHelper.handleApiError(error, 'Operation Name');
 
 ### Syntax Check
 ```bash
-find narrator-master/scripts -name '*.js' -exec node --check {} \;
+find scripts -name '*.js' -exec node --check {} \;
 ```
 
 ### JSON Validation
 ```bash
-python3 -c 'import json; json.load(open("narrator-master/module.json")); json.load(open("narrator-master/lang/it.json")); print("OK")'
+python3 -c 'import json; json.load(open("module.json")); json.load(open("lang/it.json")); print("OK")'
 ```
 
 ### Manual Testing in Foundry
