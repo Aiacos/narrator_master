@@ -23,6 +23,9 @@
         },
 
         "Panel": {
+            "Title": "Narrator Master",
+            "TogglePanel": "Apri/Chiudi Pannello DM",
+            "OpenSettings": "Apri Impostazioni",
             "StartRecording": "Avvia Registrazione",
             "StopRecording": "Ferma Registrazione",
             "PauseRecording": "Pausa",
@@ -45,10 +48,13 @@
             "ClearImages": "Cancella Immagini",
             "CopyToClipboard": "Copia negli Appunti",
             "GeneratingImage": "Generazione immagine in corso...",
-            "GeneratedImage": "Immagine Generata"
+            "GeneratedImage": "Immagine Generata",
+            "LoadingJournal": "Caricamento Journal..."
         },
 
         "Errors": {
+            "NotInitialized": "Narrator Master non e ancora inizializzato. Attendi il caricamento completo.",
+            "InitFailed": "Inizializzazione Narrator Master fallita",
             "NoApiKey": "Chiave API OpenAI non configurata. Vai nelle impostazioni del modulo per aggiungerla.",
             "NoJournal": "Nessun Journal selezionato. Seleziona un Journal dell'avventura nelle impostazioni.",
             "InvalidAudio": "Audio non valido. Assicurati che la registrazione contenga dati audio.",
@@ -77,15 +83,23 @@
             "RecorderInitFailed": "Impossibile inizializzare il registratore: {error}"
         },
 
+        "Warnings": {
+            "ConfigIncomplete": "Configurazione incompleta"
+        },
+
         "Notifications": {
             "CopiedToClipboard": "Copiato negli appunti!",
             "RecordingStarted": "Registrazione avviata",
             "RecordingStopped": "Registrazione fermata",
             "JournalParsed": "Journal analizzato con successo",
+            "JournalLoaded": "Journal caricato con successo",
             "ImageGenerated": "Immagine generata con successo",
             "SettingsSaved": "Impostazioni salvate",
             "ModuleReady": "Narrator Master pronto",
-            "TranscriptionComplete": "Trascrizione completata"
+            "TranscriptionComplete": "Trascrizione completata",
+            "ApiKeyUpdated": "Chiave API aggiornata",
+            "MicrophoneReady": "Microfono pronto per la registrazione",
+            "PlayersOffTrack": "Attenzione: I giocatori si stanno allontanando dalla trama!"
         },
 
         "OffTrack": {

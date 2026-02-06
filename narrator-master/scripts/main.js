@@ -774,5 +774,81 @@ Hooks.once('ready', async function() {
     }
 });
 
+/**
+ * Add Narrator Master panel toggle button to the scene controls sidebar
+ * Only visible to GM users
+ * Uses getSceneControlButtons hook to add a custom control group
+ */
+Hooks.on('getSceneControlButtons', (controls) => {
+    // Only add controls for GM users
+    if (!game.user.isGM) return;
+
+    // Find the notes/journal control group to add our button to
+    // Alternatively, create a dedicated control group for Narrator Master
+    const narratorControl = {
+        name: 'narrator-master',
+        title: game.i18n.localize('NARRATOR.PanelTitle'),
+        icon: 'fas fa-microphone-alt',
+        layer: 'controls',
+        visible: game.user.isGM,
+        tools: [
+            {
+                name: 'toggle-panel',
+                title: game.i18n.localize('NARRATOR.Panel.TogglePanel'),
+                icon: 'fas fa-book-reader',
+                button: true,
+                onClick: () => {
+                    if (window.narratorMaster) {
+                        window.narratorMaster.togglePanel();
+                    } else {
+                        ui.notifications.warn(game.i18n.localize('NARRATOR.Errors.NotInitialized'));
+                    }
+                }
+            },
+            {
+                name: 'start-recording',
+                title: game.i18n.localize('NARRATOR.Panel.StartRecording'),
+                icon: 'fas fa-circle',
+                button: true,
+                onClick: () => {
+                    if (window.narratorMaster?.audioCapture) {
+                        const isRecording = window.narratorMaster.audioCapture.isRecording;
+                        if (isRecording) {
+                            window.narratorMaster.audioCapture.stop();
+                        } else {
+                            window.narratorMaster.audioCapture.start();
+                        }
+                    } else {
+                        ui.notifications.warn(game.i18n.localize('NARRATOR.Errors.NotInitialized'));
+                    }
+                }
+            },
+            {
+                name: 'settings',
+                title: game.i18n.localize('NARRATOR.Panel.OpenSettings'),
+                icon: 'fas fa-cog',
+                button: true,
+                onClick: () => {
+                    // Open module settings
+                    const settingsApp = game.settings.sheet;
+                    settingsApp.render(true);
+                    // Scroll to Narrator Master settings section after a short delay
+                    setTimeout(() => {
+                        const moduleTab = settingsApp.element?.find('[data-tab="modules"]');
+                        if (moduleTab) {
+                            moduleTab.trigger('click');
+                        }
+                    }, 100);
+                }
+            }
+        ]
+    };
+
+    // Add the Narrator Master control group to the sidebar
+    controls.push(narratorControl);
+
+    console.log(`${MODULE_ID} | Scene control buttons registered`);
+});
+
 // Export for external use and testing
 export { NarratorMaster, MODULE_ID };
