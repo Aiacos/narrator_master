@@ -938,7 +938,14 @@ Hooks.on('getSceneControlButtons', (controls) => {
     };
 
     // Add the Narrator Master control group to the sidebar
-    controls.push(narratorControl);
+    // Foundry v13 uses object-based controls, v12 uses array-based
+    if (typeof controls === 'object' && !Array.isArray(controls)) {
+        // Foundry v13+: controls is an object keyed by control name
+        controls['narrator-master'] = narratorControl;
+    } else if (Array.isArray(controls)) {
+        // Foundry v12: controls is an array
+        controls.push(narratorControl);
+    }
 
     console.log(`${MODULE_ID} | Scene control buttons registered`);
 });
