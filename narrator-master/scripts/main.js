@@ -5,10 +5,16 @@
  */
 
 import { MODULE_ID, registerSettings, SettingsManager } from './settings.js';
+import { AudioCapture, AudioCaptureEvent, RecordingState } from './audio-capture.js';
+import { TranscriptionService } from './transcription.js';
+import { AIAssistant } from './ai-assistant.js';
+import { ImageGenerator } from './image-generator.js';
+import { JournalParser } from './journal-parser.js';
+import { NarratorPanel, RECORDING_STATE } from './ui-panel.js';
 
 /**
  * NarratorMaster - Main controller class that orchestrates all module components
- * This class will be extended in phase-6-integration to wire all services together
+ * Coordinates audio capture, transcription, AI analysis, and UI updates
  */
 class NarratorMaster {
     /**
@@ -28,40 +34,61 @@ class NarratorMaster {
         this._initialized = false;
 
         /**
-         * Reference to the UI panel (will be set in phase-5)
-         * @type {Application|null}
+         * Reference to the UI panel
+         * @type {NarratorPanel|null}
          */
         this.panel = null;
 
         /**
-         * Audio capture service (will be set in phase-4)
-         * @type {Object|null}
+         * Audio capture service
+         * @type {AudioCapture|null}
          */
         this.audioCapture = null;
 
         /**
-         * Transcription service (will be set in phase-3)
-         * @type {Object|null}
+         * Transcription service
+         * @type {TranscriptionService|null}
          */
         this.transcriptionService = null;
 
         /**
-         * AI assistant service (will be set in phase-3)
-         * @type {Object|null}
+         * AI assistant service
+         * @type {AIAssistant|null}
          */
         this.aiAssistant = null;
 
         /**
-         * Image generator service (will be set in phase-3)
-         * @type {Object|null}
+         * Image generator service
+         * @type {ImageGenerator|null}
          */
         this.imageGenerator = null;
 
         /**
-         * Journal parser service (will be set in phase-2)
-         * @type {Object|null}
+         * Journal parser service
+         * @type {JournalParser|null}
          */
         this.journalParser = null;
+
+        /**
+         * Audio level update interval ID
+         * @type {number|null}
+         * @private
+         */
+        this._audioLevelInterval = null;
+
+        /**
+         * Pending transcription timeout ID for debouncing
+         * @type {number|null}
+         * @private
+         */
+        this._transcriptionTimeout = null;
+
+        /**
+         * Collected audio chunks waiting to be processed
+         * @type {Blob[]}
+         * @private
+         */
+        this._pendingAudioChunks = [];
     }
 
     /**
@@ -78,6 +105,18 @@ class NarratorMaster {
         console.log(`${MODULE_ID} | Initializing NarratorMaster controller`);
 
         try {
+            // Get API key from settings
+            const apiKey = this.settings.getApiKey();
+
+            // Initialize services
+            this._initializeServices(apiKey);
+
+            // Initialize UI panel
+            this._initializePanel();
+
+            // Load selected journal if configured
+            await this._loadSelectedJournal();
+
             // Validate configuration
             const validation = this.settings.validateConfiguration();
             if (!validation.valid) {
@@ -97,6 +136,454 @@ class NarratorMaster {
     }
 
     /**
+     * Initializes all service instances
+     * @param {string} apiKey - The OpenAI API key
+     * @private
+     */
+    _initializeServices(apiKey) {
+        console.log(`${MODULE_ID} | Initializing services`);
+
+        // Initialize Journal Parser (no API key needed)
+        this.journalParser = new JournalParser();
+
+        // Initialize Audio Capture
+        this.audioCapture = new AudioCapture({
+            timeslice: 5000, // 5 second chunks for better processing
+            maxDuration: 300000 // 5 minutes max
+        });
+
+        // Set up audio capture event handlers
+        this._setupAudioCaptureHandlers();
+
+        // Initialize API-dependent services
+        this.transcriptionService = new TranscriptionService(apiKey, {
+            language: this.settings.getTranscriptionLanguage(),
+            enableDiarization: true
+        });
+
+        this.aiAssistant = new AIAssistant(apiKey, {
+            model: 'gpt-4o-mini',
+            sensitivity: this.settings.getOffTrackSensitivity()
+        });
+
+        this.imageGenerator = new ImageGenerator(apiKey, {
+            model: 'gpt-image-1',
+            defaultSize: '1024x1024',
+            autoCacheImages: true
+        });
+
+        console.log(`${MODULE_ID} | Services initialized`);
+    }
+
+    /**
+     * Sets up event handlers for audio capture
+     * @private
+     */
+    _setupAudioCaptureHandlers() {
+        // Handle state changes
+        this.audioCapture.on(AudioCaptureEvent.STATE_CHANGE, (state) => {
+            this._onAudioStateChange(state);
+        });
+
+        // Handle audio data available
+        this.audioCapture.on(AudioCaptureEvent.DATA_AVAILABLE, (chunk) => {
+            this._onAudioDataAvailable(chunk);
+        });
+
+        // Handle errors
+        this.audioCapture.on(AudioCaptureEvent.ERROR, (error) => {
+            this._onAudioCaptureError(error);
+        });
+
+        // Handle permission events
+        this.audioCapture.on(AudioCaptureEvent.PERMISSION_DENIED, (error) => {
+            ui.notifications.error(error.message);
+        });
+
+        this.audioCapture.on(AudioCaptureEvent.PERMISSION_GRANTED, () => {
+            ui.notifications.info(game.i18n.localize('NARRATOR.Notifications.MicrophoneReady'));
+        });
+    }
+
+    /**
+     * Initializes the UI panel
+     * @private
+     */
+    _initializePanel() {
+        console.log(`${MODULE_ID} | Initializing UI panel`);
+
+        this.panel = new NarratorPanel();
+
+        // Set up panel callbacks
+        this.panel.onRecordingControl = this._handleRecordingControl.bind(this);
+        this.panel.onGenerateImage = this._handleGenerateImage.bind(this);
+        this.panel.onJournalSelect = this._handleJournalSelect.bind(this);
+
+        console.log(`${MODULE_ID} | UI panel initialized`);
+    }
+
+    /**
+     * Loads the selected journal from settings
+     * @private
+     */
+    async _loadSelectedJournal() {
+        const journalId = this.settings.getSelectedJournal();
+        if (!journalId) {
+            console.log(`${MODULE_ID} | No journal selected`);
+            return;
+        }
+
+        try {
+            await this._parseAndSetJournal(journalId);
+        } catch (error) {
+            console.warn(`${MODULE_ID} | Failed to load selected journal:`, error);
+        }
+    }
+
+    /**
+     * Parses a journal and sets up the AI context
+     * @param {string} journalId - The journal ID to parse
+     * @private
+     */
+    async _parseAndSetJournal(journalId) {
+        console.log(`${MODULE_ID} | Parsing journal: ${journalId}`);
+
+        const parsedJournal = await this.journalParser.parseJournal(journalId);
+        const context = this.journalParser.getContentForAI(journalId);
+
+        // Set context in AI assistant
+        this.aiAssistant.setAdventureContext(context);
+
+        // Update panel with journal reference
+        if (this.panel) {
+            this.panel.updateContent({
+                journalRef: `${parsedJournal.name} (${parsedJournal.pages.length} pagine)`
+            });
+        }
+
+        console.log(`${MODULE_ID} | Journal context set: ${context.length} chars`);
+    }
+
+    /**
+     * Handles audio capture state changes
+     * @param {RecordingState} state - The new state
+     * @private
+     */
+    _onAudioStateChange(state) {
+        console.log(`${MODULE_ID} | Audio state changed: ${state}`);
+
+        if (!this.panel) return;
+
+        switch (state) {
+            case RecordingState.RECORDING:
+                this.panel.setRecordingState(RECORDING_STATE.RECORDING);
+                this._startAudioLevelUpdates();
+                break;
+
+            case RecordingState.PAUSED:
+                this.panel.setRecordingState(RECORDING_STATE.PAUSED);
+                this._stopAudioLevelUpdates();
+                break;
+
+            case RecordingState.STOPPING:
+                this.panel.setRecordingState(RECORDING_STATE.PROCESSING);
+                this._stopAudioLevelUpdates();
+                break;
+
+            case RecordingState.INACTIVE:
+                this.panel.setRecordingState(RECORDING_STATE.INACTIVE);
+                this._stopAudioLevelUpdates();
+                break;
+        }
+    }
+
+    /**
+     * Handles audio data availability
+     * @param {Blob} chunk - Audio data chunk
+     * @private
+     */
+    _onAudioDataAvailable(chunk) {
+        this._pendingAudioChunks.push(chunk);
+
+        // Debounce transcription - wait for 2 seconds of silence
+        if (this._transcriptionTimeout) {
+            clearTimeout(this._transcriptionTimeout);
+        }
+
+        this._transcriptionTimeout = setTimeout(() => {
+            this._processAudioChunks();
+        }, 2000);
+    }
+
+    /**
+     * Processes accumulated audio chunks through transcription
+     * @private
+     */
+    async _processAudioChunks() {
+        if (this._pendingAudioChunks.length === 0) return;
+
+        // Combine chunks into a single blob
+        const audioBlob = new Blob(this._pendingAudioChunks, { type: 'audio/webm' });
+        this._pendingAudioChunks = [];
+
+        // Skip if too small (likely silence)
+        if (audioBlob.size < 1000) {
+            console.log(`${MODULE_ID} | Audio chunk too small, skipping`);
+            return;
+        }
+
+        try {
+            // Transcribe audio
+            const transcription = await this.transcriptionService.transcribe(audioBlob);
+
+            // Skip if no text was transcribed
+            if (!transcription.text || transcription.text.trim().length === 0) {
+                console.log(`${MODULE_ID} | No text transcribed`);
+                return;
+            }
+
+            // Update panel with transcription segments
+            if (this.panel) {
+                for (const segment of transcription.segments) {
+                    this.panel.appendTranscription({
+                        speaker: segment.speaker,
+                        text: segment.text,
+                        timestamp: segment.start
+                    });
+                }
+            }
+
+            // Analyze transcription with AI
+            await this._analyzeTranscription(transcription.text);
+
+        } catch (error) {
+            console.error(`${MODULE_ID} | Transcription error:`, error);
+            ui.notifications.error(game.i18n.format('NARRATOR.Errors.TranscriptionFailed', {
+                message: error.message
+            }));
+        }
+    }
+
+    /**
+     * Analyzes transcription with AI assistant
+     * @param {string} text - Transcribed text to analyze
+     * @private
+     */
+    async _analyzeTranscription(text) {
+        if (!this.aiAssistant.isConfigured()) {
+            console.warn(`${MODULE_ID} | AI assistant not configured`);
+            return;
+        }
+
+        try {
+            const analysis = await this.aiAssistant.analyzeContext(text);
+
+            if (this.panel) {
+                // Update suggestions
+                const suggestionTexts = analysis.suggestions.map(s => s.content);
+                this.panel.updateContent({
+                    suggestions: suggestionTexts,
+                    offTrack: analysis.offTrackStatus.isOffTrack,
+                    offTrackMessage: analysis.offTrackStatus.reason,
+                    narrativeBridge: analysis.offTrackStatus.narrativeBridge || ''
+                });
+
+                // Show notification if off-track
+                if (analysis.offTrackStatus.isOffTrack && analysis.offTrackStatus.severity > 0.5) {
+                    ui.notifications.warn(game.i18n.localize('NARRATOR.Notifications.PlayersOffTrack'));
+                }
+            }
+
+        } catch (error) {
+            console.error(`${MODULE_ID} | AI analysis error:`, error);
+            // Don't show notification for analysis errors - not critical
+        }
+    }
+
+    /**
+     * Handles audio capture errors
+     * @param {Object} error - Error object
+     * @private
+     */
+    _onAudioCaptureError(error) {
+        console.error(`${MODULE_ID} | Audio capture error:`, error);
+        ui.notifications.error(error.message);
+
+        if (this.panel) {
+            this.panel.setRecordingState(RECORDING_STATE.INACTIVE);
+        }
+    }
+
+    /**
+     * Starts periodic audio level updates
+     * @private
+     */
+    _startAudioLevelUpdates() {
+        this._stopAudioLevelUpdates();
+
+        // Initialize audio analyzer if not already done
+        if (!this.audioCapture._analyser) {
+            this.audioCapture.initializeAnalyser();
+        }
+
+        // Update every 100ms
+        this._audioLevelInterval = setInterval(() => {
+            const level = this.audioCapture.getAudioLevel() * 100;
+            if (this.panel) {
+                this.panel.setAudioLevel(level);
+            }
+        }, 100);
+    }
+
+    /**
+     * Stops periodic audio level updates
+     * @private
+     */
+    _stopAudioLevelUpdates() {
+        if (this._audioLevelInterval) {
+            clearInterval(this._audioLevelInterval);
+            this._audioLevelInterval = null;
+        }
+    }
+
+    /**
+     * Handles recording control actions from the panel
+     * @param {string} action - The action (start, stop, pause, resume)
+     * @private
+     */
+    async _handleRecordingControl(action) {
+        console.log(`${MODULE_ID} | Recording control: ${action}`);
+
+        try {
+            switch (action) {
+                case 'start':
+                    await this.audioCapture.start();
+                    break;
+
+                case 'stop':
+                    const audioBlob = await this.audioCapture.stop();
+                    if (audioBlob && audioBlob.size > 1000) {
+                        // Process final audio
+                        this.panel?.setRecordingState(RECORDING_STATE.PROCESSING);
+                        await this._processFinalAudio(audioBlob);
+                    }
+                    break;
+
+                case 'pause':
+                    this.audioCapture.pause();
+                    break;
+
+                case 'resume':
+                    this.audioCapture.resume();
+                    break;
+            }
+        } catch (error) {
+            console.error(`${MODULE_ID} | Recording control error:`, error);
+            ui.notifications.error(error.message);
+            this.panel?.setRecordingState(RECORDING_STATE.INACTIVE);
+        }
+    }
+
+    /**
+     * Processes the final audio blob after recording stops
+     * @param {Blob} audioBlob - The complete recording
+     * @private
+     */
+    async _processFinalAudio(audioBlob) {
+        try {
+            // Transcribe final audio
+            const transcription = await this.transcriptionService.transcribe(audioBlob);
+
+            if (transcription.text && transcription.text.trim().length > 0) {
+                // Update panel with final transcription
+                if (this.panel) {
+                    for (const segment of transcription.segments) {
+                        this.panel.appendTranscription({
+                            speaker: segment.speaker,
+                            text: segment.text,
+                            timestamp: segment.start
+                        });
+                    }
+                }
+
+                // Final AI analysis
+                await this._analyzeTranscription(transcription.text);
+            }
+
+        } catch (error) {
+            console.error(`${MODULE_ID} | Final audio processing error:`, error);
+            ui.notifications.error(game.i18n.format('NARRATOR.Errors.TranscriptionFailed', {
+                message: error.message
+            }));
+        } finally {
+            this.panel?.setRecordingState(RECORDING_STATE.INACTIVE);
+        }
+    }
+
+    /**
+     * Handles image generation requests from the panel
+     * @param {string} context - Context for image generation
+     * @private
+     */
+    async _handleGenerateImage(context) {
+        console.log(`${MODULE_ID} | Generating image from context`);
+
+        if (!this.imageGenerator.isConfigured()) {
+            ui.notifications.error(game.i18n.localize('NARRATOR.Errors.NoApiKey'));
+            return;
+        }
+
+        try {
+            const result = await this.imageGenerator.generateInfographic(context, {
+                style: 'fantasy',
+                mood: 'dramatic'
+            });
+
+            if (this.panel && result.url) {
+                this.panel.addImage({
+                    url: result.base64 ? `data:image/png;base64,${result.base64}` : result.url,
+                    prompt: result.prompt
+                });
+
+                ui.notifications.info(game.i18n.localize('NARRATOR.Notifications.ImageGenerated'));
+            }
+
+        } catch (error) {
+            console.error(`${MODULE_ID} | Image generation error:`, error);
+            ui.notifications.error(error.message);
+        }
+    }
+
+    /**
+     * Handles journal selection from the panel
+     * @param {string} journalId - Selected journal ID
+     * @private
+     */
+    async _handleJournalSelect(journalId) {
+        console.log(`${MODULE_ID} | Journal selected: ${journalId}`);
+
+        if (!journalId) {
+            // Clear journal context
+            this.aiAssistant.setAdventureContext('');
+            if (this.panel) {
+                this.panel.updateContent({ journalRef: '' });
+            }
+            return;
+        }
+
+        try {
+            this.panel?.setLoading(true, game.i18n.localize('NARRATOR.Panel.LoadingJournal'));
+            await this._parseAndSetJournal(journalId);
+            ui.notifications.info(game.i18n.localize('NARRATOR.Notifications.JournalLoaded'));
+        } catch (error) {
+            console.error(`${MODULE_ID} | Journal loading error:`, error);
+            ui.notifications.error(error.message);
+        } finally {
+            this.panel?.setLoading(false);
+        }
+    }
+
+    /**
      * Updates the API key and reinitializes dependent services
      * Called when the API key setting changes
      * @param {string} newApiKey - The new API key
@@ -104,13 +591,20 @@ class NarratorMaster {
     updateApiKey(newApiKey) {
         console.log(`${MODULE_ID} | API key updated`);
 
-        // Services will be updated here in phase-6-integration
-        // For now, just log the change
         if (newApiKey && newApiKey.trim().length > 0) {
-            console.log(`${MODULE_ID} | API key configured`);
+            // Update all API-dependent services
+            this.transcriptionService?.setApiKey(newApiKey);
+            this.aiAssistant?.setApiKey(newApiKey);
+            this.imageGenerator?.setApiKey(newApiKey);
+
+            console.log(`${MODULE_ID} | Services updated with new API key`);
+            ui.notifications.info(game.i18n.localize('NARRATOR.Notifications.ApiKeyUpdated'));
         } else {
             console.warn(`${MODULE_ID} | API key cleared`);
         }
+
+        // Update panel to reflect configuration status
+        this.panel?.render(false);
     }
 
     /**
@@ -118,13 +612,21 @@ class NarratorMaster {
      * Called when the selected journal setting changes
      * @param {string} journalId - The new journal ID
      */
-    updateSelectedJournal(journalId) {
+    async updateSelectedJournal(journalId) {
         console.log(`${MODULE_ID} | Selected journal updated:`, journalId);
 
-        // Journal parser will be updated here in phase-6-integration
         if (journalId && journalId.trim().length > 0) {
-            console.log(`${MODULE_ID} | Journal selected`);
+            try {
+                await this._parseAndSetJournal(journalId);
+            } catch (error) {
+                console.warn(`${MODULE_ID} | Failed to load journal:`, error);
+            }
         } else {
+            // Clear journal context
+            this.aiAssistant?.setAdventureContext('');
+            if (this.panel) {
+                this.panel.updateContent({ journalRef: '' });
+            }
             console.warn(`${MODULE_ID} | No journal selected`);
         }
     }
@@ -151,7 +653,6 @@ class NarratorMaster {
 
     /**
      * Opens the DM panel
-     * Will be implemented in phase-5
      */
     openPanel() {
         if (this.panel) {
@@ -163,7 +664,6 @@ class NarratorMaster {
 
     /**
      * Closes the DM panel
-     * Will be implemented in phase-5
      */
     closePanel() {
         if (this.panel) {
@@ -199,8 +699,39 @@ class NarratorMaster {
             initialized: this._initialized,
             apiKeyConfigured: this.settings.isApiKeyConfigured(),
             journalSelected: this.settings.isJournalSelected(),
-            panelOpen: this.panel?.rendered ?? false
+            panelOpen: this.panel?.rendered ?? false,
+            isRecording: this.audioCapture?.isRecording ?? false,
+            services: {
+                audioCapture: !!this.audioCapture,
+                transcription: this.transcriptionService?.isConfigured() ?? false,
+                aiAssistant: this.aiAssistant?.isConfigured() ?? false,
+                imageGenerator: this.imageGenerator?.isConfigured() ?? false,
+                journalParser: !!this.journalParser
+            }
         };
+    }
+
+    /**
+     * Cleans up resources when module is disabled
+     */
+    destroy() {
+        console.log(`${MODULE_ID} | Cleaning up NarratorMaster`);
+
+        // Stop audio capture
+        if (this.audioCapture) {
+            this.audioCapture.destroy();
+        }
+
+        // Clear intervals
+        this._stopAudioLevelUpdates();
+        if (this._transcriptionTimeout) {
+            clearTimeout(this._transcriptionTimeout);
+        }
+
+        // Close panel
+        this.closePanel();
+
+        this._initialized = false;
     }
 }
 
