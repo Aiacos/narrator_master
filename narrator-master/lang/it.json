@@ -1,0 +1,157 @@
+{
+    "NARRATOR": {
+        "PanelTitle": "Narrator Master - Assistente DM",
+
+        "Settings": {
+            "ApiKeyName": "Chiave API OpenAI",
+            "ApiKeyHint": "La tua chiave API OpenAI. Richiede un account con crediti (minimo $5). Ottienila da platform.openai.com/api-keys",
+            "JournalName": "Journal dell'Avventura",
+            "JournalHint": "Seleziona il Journal che contiene i dettagli dell'avventura per il contesto AI",
+            "AutoStartName": "Avvio Automatico Registrazione",
+            "AutoStartHint": "Avvia automaticamente la registrazione audio quando il pannello viene aperto",
+            "LanguageName": "Lingua Trascrizione",
+            "LanguageHint": "Lingua per la trascrizione audio (predefinito: Italiano)",
+            "PanelPositionName": "Posizione Pannello",
+            "PanelPositionHint": "Posizione salvata del pannello DM",
+            "SpeakerLabelsName": "Mostra Etichette Parlanti",
+            "SpeakerLabelsHint": "Mostra i nomi degli speaker nella trascrizione quando viene rilevata la diarizzazione",
+            "SensitivityName": "Sensibilita Rilevamento Fuori Tema",
+            "SensitivityHint": "Quanto rigorosamente rilevare quando i giocatori si allontanano dalla trama dell'avventura",
+            "SensitivityLow": "Bassa - Solo grandi deviazioni",
+            "SensitivityMedium": "Media - Bilanciato",
+            "SensitivityHigh": "Alta - Anche piccole variazioni"
+        },
+
+        "Panel": {
+            "StartRecording": "Avvia Registrazione",
+            "StopRecording": "Ferma Registrazione",
+            "PauseRecording": "Pausa",
+            "ResumeRecording": "Riprendi",
+            "GenerateImage": "Genera Immagine",
+            "TranscriptionTab": "Trascrizione",
+            "SuggestionsTab": "Suggerimenti",
+            "ImagesTab": "Immagini",
+            "NoTranscription": "Nessuna trascrizione disponibile. Avvia la registrazione per catturare l'audio della sessione.",
+            "NoSuggestions": "Nessun suggerimento disponibile. I suggerimenti appariranno dopo la trascrizione dell'audio.",
+            "NoImages": "Nessuna immagine generata. Usa il pulsante 'Genera Immagine' per creare infografiche.",
+            "OffTrackWarning": "ATTENZIONE: Fuori Tema!",
+            "ReturnToStory": "Per Riportarli nella Storia",
+            "SelectJournal": "Seleziona Journal",
+            "CurrentContext": "Contesto Attuale",
+            "NoApiKey": "Chiave API non configurata",
+            "ConfigureSettings": "Configura Impostazioni",
+            "Processing": "Elaborazione in corso...",
+            "ClearTranscription": "Cancella Trascrizione",
+            "ClearImages": "Cancella Immagini",
+            "CopyToClipboard": "Copia negli Appunti",
+            "GeneratingImage": "Generazione immagine in corso...",
+            "GeneratedImage": "Immagine Generata"
+        },
+
+        "Errors": {
+            "NoApiKey": "Chiave API OpenAI non configurata. Vai nelle impostazioni del modulo per aggiungerla.",
+            "NoJournal": "Nessun Journal selezionato. Seleziona un Journal dell'avventura nelle impostazioni.",
+            "InvalidAudio": "Audio non valido. Assicurati che la registrazione contenga dati audio.",
+            "FileTooLarge": "File audio troppo grande ({size}MB). Il limite massimo e 25MB.",
+            "InvalidApiKey": "Chiave API non valida. Verifica la tua chiave API OpenAI nelle impostazioni.",
+            "RateLimited": "Limite di richieste raggiunto. Attendi qualche momento prima di riprovare.",
+            "BadRequest": "Richiesta non valida: {details}",
+            "ServerError": "Errore del server OpenAI. Riprova piu tardi.",
+            "TranscriptionFailed": "Trascrizione fallita (Errore {status}): {message}",
+            "NoTranscription": "Nessuna trascrizione disponibile per l'analisi.",
+            "NoPrompt": "Nessun prompt fornito per la generazione dell'immagine.",
+            "NoDescription": "Nessuna descrizione fornita per l'infografica.",
+            "ContentPolicy": "Il contenuto viola le policy di OpenAI. Prova con una descrizione diversa.",
+            "AIAssistantFailed": "Assistente AI fallito (Errore {status}): {message}",
+            "ImageGenerationFailed": "Generazione immagine fallita (Errore {status}): {message}",
+            "NoContextForImage": "Nessun contesto disponibile per generare un'immagine. Registra prima dell'audio o seleziona un Journal.",
+            "CopyFailed": "Impossibile copiare negli appunti.",
+            "MicrophoneNotSupported": "Il tuo browser non supporta la cattura audio del microfono.",
+            "MicrophonePermissionDenied": "Permesso microfono negato. Consenti l'accesso al microfono nelle impostazioni del browser.",
+            "MicrophoneNotFound": "Nessun microfono trovato. Collega un microfono e riprova.",
+            "MicrophoneInUse": "Il microfono e in uso da un'altra applicazione. Chiudi le altre app che usano il microfono.",
+            "MicrophoneConstraints": "Il microfono non soddisfa i requisiti richiesti.",
+            "MicrophoneSecurityError": "Errore di sicurezza: la cattura audio richiede HTTPS in produzione.",
+            "MicrophoneGeneric": "Errore microfono: {error}",
+            "RecordingFailed": "Registrazione fallita. Riprova.",
+            "RecorderInitFailed": "Impossibile inizializzare il registratore: {error}"
+        },
+
+        "Notifications": {
+            "CopiedToClipboard": "Copiato negli appunti!",
+            "RecordingStarted": "Registrazione avviata",
+            "RecordingStopped": "Registrazione fermata",
+            "JournalParsed": "Journal analizzato con successo",
+            "ImageGenerated": "Immagine generata con successo",
+            "SettingsSaved": "Impostazioni salvate",
+            "ModuleReady": "Narrator Master pronto",
+            "TranscriptionComplete": "Trascrizione completata"
+        },
+
+        "OffTrack": {
+            "NoContext": "Nessun contesto avventura impostato per il rilevamento fuori tema.",
+            "ParseError": "Impossibile analizzare la risposta del rilevamento fuori tema.",
+            "Warning": "I giocatori si stanno allontanando dalla trama dell'avventura.",
+            "Severe": "I giocatori sono completamente fuori tema rispetto all'avventura.",
+            "Minor": "Lieve deviazione dalla trama principale."
+        },
+
+        "Suggestions": {
+            "TypeNarration": "Narrazione",
+            "TypeDialogue": "Dialogo",
+            "TypeAction": "Azione",
+            "TypeReference": "Riferimento",
+            "HighConfidence": "Alta confidenza",
+            "MediumConfidence": "Media confidenza",
+            "LowConfidence": "Bassa confidenza"
+        },
+
+        "Recording": {
+            "StateInactive": "Inattivo",
+            "StateRecording": "In registrazione",
+            "StatePaused": "In pausa",
+            "StateProcessing": "Elaborazione",
+            "AudioLevelLow": "Livello audio basso",
+            "AudioLevelNormal": "Livello audio normale",
+            "AudioLevelHigh": "Livello audio alto"
+        },
+
+        "Journal": {
+            "NoJournalFound": "Journal non trovato",
+            "ParsingJournal": "Analisi Journal in corso...",
+            "JournalEmpty": "Il Journal selezionato e vuoto.",
+            "PageCount": "{count} pagine trovate"
+        },
+
+        "Images": {
+            "Generating": "Generazione in corso...",
+            "CacheExpired": "URL immagine scaduto, usando cache locale",
+            "NoCache": "Immagine non disponibile (URL scaduto e nessuna cache)",
+            "ClickToEnlarge": "Clicca per ingrandire",
+            "Delete": "Elimina",
+            "Download": "Scarica"
+        },
+
+        "Tooltips": {
+            "StartRecording": "Inizia a registrare l'audio della sessione",
+            "StopRecording": "Ferma la registrazione e elabora l'audio",
+            "PauseRecording": "Metti in pausa la registrazione",
+            "ResumeRecording": "Riprendi la registrazione",
+            "GenerateImage": "Genera un'immagine basata sul contesto attuale",
+            "ClearTranscription": "Cancella tutta la trascrizione corrente",
+            "ClearImages": "Cancella tutte le immagini generate",
+            "CopyText": "Copia il testo negli appunti",
+            "OpenSettings": "Apri le impostazioni del modulo",
+            "SelectJournal": "Seleziona il Journal dell'avventura per il contesto AI"
+        },
+
+        "Accessibility": {
+            "RecordButton": "Pulsante registrazione",
+            "AudioLevel": "Indicatore livello audio",
+            "TabNavigation": "Navigazione schede",
+            "ImageGallery": "Galleria immagini",
+            "SuggestionsList": "Lista suggerimenti",
+            "TranscriptionContent": "Contenuto trascrizione"
+        }
+    }
+}
