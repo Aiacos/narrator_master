@@ -394,14 +394,22 @@ export class ImageGenerator {
      * @private
      */
     async _makeApiRequest(requestBody) {
-        const response = await fetch(`${this._baseUrl}/images/generations`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${this._apiKey}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestBody)
-        });
+        let response;
+
+        try {
+            response = await fetch(`${this._baseUrl}/images/generations`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this._apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+        } catch (networkError) {
+            // Handle network errors (no connection, timeout, etc.)
+            console.error(`${MODULE_ID} | Network error during image generation:`, networkError);
+            throw this._createNetworkError(networkError);
+        }
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
@@ -413,6 +421,33 @@ export class ImageGenerator {
         }
 
         return await response.json();
+    }
+
+    /**
+     * Creates a user-friendly error for network failures
+     * @param {Error} networkError - The original network error
+     * @returns {Object} Error object with status and message
+     * @private
+     */
+    _createNetworkError(networkError) {
+        const isTimeout = networkError.name === 'AbortError' ||
+            networkError.message?.includes('timeout');
+
+        if (isTimeout) {
+            return {
+                message: game.i18n.localize('NARRATOR.Errors.Timeout'),
+                code: 'timeout',
+                status: 0,
+                isNetworkError: true
+            };
+        }
+
+        return {
+            message: game.i18n.localize('NARRATOR.Errors.NetworkError'),
+            code: 'network_error',
+            status: 0,
+            isNetworkError: true
+        };
     }
 
     /**
@@ -718,6 +753,14 @@ export class ImageGenerator {
     _handleApiError(error) {
         let message;
 
+        // Handle network errors first
+        if (error.isNetworkError || error.status === 0) {
+            message = error.message || game.i18n.localize('NARRATOR.Errors.NetworkError');
+            const err = new Error(message);
+            err.isNetworkError = true;
+            return err;
+        }
+
         switch (error.status) {
             case 401:
                 message = game.i18n.localize('NARRATOR.Errors.InvalidApiKey');
@@ -740,6 +783,9 @@ export class ImageGenerator {
             case 503:
                 message = game.i18n.localize('NARRATOR.Errors.ServerError');
                 break;
+            case 504:
+                message = game.i18n.localize('NARRATOR.Errors.Timeout');
+                break;
             default:
                 message = game.i18n.format('NARRATOR.Errors.ImageGenerationFailed', {
                     status: error.status,
@@ -748,6 +794,16 @@ export class ImageGenerator {
         }
 
         return new Error(message);
+    }
+
+    /**
+     * Shows a user notification for image generation errors
+     * @param {Error} error - The error to display
+     */
+    static notifyError(error) {
+        if (typeof ui !== 'undefined' && ui.notifications) {
+            ui.notifications.error(error.message);
+        }
     }
 
     /**

@@ -347,13 +347,21 @@ export class TranscriptionService {
      * @private
      */
     async _makeApiRequest(formData) {
-        const response = await fetch(`${this._baseUrl}/audio/transcriptions`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${this._apiKey}`
-            },
-            body: formData
-        });
+        let response;
+
+        try {
+            response = await fetch(`${this._baseUrl}/audio/transcriptions`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this._apiKey}`
+                },
+                body: formData
+            });
+        } catch (networkError) {
+            // Handle network errors (no connection, timeout, etc.)
+            console.error(`${MODULE_ID} | Network error during transcription:`, networkError);
+            throw this._createNetworkError(networkError);
+        }
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
@@ -365,6 +373,33 @@ export class TranscriptionService {
         }
 
         return await response.json();
+    }
+
+    /**
+     * Creates a user-friendly error for network failures
+     * @param {Error} networkError - The original network error
+     * @returns {Object} Error object with status and message
+     * @private
+     */
+    _createNetworkError(networkError) {
+        const isTimeout = networkError.name === 'AbortError' ||
+            networkError.message?.includes('timeout');
+
+        if (isTimeout) {
+            return {
+                message: game.i18n.localize('NARRATOR.Errors.Timeout'),
+                code: 'timeout',
+                status: 0,
+                isNetworkError: true
+            };
+        }
+
+        return {
+            message: game.i18n.localize('NARRATOR.Errors.NetworkError'),
+            code: 'network_error',
+            status: 0,
+            isNetworkError: true
+        };
     }
 
     /**
@@ -412,6 +447,14 @@ export class TranscriptionService {
     _handleApiError(error) {
         let message;
 
+        // Handle network errors first
+        if (error.isNetworkError || error.status === 0) {
+            message = error.message || game.i18n.localize('NARRATOR.Errors.NetworkError');
+            const err = new Error(message);
+            err.isNetworkError = true;
+            return err;
+        }
+
         switch (error.status) {
             case 401:
                 message = game.i18n.localize('NARRATOR.Errors.InvalidApiKey');
@@ -432,6 +475,9 @@ export class TranscriptionService {
             case 503:
                 message = game.i18n.localize('NARRATOR.Errors.ServerError');
                 break;
+            case 504:
+                message = game.i18n.localize('NARRATOR.Errors.Timeout');
+                break;
             default:
                 message = game.i18n.format('NARRATOR.Errors.TranscriptionFailed', {
                     status: error.status,
@@ -440,6 +486,16 @@ export class TranscriptionService {
         }
 
         return new Error(message);
+    }
+
+    /**
+     * Shows a user notification for transcription errors
+     * @param {Error} error - The error to display
+     */
+    static notifyError(error) {
+        if (typeof ui !== 'undefined' && ui.notifications) {
+            ui.notifications.error(error.message);
+        }
     }
 
     /**

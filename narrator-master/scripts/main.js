@@ -13,6 +13,99 @@ import { JournalParser } from './journal-parser.js';
 import { NarratorPanel, RECORDING_STATE } from './ui-panel.js';
 
 /**
+ * Error notification types for different severity levels
+ * @constant {Object}
+ */
+const NOTIFICATION_TYPE = {
+    ERROR: 'error',
+    WARNING: 'warn',
+    INFO: 'info'
+};
+
+/**
+ * Centralized error notification helper
+ * Handles different error types and shows appropriate user notifications
+ */
+class ErrorNotificationHelper {
+    /**
+     * Shows an error notification to the user
+     * @param {Error|string} error - The error or message to display
+     * @param {Object} [options={}] - Notification options
+     * @param {string} [options.type='error'] - Notification type (error, warn, info)
+     * @param {boolean} [options.permanent=false] - Whether notification should be permanent
+     * @param {string} [options.context] - Additional context about where the error occurred
+     */
+    static notify(error, options = {}) {
+        const type = options.type || NOTIFICATION_TYPE.ERROR;
+        const message = error instanceof Error ? error.message : String(error);
+        const context = options.context ? `[${options.context}] ` : '';
+
+        // Log to console for debugging
+        if (type === NOTIFICATION_TYPE.ERROR) {
+            console.error(`${MODULE_ID} | ${context}${message}`, error);
+        } else if (type === NOTIFICATION_TYPE.WARNING) {
+            console.warn(`${MODULE_ID} | ${context}${message}`);
+        }
+
+        // Show user notification
+        if (typeof ui !== 'undefined' && ui.notifications) {
+            const notifyMethod = ui.notifications[type];
+            if (typeof notifyMethod === 'function') {
+                notifyMethod.call(ui.notifications, message, { permanent: options.permanent });
+            }
+        }
+    }
+
+    /**
+     * Shows an error notification
+     * @param {Error|string} error - The error to display
+     * @param {string} [context] - Additional context
+     */
+    static error(error, context) {
+        this.notify(error, { type: NOTIFICATION_TYPE.ERROR, context });
+    }
+
+    /**
+     * Shows a warning notification
+     * @param {string} message - The warning message
+     * @param {string} [context] - Additional context
+     */
+    static warn(message, context) {
+        this.notify(message, { type: NOTIFICATION_TYPE.WARNING, context });
+    }
+
+    /**
+     * Shows an info notification
+     * @param {string} message - The info message
+     */
+    static info(message) {
+        this.notify(message, { type: NOTIFICATION_TYPE.INFO });
+    }
+
+    /**
+     * Handles API-related errors with specific messaging
+     * @param {Error} error - The API error
+     * @param {string} operation - What operation failed (e.g., 'transcription', 'image generation')
+     */
+    static handleApiError(error, operation) {
+        // Check if it's a network error
+        if (error.isNetworkError) {
+            this.error(error.message, operation);
+            return;
+        }
+
+        // Check for rate limiting
+        if (error.message?.includes('rate') || error.message?.includes('limite')) {
+            this.warn(error.message, operation);
+            return;
+        }
+
+        // Default error handling
+        this.error(error, operation);
+    }
+}
+
+/**
  * NarratorMaster - Main controller class that orchestrates all module components
  * Coordinates audio capture, transcription, AI analysis, and UI updates
  */
@@ -357,10 +450,7 @@ class NarratorMaster {
             await this._analyzeTranscription(transcription.text);
 
         } catch (error) {
-            console.error(`${MODULE_ID} | Transcription error:`, error);
-            ui.notifications.error(game.i18n.format('NARRATOR.Errors.TranscriptionFailed', {
-                message: error.message
-            }));
+            this._handleServiceError(error, 'Transcription');
         }
     }
 
@@ -406,8 +496,7 @@ class NarratorMaster {
      * @private
      */
     _onAudioCaptureError(error) {
-        console.error(`${MODULE_ID} | Audio capture error:`, error);
-        ui.notifications.error(error.message);
+        ErrorNotificationHelper.error(error.message || error, 'Audio Capture');
 
         if (this.panel) {
             this.panel.setRecordingState(RECORDING_STATE.INACTIVE);
@@ -478,8 +567,7 @@ class NarratorMaster {
                     break;
             }
         } catch (error) {
-            console.error(`${MODULE_ID} | Recording control error:`, error);
-            ui.notifications.error(error.message);
+            this._handleServiceError(error, 'Recording Control');
             this.panel?.setRecordingState(RECORDING_STATE.INACTIVE);
         }
     }
@@ -511,10 +599,7 @@ class NarratorMaster {
             }
 
         } catch (error) {
-            console.error(`${MODULE_ID} | Final audio processing error:`, error);
-            ui.notifications.error(game.i18n.format('NARRATOR.Errors.TranscriptionFailed', {
-                message: error.message
-            }));
+            this._handleServiceError(error, 'Final Audio Processing');
         } finally {
             this.panel?.setRecordingState(RECORDING_STATE.INACTIVE);
         }
@@ -545,12 +630,11 @@ class NarratorMaster {
                     prompt: result.prompt
                 });
 
-                ui.notifications.info(game.i18n.localize('NARRATOR.Notifications.ImageGenerated'));
+                ErrorNotificationHelper.info(game.i18n.localize('NARRATOR.Notifications.ImageGenerated'));
             }
 
         } catch (error) {
-            console.error(`${MODULE_ID} | Image generation error:`, error);
-            ui.notifications.error(error.message);
+            this._handleServiceError(error, 'Image Generation');
         }
     }
 
@@ -574,10 +658,9 @@ class NarratorMaster {
         try {
             this.panel?.setLoading(true, game.i18n.localize('NARRATOR.Panel.LoadingJournal'));
             await this._parseAndSetJournal(journalId);
-            ui.notifications.info(game.i18n.localize('NARRATOR.Notifications.JournalLoaded'));
+            ErrorNotificationHelper.info(game.i18n.localize('NARRATOR.Notifications.JournalLoaded'));
         } catch (error) {
-            console.error(`${MODULE_ID} | Journal loading error:`, error);
-            ui.notifications.error(error.message);
+            this._handleServiceError(error, 'Journal Loading');
         } finally {
             this.panel?.setLoading(false);
         }
@@ -598,7 +681,7 @@ class NarratorMaster {
             this.imageGenerator?.setApiKey(newApiKey);
 
             console.log(`${MODULE_ID} | Services updated with new API key`);
-            ui.notifications.info(game.i18n.localize('NARRATOR.Notifications.ApiKeyUpdated'));
+            ErrorNotificationHelper.info(game.i18n.localize('NARRATOR.Notifications.ApiKeyUpdated'));
         } else {
             console.warn(`${MODULE_ID} | API key cleared`);
         }
@@ -638,7 +721,7 @@ class NarratorMaster {
      */
     _showConfigurationWarning(errors) {
         const message = game.i18n.localize('NARRATOR.Warnings.ConfigIncomplete');
-        ui.notifications.warn(`${message}: ${errors.join(', ')}`);
+        ErrorNotificationHelper.warn(`${message}: ${errors.join(', ')}`, 'Configuration');
     }
 
     /**
@@ -648,7 +731,17 @@ class NarratorMaster {
      */
     _showErrorNotification(message) {
         const prefix = game.i18n.localize('NARRATOR.Errors.InitFailed');
-        ui.notifications.error(`${prefix}: ${message}`);
+        ErrorNotificationHelper.error(`${prefix}: ${message}`, 'Initialization');
+    }
+
+    /**
+     * Handles service errors with user-friendly notifications
+     * @param {Error} error - The error that occurred
+     * @param {string} operation - What operation failed
+     * @private
+     */
+    _handleServiceError(error, operation) {
+        ErrorNotificationHelper.handleApiError(error, operation);
     }
 
     /**

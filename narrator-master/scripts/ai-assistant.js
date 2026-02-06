@@ -531,19 +531,27 @@ Scrivi una breve narrazione (2-3 frasi) che il DM può usare per riportare delic
      * @private
      */
     async _makeApiRequest(messages) {
-        const response = await fetch(`${this._baseUrl}/chat/completions`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${this._apiKey}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: this._model,
-                messages,
-                temperature: 0.7,
-                max_tokens: 1000
-            })
-        });
+        let response;
+
+        try {
+            response = await fetch(`${this._baseUrl}/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this._apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: this._model,
+                    messages,
+                    temperature: 0.7,
+                    max_tokens: 1000
+                })
+            });
+        } catch (networkError) {
+            // Handle network errors (no connection, timeout, etc.)
+            console.error(`${MODULE_ID} | Network error during AI request:`, networkError);
+            throw this._createNetworkError(networkError);
+        }
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
@@ -555,6 +563,33 @@ Scrivi una breve narrazione (2-3 frasi) che il DM può usare per riportare delic
         }
 
         return await response.json();
+    }
+
+    /**
+     * Creates a user-friendly error for network failures
+     * @param {Error} networkError - The original network error
+     * @returns {Object} Error object with status and message
+     * @private
+     */
+    _createNetworkError(networkError) {
+        const isTimeout = networkError.name === 'AbortError' ||
+            networkError.message?.includes('timeout');
+
+        if (isTimeout) {
+            return {
+                message: game.i18n.localize('NARRATOR.Errors.Timeout'),
+                code: 'timeout',
+                status: 0,
+                isNetworkError: true
+            };
+        }
+
+        return {
+            message: game.i18n.localize('NARRATOR.Errors.NetworkError'),
+            code: 'network_error',
+            status: 0,
+            isNetworkError: true
+        };
     }
 
     /**
@@ -729,6 +764,14 @@ Scrivi una breve narrazione (2-3 frasi) che il DM può usare per riportare delic
     _handleApiError(error) {
         let message;
 
+        // Handle network errors first
+        if (error.isNetworkError || error.status === 0) {
+            message = error.message || game.i18n.localize('NARRATOR.Errors.NetworkError');
+            const err = new Error(message);
+            err.isNetworkError = true;
+            return err;
+        }
+
         switch (error.status) {
             case 401:
                 message = game.i18n.localize('NARRATOR.Errors.InvalidApiKey');
@@ -746,6 +789,9 @@ Scrivi una breve narrazione (2-3 frasi) che il DM può usare per riportare delic
             case 503:
                 message = game.i18n.localize('NARRATOR.Errors.ServerError');
                 break;
+            case 504:
+                message = game.i18n.localize('NARRATOR.Errors.Timeout');
+                break;
             default:
                 message = game.i18n.format('NARRATOR.Errors.AIAssistantFailed', {
                     status: error.status,
@@ -754,6 +800,16 @@ Scrivi una breve narrazione (2-3 frasi) che il DM può usare per riportare delic
         }
 
         return new Error(message);
+    }
+
+    /**
+     * Shows a user notification for AI assistant errors
+     * @param {Error} error - The error to display
+     */
+    static notifyError(error) {
+        if (typeof ui !== 'undefined' && ui.notifications) {
+            ui.notifications.error(error.message);
+        }
     }
 
     /**

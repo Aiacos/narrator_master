@@ -80,7 +80,11 @@
             "MicrophoneSecurityError": "Errore di sicurezza: la cattura audio richiede HTTPS in produzione.",
             "MicrophoneGeneric": "Errore microfono: {error}",
             "RecordingFailed": "Registrazione fallita. Riprova.",
-            "RecorderInitFailed": "Impossibile inizializzare il registratore: {error}"
+            "RecorderInitFailed": "Impossibile inizializzare il registratore: {error}",
+            "NetworkError": "Errore di connessione. Verifica la tua connessione Internet e riprova.",
+            "Timeout": "La richiesta ha impiegato troppo tempo. Riprova piu tardi.",
+            "UnexpectedError": "Si e verificato un errore imprevisto: {message}",
+            "ServiceUnavailable": "Servizio temporaneamente non disponibile. Riprova tra qualche minuto."
         },
 
         "Warnings": {
