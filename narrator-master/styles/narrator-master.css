@@ -1,0 +1,946 @@
+/**
+ * Narrator Master - CSS Stylesheet
+ * DM Assistant Panel styling for Foundry VTT
+ * @module narrator-master.css
+ */
+
+/* ============================================
+   CSS Custom Properties (Theme Variables)
+   ============================================ */
+:root {
+    /* Primary colors */
+    --narrator-primary: #7b68ee;
+    --narrator-primary-hover: #6a5acd;
+    --narrator-primary-light: rgba(123, 104, 238, 0.1);
+
+    /* Recording states */
+    --narrator-recording: #e74c3c;
+    --narrator-recording-pulse: rgba(231, 76, 60, 0.6);
+    --narrator-paused: #f39c12;
+    --narrator-processing: #3498db;
+
+    /* Status colors */
+    --narrator-success: #2ecc71;
+    --narrator-warning: #f39c12;
+    --narrator-error: #e74c3c;
+
+    /* Off-track warning - RED TEXT (Critical requirement) */
+    --narrator-off-track: #e74c3c;
+    --narrator-off-track-bg: rgba(231, 76, 60, 0.1);
+    --narrator-off-track-border: rgba(231, 76, 60, 0.4);
+
+    /* UI colors */
+    --narrator-bg-primary: #1a1a1a;
+    --narrator-bg-secondary: #2a2a2a;
+    --narrator-bg-tertiary: #3a3a3a;
+    --narrator-text-primary: #f0f0f0;
+    --narrator-text-secondary: #aaaaaa;
+    --narrator-text-muted: #777777;
+    --narrator-border: #444444;
+    --narrator-border-light: #555555;
+
+    /* Speaker label colors */
+    --narrator-speaker-dm: #9b59b6;
+    --narrator-speaker-player1: #3498db;
+    --narrator-speaker-player2: #2ecc71;
+    --narrator-speaker-player3: #f39c12;
+    --narrator-speaker-player4: #e74c3c;
+    --narrator-speaker-unknown: #95a5a6;
+
+    /* Spacing */
+    --narrator-spacing-xs: 4px;
+    --narrator-spacing-sm: 8px;
+    --narrator-spacing-md: 12px;
+    --narrator-spacing-lg: 16px;
+    --narrator-spacing-xl: 24px;
+
+    /* Border radius */
+    --narrator-radius-sm: 4px;
+    --narrator-radius-md: 6px;
+    --narrator-radius-lg: 8px;
+
+    /* Transitions */
+    --narrator-transition: 0.2s ease;
+}
+
+/* ============================================
+   Main Panel Container
+   ============================================ */
+.narrator-master.narrator-panel {
+    background: var(--narrator-bg-primary);
+    color: var(--narrator-text-primary);
+    font-family: var(--font-primary, 'Signika', sans-serif);
+}
+
+.narrator-panel-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: var(--narrator-spacing-md);
+    gap: var(--narrator-spacing-md);
+    overflow: hidden;
+}
+
+/* ============================================
+   Configuration Warning
+   ============================================ */
+.narrator-config-warning {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--narrator-spacing-sm);
+    padding: var(--narrator-spacing-md);
+    background: rgba(243, 156, 18, 0.15);
+    border: 1px solid rgba(243, 156, 18, 0.4);
+    border-radius: var(--narrator-radius-md);
+    color: var(--narrator-warning);
+    font-size: 0.9em;
+}
+
+.narrator-config-warning i {
+    font-size: 1.2em;
+}
+
+.narrator-config-warning span {
+    flex: 1;
+}
+
+.narrator-config-warning .open-settings {
+    display: flex;
+    align-items: center;
+    gap: var(--narrator-spacing-xs);
+    padding: var(--narrator-spacing-xs) var(--narrator-spacing-sm);
+    background: var(--narrator-warning);
+    color: #1a1a1a;
+    border: none;
+    border-radius: var(--narrator-radius-sm);
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: background var(--narrator-transition);
+}
+
+.narrator-config-warning .open-settings:hover {
+    background: #e08e0b;
+}
+
+/* ============================================
+   Loading Overlay
+   ============================================ */
+.narrator-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--narrator-spacing-md);
+    background: rgba(26, 26, 26, 0.9);
+    z-index: 100;
+    color: var(--narrator-text-primary);
+}
+
+.narrator-loading-overlay i {
+    font-size: 2em;
+    color: var(--narrator-primary);
+}
+
+/* ============================================
+   Recording Section
+   ============================================ */
+.narrator-recording-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--narrator-spacing-sm);
+    padding: var(--narrator-spacing-md);
+    background: var(--narrator-bg-secondary);
+    border-radius: var(--narrator-radius-md);
+}
+
+.recording-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--narrator-spacing-sm);
+    align-items: center;
+}
+
+.recording-controls button {
+    display: flex;
+    align-items: center;
+    gap: var(--narrator-spacing-xs);
+    padding: var(--narrator-spacing-sm) var(--narrator-spacing-md);
+    border: none;
+    border-radius: var(--narrator-radius-sm);
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: all var(--narrator-transition);
+}
+
+.recording-controls button:disabled,
+.recording-controls button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Start Recording Button */
+.start-recording {
+    background: var(--narrator-primary);
+    color: white;
+}
+
+.start-recording:hover:not(:disabled):not(.disabled) {
+    background: var(--narrator-primary-hover);
+}
+
+/* Stop Recording Button */
+.stop-recording {
+    background: var(--narrator-recording);
+    color: white;
+}
+
+.stop-recording:hover {
+    background: #c0392b;
+}
+
+/* Pause Recording Button */
+.pause-recording {
+    background: var(--narrator-paused);
+    color: #1a1a1a;
+}
+
+.pause-recording:hover {
+    background: #e08e0b;
+}
+
+/* Resume Recording Button */
+.resume-recording {
+    background: var(--narrator-success);
+    color: white;
+}
+
+.resume-recording:hover {
+    background: #27ae60;
+}
+
+/* Processing Indicator */
+.processing-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--narrator-spacing-sm);
+    color: var(--narrator-processing);
+    font-size: 0.9em;
+}
+
+.processing-indicator i {
+    font-size: 1.1em;
+}
+
+/* Recording Status */
+.recording-status {
+    display: flex;
+    align-items: center;
+    gap: var(--narrator-spacing-sm);
+    font-size: 0.9em;
+}
+
+.recording-indicator {
+    display: flex;
+    align-items: center;
+}
+
+.recording-indicator i {
+    font-size: 0.8em;
+    color: var(--narrator-text-muted);
+    transition: color var(--narrator-transition);
+}
+
+.recording-indicator.active i {
+    color: var(--narrator-recording);
+    animation: pulse 1s infinite;
+}
+
+.recording-indicator.paused i {
+    color: var(--narrator-paused);
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.4;
+    }
+}
+
+.recording-duration {
+    font-family: monospace;
+    font-size: 1em;
+    color: var(--narrator-text-secondary);
+}
+
+/* Audio Level Indicator */
+.audio-level-container {
+    height: 6px;
+    background: var(--narrator-bg-tertiary);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.audio-level-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--narrator-success), var(--narrator-paused), var(--narrator-recording));
+    border-radius: 3px;
+    transition: width 0.1s linear;
+}
+
+/* ============================================
+   Journal Selection Section
+   ============================================ */
+.narrator-journal-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--narrator-spacing-xs);
+}
+
+.narrator-journal-section label {
+    font-size: 0.85em;
+    color: var(--narrator-text-secondary);
+    font-weight: 500;
+}
+
+.journal-select {
+    width: 100%;
+    padding: var(--narrator-spacing-sm);
+    background: var(--narrator-bg-secondary);
+    border: 1px solid var(--narrator-border);
+    border-radius: var(--narrator-radius-sm);
+    color: var(--narrator-text-primary);
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: border-color var(--narrator-transition);
+}
+
+.journal-select:hover {
+    border-color: var(--narrator-border-light);
+}
+
+.journal-select:focus {
+    outline: none;
+    border-color: var(--narrator-primary);
+}
+
+/* ============================================
+   Tab Navigation
+   ============================================ */
+.narrator-panel-container .tabs {
+    display: flex;
+    gap: var(--narrator-spacing-xs);
+    background: var(--narrator-bg-secondary);
+    padding: var(--narrator-spacing-xs);
+    border-radius: var(--narrator-radius-md);
+}
+
+.narrator-panel-container .tabs .item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--narrator-spacing-xs);
+    padding: var(--narrator-spacing-sm) var(--narrator-spacing-md);
+    background: transparent;
+    border: none;
+    border-radius: var(--narrator-radius-sm);
+    color: var(--narrator-text-secondary);
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: all var(--narrator-transition);
+    text-decoration: none;
+    position: relative;
+}
+
+.narrator-panel-container .tabs .item:hover {
+    background: var(--narrator-bg-tertiary);
+    color: var(--narrator-text-primary);
+}
+
+.narrator-panel-container .tabs .item.active {
+    background: var(--narrator-primary);
+    color: white;
+}
+
+/* Off-Track Badge - RED indicator on tab */
+.off-track-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    background: var(--narrator-off-track);
+    color: white;
+    border-radius: 50%;
+    font-size: 0.7em;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: badge-pulse 2s infinite;
+}
+
+@keyframes badge-pulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 var(--narrator-recording-pulse);
+    }
+    50% {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 4px transparent;
+    }
+}
+
+/* Count Badge */
+.count-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    background: var(--narrator-primary);
+    color: white;
+    border-radius: 8px;
+    font-size: 0.7em;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ============================================
+   Tab Content
+   ============================================ */
+.tab-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.tab-content .tab {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+
+.tab-content .tab.active {
+    display: flex;
+}
+
+/* Tab Headers */
+.transcription-header,
+.suggestions-header,
+.images-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: var(--narrator-spacing-sm);
+    border-bottom: 1px solid var(--narrator-border);
+    margin-bottom: var(--narrator-spacing-md);
+}
+
+.transcription-header h3,
+.suggestions-header h3,
+.images-header h3 {
+    margin: 0;
+    font-size: 1em;
+    font-weight: 600;
+    color: var(--narrator-text-primary);
+}
+
+.transcription-actions,
+.suggestions-actions,
+.images-actions {
+    display: flex;
+    gap: var(--narrator-spacing-xs);
+}
+
+.transcription-actions button,
+.suggestions-actions button,
+.images-actions button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--narrator-spacing-xs);
+    padding: var(--narrator-spacing-xs) var(--narrator-spacing-sm);
+    background: var(--narrator-bg-secondary);
+    border: 1px solid var(--narrator-border);
+    border-radius: var(--narrator-radius-sm);
+    color: var(--narrator-text-secondary);
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: all var(--narrator-transition);
+}
+
+.transcription-actions button:hover,
+.suggestions-actions button:hover,
+.images-actions button:hover {
+    background: var(--narrator-bg-tertiary);
+    border-color: var(--narrator-border-light);
+    color: var(--narrator-text-primary);
+}
+
+/* Generate Image Button */
+.generate-image {
+    background: var(--narrator-primary) !important;
+    border-color: var(--narrator-primary) !important;
+    color: white !important;
+}
+
+.generate-image:hover:not(:disabled):not(.disabled) {
+    background: var(--narrator-primary-hover) !important;
+}
+
+.generate-image:disabled,
+.generate-image.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ============================================
+   Transcription Content
+   ============================================ */
+.transcription-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: var(--narrator-spacing-xs);
+}
+
+.transcription-segments {
+    display: flex;
+    flex-direction: column;
+    gap: var(--narrator-spacing-sm);
+}
+
+.transcription-segment {
+    padding: var(--narrator-spacing-sm) var(--narrator-spacing-md);
+    background: var(--narrator-bg-secondary);
+    border-radius: var(--narrator-radius-sm);
+    border-left: 3px solid var(--narrator-speaker-unknown);
+}
+
+/* Speaker Label Colors */
+.transcription-segment:has(.speaker-label:contains('DM')),
+.transcription-segment:has(.speaker-label:contains('Master')),
+.transcription-segment:has(.speaker-label:contains('GM')) {
+    border-left-color: var(--narrator-speaker-dm);
+}
+
+.speaker-label {
+    font-weight: 600;
+    margin-right: var(--narrator-spacing-xs);
+    color: var(--narrator-primary);
+    font-size: 0.9em;
+}
+
+.segment-text {
+    color: var(--narrator-text-primary);
+    line-height: 1.5;
+}
+
+.transcription-text {
+    padding: var(--narrator-spacing-md);
+    background: var(--narrator-bg-secondary);
+    border-radius: var(--narrator-radius-sm);
+    color: var(--narrator-text-primary);
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+/* Journal Context */
+.journal-context {
+    margin-top: var(--narrator-spacing-md);
+    padding: var(--narrator-spacing-md);
+    background: var(--narrator-primary-light);
+    border: 1px solid rgba(123, 104, 238, 0.3);
+    border-radius: var(--narrator-radius-md);
+}
+
+.journal-context h4 {
+    margin: 0 0 var(--narrator-spacing-sm) 0;
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--narrator-primary);
+}
+
+.journal-ref-content {
+    font-size: 0.9em;
+    color: var(--narrator-text-secondary);
+    line-height: 1.5;
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+/* ============================================
+   Suggestions Content
+   ============================================ */
+.suggestions-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: var(--narrator-spacing-xs);
+}
+
+.suggestions-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--narrator-spacing-sm);
+}
+
+.suggestion-item {
+    display: flex;
+    gap: var(--narrator-spacing-sm);
+    padding: var(--narrator-spacing-md);
+    background: var(--narrator-bg-secondary);
+    border-radius: var(--narrator-radius-sm);
+    border-left: 3px solid var(--narrator-primary);
+}
+
+.suggestion-item i {
+    color: var(--narrator-primary);
+    margin-top: 2px;
+}
+
+.suggestion-item span {
+    flex: 1;
+    color: var(--narrator-text-primary);
+    line-height: 1.5;
+}
+
+/* ============================================
+   OFF-TRACK WARNING SECTION (CRITICAL - RED TEXT)
+   ============================================ */
+.off-track-warning {
+    margin-bottom: var(--narrator-spacing-md);
+    padding: var(--narrator-spacing-md);
+    background: var(--narrator-off-track-bg);
+    border: 2px solid var(--narrator-off-track-border);
+    border-radius: var(--narrator-radius-md);
+}
+
+.off-track-header {
+    display: flex;
+    align-items: center;
+    gap: var(--narrator-spacing-sm);
+    margin-bottom: var(--narrator-spacing-sm);
+}
+
+.off-track-header i {
+    font-size: 1.2em;
+    color: var(--narrator-off-track);
+}
+
+.off-track-header span {
+    font-weight: 700;
+    font-size: 1em;
+    /* CRITICAL: Red text for off-track warning */
+    color: var(--narrator-off-track);
+}
+
+/* Off-track message - RED TEXT */
+.off-track-message {
+    margin: 0 0 var(--narrator-spacing-md) 0;
+    padding: var(--narrator-spacing-sm);
+    background: rgba(231, 76, 60, 0.05);
+    border-radius: var(--narrator-radius-sm);
+    /* CRITICAL: Red text for off-track message content */
+    color: var(--narrator-off-track);
+    font-style: italic;
+    line-height: 1.5;
+}
+
+/* Narrative Bridge Section */
+.narrative-bridge {
+    padding: var(--narrator-spacing-md);
+    background: var(--narrator-bg-secondary);
+    border-radius: var(--narrator-radius-sm);
+    margin-top: var(--narrator-spacing-sm);
+}
+
+.narrative-bridge h4 {
+    margin: 0 0 var(--narrator-spacing-sm) 0;
+    font-size: 0.9em;
+    font-weight: 600;
+    color: var(--narrator-success);
+}
+
+.narrative-bridge-content {
+    color: var(--narrator-text-primary);
+    line-height: 1.6;
+    margin-bottom: var(--narrator-spacing-sm);
+    padding: var(--narrator-spacing-sm);
+    background: var(--narrator-bg-tertiary);
+    border-radius: var(--narrator-radius-sm);
+}
+
+.narrative-bridge .copy-bridge {
+    display: flex;
+    align-items: center;
+    gap: var(--narrator-spacing-xs);
+    padding: var(--narrator-spacing-xs) var(--narrator-spacing-sm);
+    background: var(--narrator-success);
+    border: none;
+    border-radius: var(--narrator-radius-sm);
+    color: white;
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: background var(--narrator-transition);
+}
+
+.narrative-bridge .copy-bridge:hover {
+    background: #27ae60;
+}
+
+/* ============================================
+   Images Content
+   ============================================ */
+.images-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: var(--narrator-spacing-xs);
+}
+
+.images-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: var(--narrator-spacing-md);
+}
+
+.image-item {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: var(--narrator-radius-md);
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--narrator-bg-secondary);
+    transition: transform var(--narrator-transition), box-shadow var(--narrator-transition);
+}
+
+.image-item:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.image-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.image-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: var(--narrator-spacing-sm);
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    opacity: 0;
+    transition: opacity var(--narrator-transition);
+}
+
+.image-item:hover .image-overlay {
+    opacity: 1;
+}
+
+.image-prompt {
+    flex: 1;
+    font-size: 0.75em;
+    color: white;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: var(--narrator-spacing-sm);
+}
+
+.delete-image {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    background: var(--narrator-error);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--narrator-transition);
+}
+
+.delete-image:hover {
+    background: #c0392b;
+}
+
+/* ============================================
+   Empty State
+   ============================================ */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--narrator-spacing-md);
+    padding: var(--narrator-spacing-xl);
+    color: var(--narrator-text-muted);
+    text-align: center;
+}
+
+.empty-state i {
+    font-size: 2.5em;
+    opacity: 0.5;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 0.9em;
+}
+
+/* ============================================
+   Scrollbar Styling
+   ============================================ */
+.narrator-panel-container ::-webkit-scrollbar {
+    width: 8px;
+}
+
+.narrator-panel-container ::-webkit-scrollbar-track {
+    background: var(--narrator-bg-secondary);
+    border-radius: 4px;
+}
+
+.narrator-panel-container ::-webkit-scrollbar-thumb {
+    background: var(--narrator-bg-tertiary);
+    border-radius: 4px;
+}
+
+.narrator-panel-container ::-webkit-scrollbar-thumb:hover {
+    background: var(--narrator-border-light);
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+@media (max-width: 500px) {
+    .narrator-panel-container {
+        padding: var(--narrator-spacing-sm);
+        gap: var(--narrator-spacing-sm);
+    }
+
+    .recording-controls button {
+        padding: var(--narrator-spacing-xs) var(--narrator-spacing-sm);
+        font-size: 0.85em;
+    }
+
+    .narrator-panel-container .tabs .item {
+        padding: var(--narrator-spacing-xs);
+        font-size: 0.8em;
+    }
+
+    .images-gallery {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: var(--narrator-spacing-sm);
+    }
+
+    .off-track-warning {
+        padding: var(--narrator-spacing-sm);
+    }
+
+    .suggestion-item {
+        padding: var(--narrator-spacing-sm);
+    }
+}
+
+/* ============================================
+   Foundry VTT Dark Theme Compatibility
+   ============================================ */
+.app.narrator-master {
+    background: var(--narrator-bg-primary);
+    border: 1px solid var(--narrator-border);
+}
+
+.app.narrator-master .window-header {
+    background: var(--narrator-bg-secondary);
+    border-bottom: 1px solid var(--narrator-border);
+}
+
+.app.narrator-master .window-title {
+    color: var(--narrator-text-primary);
+}
+
+.app.narrator-master a.header-button {
+    color: var(--narrator-text-secondary);
+}
+
+.app.narrator-master a.header-button:hover {
+    color: var(--narrator-text-primary);
+}
+
+.app.narrator-master .window-content {
+    background: var(--narrator-bg-primary);
+    padding: 0;
+}
+
+/* ============================================
+   Animation Utilities
+   ============================================ */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.narrator-panel-container .tab.active {
+    animation: fadeIn 0.2s ease;
+}
+
+.off-track-warning {
+    animation: fadeIn 0.3s ease;
+}
+
+/* ============================================
+   Print Styles
+   ============================================ */
+@media print {
+    .narrator-panel-container {
+        background: white;
+        color: black;
+    }
+
+    .recording-controls,
+    .images-actions,
+    .transcription-actions,
+    .suggestions-actions {
+        display: none;
+    }
+
+    .off-track-warning {
+        border: 2px solid red;
+    }
+
+    .off-track-header span,
+    .off-track-message {
+        color: red !important;
+    }
+}
