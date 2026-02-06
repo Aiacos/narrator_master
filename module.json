@@ -6,7 +6,7 @@
   "authors": [
     {
       "name": "Narrator Master Team",
-      "url": "https://github.com/narrator-master"
+      "url": "https://github.com/Aiacos"
     }
   ],
   "compatibility": {
@@ -26,11 +26,11 @@
       "path": "lang/it.json"
     }
   ],
-  "url": "https://github.com/narrator-master/narrator-master",
-  "manifest": "https://github.com/narrator-master/narrator-master/releases/latest/download/module.json",
-  "download": "https://github.com/narrator-master/narrator-master/releases/download/1.0.0/narrator-master.zip",
+  "url": "https://github.com/Aiacos/narrator_master",
+  "manifest": "https://github.com/Aiacos/narrator_master/releases/latest/download/module.json",
+  "download": "https://github.com/Aiacos/narrator_master/releases/download/v1.0.0/narrator-master-v1.0.0.zip",
   "readme": "README.md",
   "changelog": "CHANGELOG.md",
-  "bugs": "https://github.com/narrator-master/narrator-master/issues",
+  "bugs": "https://github.com/Aiacos/narrator_master/issues",
   "flags": {}
 }
