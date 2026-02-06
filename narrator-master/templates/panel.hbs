@@ -1,0 +1,279 @@
+{{!-- Narrator Master - DM Panel Template --}}
+{{!-- Handlebars template for the main DM interface --}}
+
+<div class="narrator-panel-container" data-module-id="{{moduleId}}">
+    {{!-- Configuration Warning --}}
+    {{#unless apiKeyConfigured}}
+    <div class="narrator-config-warning">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>{{i18n.noApiKey}}</span>
+        <button type="button" class="open-settings">
+            <i class="fas fa-cog"></i>
+            {{i18n.configureSettings}}
+        </button>
+    </div>
+    {{/unless}}
+
+    {{!-- Loading Overlay --}}
+    {{#if isLoading}}
+    <div class="narrator-loading-overlay">
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>{{loadingMessage}}</span>
+    </div>
+    {{/if}}
+
+    {{!-- Recording Controls Section --}}
+    <section class="narrator-recording-section">
+        <div class="recording-controls">
+            {{#if isInactive}}
+            <button type="button" class="start-recording {{#unless apiKeyConfigured}}disabled{{/unless}}"
+                    {{#unless apiKeyConfigured}}disabled{{/unless}}>
+                <i class="fas fa-microphone"></i>
+                {{i18n.startRecording}}
+            </button>
+            {{/if}}
+
+            {{#if isRecording}}
+            <button type="button" class="pause-recording">
+                <i class="fas fa-pause"></i>
+                {{i18n.pauseRecording}}
+            </button>
+            <button type="button" class="stop-recording">
+                <i class="fas fa-stop"></i>
+                {{i18n.stopRecording}}
+            </button>
+            {{/if}}
+
+            {{#if isPaused}}
+            <button type="button" class="resume-recording">
+                <i class="fas fa-play"></i>
+                {{i18n.resumeRecording}}
+            </button>
+            <button type="button" class="stop-recording">
+                <i class="fas fa-stop"></i>
+                {{i18n.stopRecording}}
+            </button>
+            {{/if}}
+
+            {{#if isProcessing}}
+            <div class="processing-indicator">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>{{i18n.processing}}</span>
+            </div>
+            {{/if}}
+        </div>
+
+        {{!-- Recording Status --}}
+        {{#unless isInactive}}
+        <div class="recording-status">
+            <span class="recording-indicator {{#if isRecording}}active{{/if}} {{#if isPaused}}paused{{/if}}">
+                <i class="fas fa-circle"></i>
+            </span>
+            <span class="recording-duration">{{recordingDuration}}</span>
+        </div>
+
+        {{!-- Audio Level Indicator --}}
+        <div class="audio-level-container">
+            <div class="audio-level-bar" style="width: {{audioLevel}}%"></div>
+        </div>
+        {{/unless}}
+    </section>
+
+    {{!-- Journal Selection --}}
+    <section class="narrator-journal-section">
+        <label for="journal-select">{{i18n.selectJournal}}</label>
+        <select class="journal-select" id="journal-select">
+            <option value="">-- {{i18n.selectJournal}} --</option>
+            {{#each availableJournals}}
+            <option value="{{this.id}}" {{#if (eq this.id ../selectedJournal)}}selected{{/if}}>
+                {{this.name}}
+            </option>
+            {{/each}}
+        </select>
+    </section>
+
+    {{!-- Tab Navigation --}}
+    <nav class="tabs" data-group="primary">
+        <a class="item" data-tab="transcription">
+            <i class="fas fa-file-alt"></i>
+            {{i18n.transcriptionTab}}
+        </a>
+        <a class="item" data-tab="suggestions">
+            <i class="fas fa-lightbulb"></i>
+            {{i18n.suggestionsTab}}
+            {{#if offTrack}}
+            <span class="off-track-badge" title="{{i18n.offTrackWarning}}">!</span>
+            {{/if}}
+        </a>
+        <a class="item" data-tab="images">
+            <i class="fas fa-images"></i>
+            {{i18n.imagesTab}}
+            {{#if hasImages}}
+            <span class="count-badge">{{generatedImages.length}}</span>
+            {{/if}}
+        </a>
+    </nav>
+
+    {{!-- Tab Content --}}
+    <section class="tab-content">
+        {{!-- Transcription Tab --}}
+        <div class="tab" data-tab="transcription" data-group="primary">
+            <div class="transcription-header">
+                <h3>{{i18n.transcriptionTab}}</h3>
+                <div class="transcription-actions">
+                    {{#if hasTranscription}}
+                    <button type="button" class="copy-transcription" title="{{i18n.copyToClipboard}}">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                    <button type="button" class="clear-transcription" title="{{i18n.clearTranscription}}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    {{/if}}
+                </div>
+            </div>
+
+            <div class="transcription-content">
+                {{#if hasTranscription}}
+                    {{#if transcriptionSegments.length}}
+                        {{!-- Diarized Transcription with Speaker Labels --}}
+                        <div class="transcription-segments">
+                            {{#each transcriptionSegments}}
+                            <div class="transcription-segment">
+                                {{#if ../showSpeakerLabels}}
+                                <span class="speaker-label">{{this.speaker}}:</span>
+                                {{/if}}
+                                <span class="segment-text">{{this.text}}</span>
+                            </div>
+                            {{/each}}
+                        </div>
+                    {{else}}
+                        {{!-- Plain Transcription --}}
+                        <div class="transcription-text">
+                            {{transcription}}
+                        </div>
+                    {{/if}}
+                {{else}}
+                    <div class="empty-state">
+                        <i class="fas fa-microphone-slash"></i>
+                        <p>{{i18n.noTranscription}}</p>
+                    </div>
+                {{/if}}
+            </div>
+
+            {{!-- Current Journal Context --}}
+            {{#if hasJournalRef}}
+            <div class="journal-context">
+                <h4>{{i18n.currentContext}}</h4>
+                <div class="journal-ref-content">
+                    {{journalRef}}
+                </div>
+            </div>
+            {{/if}}
+        </div>
+
+        {{!-- Suggestions Tab --}}
+        <div class="tab" data-tab="suggestions" data-group="primary">
+            <div class="suggestions-header">
+                <h3>{{i18n.suggestionsTab}}</h3>
+                <div class="suggestions-actions">
+                    {{#if hasSuggestions}}
+                    <button type="button" class="copy-suggestions" title="{{i18n.copyToClipboard}}">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                    {{/if}}
+                </div>
+            </div>
+
+            {{!-- Off-Track Warning --}}
+            {{#if offTrack}}
+            <div class="off-track-warning">
+                <div class="off-track-header">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>{{i18n.offTrackWarning}}</span>
+                </div>
+                {{#if offTrackMessage}}
+                <p class="off-track-message">{{offTrackMessage}}</p>
+                {{/if}}
+
+                {{!-- Narrative Bridge --}}
+                {{#if hasNarrativeBridge}}
+                <div class="narrative-bridge">
+                    <h4>{{i18n.returnToStory}}</h4>
+                    <div class="narrative-bridge-content">
+                        {{narrativeBridge}}
+                    </div>
+                    <button type="button" class="copy-bridge" title="{{i18n.copyToClipboard}}">
+                        <i class="fas fa-copy"></i>
+                        {{i18n.copyToClipboard}}
+                    </button>
+                </div>
+                {{/if}}
+            </div>
+            {{/if}}
+
+            <div class="suggestions-content">
+                {{#if hasSuggestions}}
+                <ul class="suggestions-list">
+                    {{#each suggestions}}
+                    <li class="suggestion-item">
+                        <i class="fas fa-comment-dots"></i>
+                        <span>{{this}}</span>
+                    </li>
+                    {{/each}}
+                </ul>
+                {{else}}
+                <div class="empty-state">
+                    <i class="fas fa-lightbulb"></i>
+                    <p>{{i18n.noSuggestions}}</p>
+                </div>
+                {{/if}}
+            </div>
+        </div>
+
+        {{!-- Images Tab --}}
+        <div class="tab" data-tab="images" data-group="primary">
+            <div class="images-header">
+                <h3>{{i18n.imagesTab}}</h3>
+                <div class="images-actions">
+                    <button type="button" class="generate-image {{#unless apiKeyConfigured}}disabled{{/unless}}"
+                            {{#unless apiKeyConfigured}}disabled{{/unless}}>
+                        <i class="fas fa-magic"></i>
+                        {{i18n.generateImage}}
+                    </button>
+                    {{#if hasImages}}
+                    <button type="button" class="clear-images" title="{{i18n.clearImages}}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    {{/if}}
+                </div>
+            </div>
+
+            <div class="images-content">
+                {{#if hasImages}}
+                <div class="images-gallery">
+                    {{#each generatedImages}}
+                    <div class="image-item" data-url="{{this.url}}" data-index="{{@index}}">
+                        <img src="{{this.url}}" alt="{{this.prompt}}" loading="lazy" />
+                        <div class="image-overlay">
+                            {{#if this.prompt}}
+                            <span class="image-prompt" title="{{this.prompt}}">
+                                {{this.prompt}}
+                            </span>
+                            {{/if}}
+                            <button type="button" class="delete-image" data-index="{{@index}}" title="Delete">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {{/each}}
+                </div>
+                {{else}}
+                <div class="empty-state">
+                    <i class="fas fa-image"></i>
+                    <p>{{i18n.noImages}}</p>
+                </div>
+                {{/if}}
+            </div>
+        </div>
+    </section>
+</div>
