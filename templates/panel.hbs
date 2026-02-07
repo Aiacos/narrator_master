@@ -186,20 +186,113 @@
                 </div>
             </div>
 
+            {{!-- Gallery Controls --}}
+            {{#if hasImages}}
+            <div class="gallery-controls">
+                <div class="gallery-filter-row">
+                    <div class="filter-group">
+                        <label for="gallery-filter">
+                            <i class="fas fa-filter"></i>
+                            {{i18n.filterLabel}}
+                        </label>
+                        <select id="gallery-filter" class="gallery-filter-select">
+                            <option value="all">{{i18n.filterAll}}</option>
+                            <option value="favorites">{{i18n.filterFavorites}}</option>
+                            {{#if hasCategories}}
+                            <optgroup label="{{i18n.filterByCategory}}">
+                                {{#each imageCategories}}
+                                <option value="category:{{this}}">{{this}}</option>
+                                {{/each}}
+                            </optgroup>
+                            {{/if}}
+                        </select>
+                    </div>
+                    <div class="search-group">
+                        <label for="gallery-search">
+                            <i class="fas fa-search"></i>
+                        </label>
+                        <input type="text"
+                               id="gallery-search"
+                               class="gallery-search-input"
+                               placeholder="{{i18n.searchPlaceholder}}" />
+                        <button type="button" class="clear-search" title="{{i18n.clearSearch}}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {{/if}}
+
             <div class="images-content">
                 {{#if hasImages}}
                 <div class="images-gallery">
                     {{#each generatedImages}}
-                    <div class="image-item" data-url="{{this.url}}" data-index="{{@index}}">
+                    <div class="image-item"
+                         data-url="{{this.url}}"
+                         data-index="{{@index}}"
+                         data-favorite="{{this.isFavorite}}"
+                         data-category="{{this.category}}"
+                         data-tags="{{this.tagsString}}">
                         <img src="{{this.url}}" alt="{{this.prompt}}" loading="lazy" />
+
+                        {{!-- Image Metadata Badges --}}
+                        <div class="image-badges">
+                            {{#if this.isFavorite}}
+                            <span class="badge-favorite" title="{{i18n.favoriteImage}}">
+                                <i class="fas fa-star"></i>
+                            </span>
+                            {{/if}}
+                            {{#if this.category}}
+                            <span class="badge-category" title="{{i18n.categoryLabel}}">
+                                <i class="fas fa-tag"></i>
+                                {{this.category}}
+                            </span>
+                            {{/if}}
+                        </div>
+
+                        {{!-- Image Tags --}}
+                        {{#if this.tags}}
+                        <div class="image-tags">
+                            {{#each this.tags}}
+                            <span class="image-tag">{{this}}</span>
+                            {{/each}}
+                        </div>
+                        {{/if}}
+
+                        {{!-- Image Overlay with Prompt --}}
                         <div class="image-overlay">
                             {{#if this.prompt}}
                             <span class="image-prompt" title="{{this.prompt}}">
                                 {{this.prompt}}
                             </span>
                             {{/if}}
-                            <button type="button" class="delete-image" data-index="{{@index}}" title="Delete">
-                                <i class="fas fa-times"></i>
+                        </div>
+
+                        {{!-- Image Actions --}}
+                        <div class="image-actions">
+                            <button type="button"
+                                    class="action-favorite {{#if this.isFavorite}}active{{/if}}"
+                                    data-index="{{@index}}"
+                                    title="{{i18n.toggleFavorite}}">
+                                <i class="{{#if this.isFavorite}}fas{{else}}far{{/if}} fa-star"></i>
+                            </button>
+                            <button type="button"
+                                    class="action-tag"
+                                    data-index="{{@index}}"
+                                    title="{{i18n.manageTags}}">
+                                <i class="fas fa-tags"></i>
+                            </button>
+                            <button type="button"
+                                    class="action-show"
+                                    data-index="{{@index}}"
+                                    title="{{i18n.showToPlayers}}">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button type="button"
+                                    class="action-delete"
+                                    data-index="{{@index}}"
+                                    title="{{i18n.deleteImage}}">
+                                <i class="fas fa-trash"></i>
                             </button>
                         </div>
                     </div>
