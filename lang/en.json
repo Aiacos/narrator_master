@@ -1,0 +1,162 @@
+{
+    "NARRATOR": {
+        "PanelTitle": "Narrator Master - DM Assistant",
+
+        "Settings": {
+            "ApiKeyName": "OpenAI API Key",
+            "ApiKeyHint": "Your OpenAI API key. Requires an account with credits (minimum $5). Get it from platform.openai.com/api-keys",
+            "LanguageName": "Transcription Language",
+            "LanguageHint": "Language for audio transcription (default: English)",
+            "PanelPositionName": "Panel Position",
+            "PanelPositionHint": "Saved position of the DM panel",
+            "SensitivityName": "Off-Track Detection Sensitivity",
+            "SensitivityHint": "How strictly to detect when players stray from the adventure plot",
+            "SensitivityLow": "Low - Only major deviations",
+            "SensitivityMedium": "Medium - Balanced",
+            "SensitivityHigh": "High - Even small variations"
+        },
+
+        "Panel": {
+            "Title": "Narrator Master",
+            "TogglePanel": "Open/Close DM Panel",
+            "OpenSettings": "Open Settings",
+            "ToggleRecording": "Recording",
+            "StartRecording": "Start Recording",
+            "StopRecording": "Stop Recording",
+            "PauseRecording": "Pause",
+            "ResumeRecording": "Resume",
+            "GenerateImage": "Generate Image",
+            "AssistantTab": "Assistant",
+            "ImagesTab": "Images",
+            "NoSuggestions": "No suggestions available. Start recording and the assistant will automatically analyze the conversation.",
+            "NoImages": "No images generated. Use the 'Generate Image' button to create infographics.",
+            "OffTrackWarning": "WARNING: Off Track!",
+            "ReturnToStory": "To Bring Them Back to the Story",
+            "NoApiKey": "API key not configured",
+            "ConfigureSettings": "Configure Settings",
+            "Processing": "Processing...",
+            "ClearImages": "Clear Images",
+            "CopyToClipboard": "Copy to Clipboard",
+            "GeneratingImage": "Generating image...",
+            "GeneratedImage": "Generated Image",
+            "ListeningStatus": "Listening...",
+            "JournalStatus": "{count} journals loaded",
+            "JournalStatusEmpty": "No journals available"
+        },
+
+        "Errors": {
+            "NotInitialized": "Narrator Master is not yet initialized. Wait for complete loading.",
+            "InitFailed": "Narrator Master initialization failed",
+            "NoApiKey": "OpenAI API key not configured. Go to the module settings to add it.",
+            "InvalidAudio": "Invalid audio. Make sure the recording contains audio data.",
+            "FileTooLarge": "Audio file too large ({size}MB). Maximum limit is 25MB.",
+            "InvalidApiKey": "Invalid API key. Check your OpenAI API key in the settings.",
+            "RateLimited": "Rate limit reached. Wait a moment before trying again.",
+            "BadRequest": "Invalid request: {details}",
+            "ServerError": "OpenAI server error. Try again later.",
+            "TranscriptionFailed": "Transcription failed (Error {status}): {message}",
+            "NoTranscription": "No transcription available for analysis.",
+            "NoPrompt": "No prompt provided for image generation.",
+            "NoDescription": "No description provided for the infographic.",
+            "ContentPolicy": "Content violates OpenAI policies. Try a different description.",
+            "AIAssistantFailed": "AI Assistant failed (Error {status}): {message}",
+            "ImageGenerationFailed": "Image generation failed (Error {status}): {message}",
+            "NoContextForImage": "No context available to generate an image. Record audio first.",
+            "CopyFailed": "Unable to copy to clipboard.",
+            "MicrophoneNotSupported": "Your browser does not support microphone audio capture.",
+            "MicrophonePermissionDenied": "Microphone permission denied. Allow microphone access in browser settings.",
+            "MicrophoneNotFound": "No microphone found. Connect a microphone and try again.",
+            "MicrophoneInUse": "Microphone is in use by another application. Close other apps using the microphone.",
+            "MicrophoneConstraints": "Microphone does not meet required specifications.",
+            "MicrophoneSecurityError": "Security error: audio capture requires HTTPS in production.",
+            "MicrophoneGeneric": "Microphone error: {error}",
+            "RecordingFailed": "Recording failed. Try again.",
+            "RecorderInitFailed": "Unable to initialize recorder: {error}",
+            "NetworkError": "Connection error. Check your Internet connection and try again.",
+            "Timeout": "Request took too long. Try again later.",
+            "UnexpectedError": "An unexpected error occurred: {message}",
+            "ServiceUnavailable": "Service temporarily unavailable. Try again in a few minutes.",
+            "InvalidJournalId": "Invalid Journal ID.",
+            "JournalNotFound": "Journal not found: {id}"
+        },
+
+        "Warnings": {
+            "ConfigIncomplete": "Configuration incomplete"
+        },
+
+        "Notifications": {
+            "CopiedToClipboard": "Copied to clipboard!",
+            "RecordingStarted": "Recording started",
+            "RecordingStopped": "Recording stopped",
+            "JournalsLoaded": "All journals loaded ({count})",
+            "ImageGenerated": "Image generated successfully",
+            "SettingsSaved": "Settings saved",
+            "ModuleReady": "Narrator Master ready",
+            "TranscriptionComplete": "Transcription completed",
+            "ApiKeyUpdated": "API key updated",
+            "MicrophoneReady": "Microphone ready for recording",
+            "PlayersOffTrack": "Warning: Players are straying from the plot!"
+        },
+
+        "OffTrack": {
+            "NoContext": "No adventure context set for off-track detection.",
+            "ParseError": "Unable to parse off-track detection response.",
+            "Warning": "Players are straying from the adventure plot.",
+            "Severe": "Players are completely off-topic from the adventure.",
+            "Minor": "Slight deviation from the main plot."
+        },
+
+        "Suggestions": {
+            "TypeNarration": "Narration",
+            "TypeDialogue": "Dialogue",
+            "TypeAction": "Action",
+            "TypeReference": "Reference",
+            "HighConfidence": "High confidence",
+            "MediumConfidence": "Medium confidence",
+            "LowConfidence": "Low confidence"
+        },
+
+        "Recording": {
+            "StateInactive": "Inactive",
+            "StateRecording": "Recording",
+            "StatePaused": "Paused",
+            "StateProcessing": "Processing",
+            "AudioLevelLow": "Low audio level",
+            "AudioLevelNormal": "Normal audio level",
+            "AudioLevelHigh": "High audio level"
+        },
+
+        "Journal": {
+            "NoJournalFound": "Journal not found",
+            "ParsingJournal": "Parsing Journal...",
+            "JournalEmpty": "The selected Journal is empty.",
+            "PageCount": "{count} pages found",
+            "UnnamedPage": "Unnamed page"
+        },
+
+        "Images": {
+            "Generating": "Generating...",
+            "CacheExpired": "Image URL expired, using local cache",
+            "NoCache": "Image unavailable (URL expired and no cache)",
+            "ClickToEnlarge": "Click to enlarge",
+            "Delete": "Delete",
+            "Download": "Download"
+        },
+
+        "Tooltips": {
+            "ToggleRecording": "Start or stop audio recording",
+            "GenerateImage": "Generate an image based on current context",
+            "ClearImages": "Clear all generated images",
+            "CopyText": "Copy text to clipboard",
+            "OpenSettings": "Open module settings"
+        },
+
+        "Accessibility": {
+            "RecordButton": "Record button",
+            "AudioLevel": "Audio level indicator",
+            "TabNavigation": "Tab navigation",
+            "ImageGallery": "Image gallery",
+            "SuggestionsList": "Suggestions list"
+        }
+    }
+}
