@@ -21,6 +21,11 @@
   ],
   "languages": [
     {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/it.json"
+    },
+    {
       "lang": "it",
       "name": "Italiano",
       "path": "lang/it.json"

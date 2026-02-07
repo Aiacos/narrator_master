@@ -876,21 +876,21 @@ Hooks.on('getSceneControlButtons', (controls) => {
     // Only add controls for GM users
     if (!game.user.isGM) return;
 
-    // Find the notes/journal control group to add our button to
-    // Alternatively, create a dedicated control group for Narrator Master
-    const narratorControl = {
+    // Foundry v13: controls is Record<string, SceneControl>, tools is Record<string, SceneControlTool>
+    // activeTool is required and must point to a non-button tool with onChange
+    controls['narrator-master'] = {
         name: 'narrator-master',
         title: game.i18n.localize('NARRATOR.PanelTitle'),
         icon: 'fas fa-microphone-alt',
         layer: 'controls',
         visible: game.user.isGM,
-        tools: [
-            {
-                name: 'toggle-panel',
+        activeTool: 'open-panel',
+        tools: {
+            'open-panel': {
+                name: 'open-panel',
                 title: game.i18n.localize('NARRATOR.Panel.TogglePanel'),
                 icon: 'fas fa-book-reader',
-                button: true,
-                onClick: () => {
+                onChange: () => {
                     if (window.narratorMaster) {
                         window.narratorMaster.togglePanel();
                     } else {
@@ -898,7 +898,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
                     }
                 }
             },
-            {
+            'start-recording': {
                 name: 'start-recording',
                 title: game.i18n.localize('NARRATOR.Panel.StartRecording'),
                 icon: 'fas fa-circle',
@@ -916,16 +916,14 @@ Hooks.on('getSceneControlButtons', (controls) => {
                     }
                 }
             },
-            {
+            'settings': {
                 name: 'settings',
                 title: game.i18n.localize('NARRATOR.Panel.OpenSettings'),
                 icon: 'fas fa-cog',
                 button: true,
                 onClick: () => {
-                    // Open module settings
                     const settingsApp = game.settings.sheet;
                     settingsApp.render(true);
-                    // Scroll to Narrator Master settings section after a short delay
                     setTimeout(() => {
                         const moduleTab = settingsApp.element?.find('[data-tab="modules"]');
                         if (moduleTab) {
@@ -934,18 +932,8 @@ Hooks.on('getSceneControlButtons', (controls) => {
                     }, 100);
                 }
             }
-        ]
+        }
     };
-
-    // Add the Narrator Master control group to the sidebar
-    // Foundry v13 uses object-based controls, v12 uses array-based
-    if (typeof controls === 'object' && !Array.isArray(controls)) {
-        // Foundry v13+: controls is an object keyed by control name
-        controls['narrator-master'] = narratorControl;
-    } else if (Array.isArray(controls)) {
-        // Foundry v12: controls is an array
-        controls.push(narratorControl);
-    }
 
     console.log(`${MODULE_ID} | Scene control buttons registered`);
 });
