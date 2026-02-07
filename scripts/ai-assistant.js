@@ -5,6 +5,7 @@
  */
 
 import { MODULE_ID, SETTINGS } from './settings.js';
+import { SceneDetector } from './scene-detector.js';
 
 /**
  * Default model for cost-effective suggestions
@@ -43,6 +44,10 @@ const MAX_CONTEXT_TOKENS = 8000;
  * @property {OffTrackResult} offTrackStatus - Off-track detection result
  * @property {string[]} relevantPages - IDs of relevant journal pages
  * @property {string} summary - Brief summary of current situation
+ * @property {Object} sceneInfo - Scene detection information
+ * @property {string} sceneInfo.type - The current scene type (exploration, combat, social, rest, unknown)
+ * @property {boolean} sceneInfo.isTransition - Whether a scene transition was detected
+ * @property {number} sceneInfo.timestamp - Timestamp of the analysis
  */
 
 /**
@@ -124,6 +129,20 @@ export class AIAssistant {
          * @private
          */
         this._primaryLanguage = 'it'; // Default to Italian for backward compatibility
+
+        /**
+         * Scene detector instance for scene awareness
+         * @type {SceneDetector|null}
+         * @private
+         */
+        this._sceneDetector = options.sceneDetector || null;
+
+        /**
+         * Previous transcription text for scene comparison
+         * @type {string}
+         * @private
+         */
+        this._previousTranscription = '';
     }
 
     /**
@@ -209,6 +228,22 @@ export class AIAssistant {
     }
 
     /**
+     * Sets the scene detector instance
+     * @param {SceneDetector} sceneDetector - The scene detector instance
+     */
+    setSceneDetector(sceneDetector) {
+        this._sceneDetector = sceneDetector;
+    }
+
+    /**
+     * Gets the scene detector instance
+     * @returns {SceneDetector|null} The scene detector instance
+     */
+    getSceneDetector() {
+        return this._sceneDetector;
+    }
+
+    /**
      * Analyzes the current game context and generates suggestions
      * @param {string} transcription - Recent transcribed conversation
      * @param {Object} [options={}] - Analysis options
@@ -243,6 +278,9 @@ export class AIAssistant {
             // Parse the response
             const analysis = this._parseAnalysisResponse(response);
 
+            // Detect scene transitions if scene detector is available
+            const sceneInfo = this._detectSceneInfo(transcription);
+
             // Update conversation history
             this._addToHistory('user', transcription);
             this._addToHistory('assistant', JSON.stringify(analysis));
@@ -251,7 +289,14 @@ export class AIAssistant {
 
             console.log(`${MODULE_ID} | Analysis complete, ${analysis.suggestions.length} suggestions`);
 
-            return analysis;
+            // Store current transcription for next comparison
+            this._previousTranscription = transcription;
+
+            // Add scene info to analysis result
+            return {
+                ...analysis,
+                sceneInfo
+            };
 
         } catch (error) {
             if (error.status) {
@@ -993,6 +1038,49 @@ Scrivi una breve narrazione (2-3 frasi) che il DM può usare per riportare delic
         if (this._conversationHistory.length > this._maxHistorySize) {
             this._conversationHistory = this._conversationHistory.slice(-this._maxHistorySize);
         }
+    }
+
+    /**
+     * Detects scene information from transcription
+     * @param {string} transcription - The transcription text
+     * @returns {Object} Scene information object
+     * @private
+     */
+    _detectSceneInfo(transcription) {
+        const timestamp = Date.now();
+
+        // If no scene detector is available, return default info
+        if (!this._sceneDetector) {
+            return {
+                type: 'unknown',
+                isTransition: false,
+                timestamp
+            };
+        }
+
+        // Detect scene transition
+        const transition = this._sceneDetector.detectSceneTransition(
+            transcription,
+            this._previousTranscription
+        );
+
+        // Get current scene type
+        const sceneType = transition.detected ? transition.sceneType : this._sceneDetector.getCurrentSceneType();
+
+        // Update session state with current scene
+        if (transition.detected) {
+            this._sessionState.currentScene = {
+                type: sceneType,
+                timestamp,
+                trigger: transition.trigger
+            };
+        }
+
+        return {
+            type: sceneType,
+            isTransition: transition.detected,
+            timestamp
+        };
     }
 
     /**
