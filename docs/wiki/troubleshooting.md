@@ -2,6 +2,59 @@
 
 Questa guida completa documenta tutti gli errori che potresti incontrare usando Narrator Master, con spiegazioni dettagliate delle cause e soluzioni passo-passo.
 
+## Riferimento Rapido Errori
+
+Usa questa tabella per trovare rapidamente la soluzione al tuo errore:
+
+| Messaggio di Errore | Vai alla Sezione |
+|---------------------|------------------|
+| `Narrator Master non è ancora inizializzato` | [NotInitialized](#notinitialized) |
+| `Inizializzazione Narrator Master fallita` | [InitFailed](#initfailed) |
+| `Chiave API OpenAI non configurata` | [NoApiKey](#noapikey) |
+| `Chiave API non valida` | [InvalidApiKey](#invalidapikey) |
+| `Configurazione incompleta` | [ConfigIncomplete](#configincomplete) |
+| `Il tuo browser non supporta la cattura audio` | [MicrophoneNotSupported](#microphonenotsupported) |
+| `Permesso microfono negato` | [MicrophonePermissionDenied](#microphonepermissiondenied) |
+| `Nessun microfono trovato` | [MicrophoneNotFound](#microphonenotfound) |
+| `Il microfono è in uso da un'altra applicazione` | [MicrophoneInUse](#microphoneinuse) |
+| `Il microfono non soddisfa i requisiti` | [MicrophoneConstraints](#microphoneconstraints) |
+| `Errore di sicurezza: la cattura audio richiede HTTPS` | [MicrophoneSecurityError](#microphonesecurityerror) |
+| `Errore microfono: {error}` | [MicrophoneGeneric](#microphonegeneric) |
+| `Audio non valido` | [InvalidAudio](#invalidaudio) |
+| `Registrazione fallita` | [RecordingFailed](#recordingfailed) |
+| `Impossibile inizializzare il registratore` | [RecorderInitFailed](#recorderinitfailed) |
+| `File audio troppo grande` | [FileTooLarge](#filetoolarge) |
+| `Trascrizione fallita` | [TranscriptionFailed](#transcriptionfailed) |
+| `Nessuna trascrizione disponibile` | [NoTranscription](#notranscription) |
+| `Assistente AI fallito` | [AIAssistantFailed](#aiassistantfailed) |
+| `Generazione immagine fallita` | [ImageGenerationFailed](#imagegenerationfailed) |
+| `Nessun prompt fornito` | [NoPrompt](#noprompt) |
+| `Nessuna descrizione fornita` | [NoDescription](#nodescription) |
+| `Il contenuto viola le policy di OpenAI` | [ContentPolicy](#contentpolicy) |
+| `Contenuto troppo lungo` | [ContentTooLong](#contenttoolong) |
+| `Contenuto non valido` | [InvalidContent](#invalidcontent) |
+| `Nessun contesto disponibile per generare un'immagine` | [NoContextForImage](#nocontextforimage) |
+| `Errore di connessione` | [NetworkError](#networkerror) |
+| `Limite di richieste raggiunto` | [RateLimited](#ratelimited) |
+| `La richiesta ha impiegato troppo tempo` | [Timeout](#timeout) |
+| `Errore del server OpenAI` | [ServerError](#servererror) |
+| `Richiesta non valida` | [BadRequest](#badrequest) |
+| `Servizio temporaneamente non disponibile` | [ServiceUnavailable](#serviceunavailable) |
+| `Si è verificato un errore imprevisto` | [UnexpectedError](#unexpectederror) |
+| `ID Journal non valido` | [InvalidJournalId](#invalidjournalid) |
+| `Journal non trovato` | [JournalNotFound](#journalnotfound) |
+| `Il Journal selezionato è vuoto` | [JournalEmpty](#journalempty) |
+| `ID parlante non valido` | [InvalidSpeaker](#invalidspeaker) |
+| `Etichetta parlante non valida` | [InvalidLabel](#invalidlabel) |
+| `L'etichetta non può essere vuota` | [EmptyLabel](#emptylabel) |
+| `Impossibile salvare le mappature dei parlanti` | [SaveMappingsFailed](#savemappingsfailed) |
+| `Impossibile copiare negli appunti` | [CopyFailed](#copyfailed) |
+| `Esportazione trascrizione fallita` | [ExportFailed](#exportfailed) |
+| `Nessun contesto avventura impostato` | [NoContext (Off-Track)](#nocontext-off-track) |
+| `Impossibile analizzare la risposta` | [ParseError (Off-Track)](#parseerror-off-track) |
+
+---
+
 ## Indice
 
 - [Errori di Configurazione e Inizializzazione](#errori-di-configurazione-e-inizializzazione)
