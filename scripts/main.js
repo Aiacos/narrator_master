@@ -479,7 +479,16 @@ class NarratorMaster {
             const labeledText = this._formatTranscriptionWithLabels(transcription);
 
             // Analyze transcription with AI (results shown to user)
-            await this._analyzeTranscription(labeledText);
+            const analysis = await this._analyzeTranscription(labeledText);
+
+            // Handle scene transitions
+            if (analysis && analysis.sceneInfo && analysis.sceneInfo.isTransition && this.panel) {
+                this.panel.addSceneBreak(
+                    analysis.sceneInfo.type,
+                    analysis.sceneInfo.timestamp,
+                    false // false for automatic detection
+                );
+            }
 
         } catch (error) {
             this._handleServiceError(error, 'Transcription');
@@ -489,12 +498,13 @@ class NarratorMaster {
     /**
      * Analyzes transcription with AI assistant
      * @param {string} text - Transcribed text to analyze
+     * @returns {Promise<Object|null>} The analysis result including sceneInfo, or null if failed
      * @private
      */
     async _analyzeTranscription(text) {
         if (!this.aiAssistant.isConfigured()) {
             console.warn(`${MODULE_ID} | AI assistant not configured`);
-            return;
+            return null;
         }
 
         try {
@@ -516,9 +526,12 @@ class NarratorMaster {
                 }
             }
 
+            return analysis;
+
         } catch (error) {
             console.error(`${MODULE_ID} | AI analysis error:`, error);
             // Don't show notification for analysis errors - not critical
+            return null;
         }
     }
 
@@ -630,7 +643,16 @@ class NarratorMaster {
                 const labeledText = this._formatTranscriptionWithLabels(transcription);
 
                 // Final AI analysis
-                await this._analyzeTranscription(labeledText);
+                const analysis = await this._analyzeTranscription(labeledText);
+
+                // Handle scene transitions
+                if (analysis && analysis.sceneInfo && analysis.sceneInfo.isTransition && this.panel) {
+                    this.panel.addSceneBreak(
+                        analysis.sceneInfo.type,
+                        analysis.sceneInfo.timestamp,
+                        false // false for automatic detection
+                    );
+                }
             }
 
         } catch (error) {
