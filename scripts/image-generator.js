@@ -858,6 +858,252 @@ export class ImageGenerator {
     }
 
     /**
+     * Adds a tag to an image in the gallery
+     * @param {string} imageId - The image ID
+     * @param {string} tag - The tag to add
+     * @returns {Promise<boolean>} True if successful, false if image not found
+     */
+    async addTag(imageId, tag) {
+        if (!imageId || !tag) {
+            console.warn(`${MODULE_ID} | Invalid imageId or tag provided`);
+            return false;
+        }
+
+        try {
+            const gallery = await this.loadGallery();
+            const image = gallery.find(img => img.id === imageId);
+
+            if (!image) {
+                console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
+                return false;
+            }
+
+            // Initialize tags array if it doesn't exist
+            if (!Array.isArray(image.tags)) {
+                image.tags = [];
+            }
+
+            // Add tag if it doesn't already exist
+            const normalizedTag = tag.trim();
+            if (!image.tags.includes(normalizedTag)) {
+                image.tags.push(normalizedTag);
+                await this._syncWithSettings(gallery);
+                console.log(`${MODULE_ID} | Added tag "${normalizedTag}" to image ${imageId}`);
+                return true;
+            }
+
+            return false;
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to add tag:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Removes a tag from an image in the gallery
+     * @param {string} imageId - The image ID
+     * @param {string} tag - The tag to remove
+     * @returns {Promise<boolean>} True if successful, false if image not found
+     */
+    async removeTag(imageId, tag) {
+        if (!imageId || !tag) {
+            console.warn(`${MODULE_ID} | Invalid imageId or tag provided`);
+            return false;
+        }
+
+        try {
+            const gallery = await this.loadGallery();
+            const image = gallery.find(img => img.id === imageId);
+
+            if (!image) {
+                console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
+                return false;
+            }
+
+            if (!Array.isArray(image.tags)) {
+                return false;
+            }
+
+            const normalizedTag = tag.trim();
+            const index = image.tags.indexOf(normalizedTag);
+
+            if (index !== -1) {
+                image.tags.splice(index, 1);
+                await this._syncWithSettings(gallery);
+                console.log(`${MODULE_ID} | Removed tag "${normalizedTag}" from image ${imageId}`);
+                return true;
+            }
+
+            return false;
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to remove tag:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Toggles the favorite status of an image in the gallery
+     * @param {string} imageId - The image ID
+     * @returns {Promise<boolean>} The new favorite status, or null if image not found
+     */
+    async toggleFavorite(imageId) {
+        if (!imageId) {
+            console.warn(`${MODULE_ID} | Invalid imageId provided`);
+            return null;
+        }
+
+        try {
+            const gallery = await this.loadGallery();
+            const image = gallery.find(img => img.id === imageId);
+
+            if (!image) {
+                console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
+                return null;
+            }
+
+            image.isFavorite = !image.isFavorite;
+            await this._syncWithSettings(gallery);
+            console.log(`${MODULE_ID} | Toggled favorite for image ${imageId}: ${image.isFavorite}`);
+            return image.isFavorite;
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to toggle favorite:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Sets the category of an image in the gallery
+     * @param {string} imageId - The image ID
+     * @param {string} category - The category to set (location, npc, scene, item, etc.)
+     * @returns {Promise<boolean>} True if successful, false if image not found
+     */
+    async setCategory(imageId, category) {
+        if (!imageId) {
+            console.warn(`${MODULE_ID} | Invalid imageId provided`);
+            return false;
+        }
+
+        try {
+            const gallery = await this.loadGallery();
+            const image = gallery.find(img => img.id === imageId);
+
+            if (!image) {
+                console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
+                return false;
+            }
+
+            image.category = category || '';
+            await this._syncWithSettings(gallery);
+            console.log(`${MODULE_ID} | Set category for image ${imageId}: ${category}`);
+            return true;
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to set category:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Deletes an image from the gallery
+     * @param {string} imageId - The image ID to delete
+     * @returns {Promise<boolean>} True if successful, false if image not found
+     */
+    async deleteImage(imageId) {
+        if (!imageId) {
+            console.warn(`${MODULE_ID} | Invalid imageId provided`);
+            return false;
+        }
+
+        try {
+            const gallery = await this.loadGallery();
+            const index = gallery.findIndex(img => img.id === imageId);
+
+            if (index === -1) {
+                console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
+                return false;
+            }
+
+            gallery.splice(index, 1);
+            await this._syncWithSettings(gallery);
+            console.log(`${MODULE_ID} | Deleted image ${imageId} from gallery`);
+            return true;
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to delete image:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Gets all images from the gallery with optional filters
+     * @param {Object} [filters={}] - Filter options
+     * @param {string} [filters.category] - Filter by category
+     * @param {string} [filters.tag] - Filter by tag
+     * @param {boolean} [filters.isFavorite] - Filter by favorite status
+     * @param {string} [filters.session] - Filter by session
+     * @returns {Promise<GalleryEntry[]>} Filtered gallery entries
+     */
+    async getGalleryImages(filters = {}) {
+        try {
+            let gallery = await this.loadGallery();
+
+            if (filters.category) {
+                gallery = gallery.filter(img => img.category === filters.category);
+            }
+
+            if (filters.tag) {
+                gallery = gallery.filter(img =>
+                    Array.isArray(img.tags) && img.tags.includes(filters.tag)
+                );
+            }
+
+            if (typeof filters.isFavorite === 'boolean') {
+                gallery = gallery.filter(img => img.isFavorite === filters.isFavorite);
+            }
+
+            if (filters.session) {
+                gallery = gallery.filter(img => img.session === filters.session);
+            }
+
+            return gallery;
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to get gallery images:`, error);
+            return [];
+        }
+    }
+
+    /**
+     * Gets a single image from the gallery by ID
+     * @param {string} imageId - The image ID
+     * @returns {Promise<GalleryEntry|null>} The gallery entry or null if not found
+     */
+    async getGalleryImage(imageId) {
+        if (!imageId) {
+            return null;
+        }
+
+        try {
+            const gallery = await this.loadGallery();
+            return gallery.find(img => img.id === imageId) || null;
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to get gallery image:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Clears the entire gallery
+     * @returns {Promise<void>}
+     */
+    async clearGallery() {
+        try {
+            await this._syncWithSettings([]);
+            console.log(`${MODULE_ID} | Gallery cleared`);
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to clear gallery:`, error);
+            throw error;
+        }
+    }
+
+    /**
      * Handles API errors and returns user-friendly error messages
      * @param {Object} error - The API error
      * @returns {Error} A user-friendly error
