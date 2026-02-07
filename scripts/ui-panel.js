@@ -618,9 +618,21 @@ export class NarratorPanel extends Application {
      * @param {Event} event - Click event
      * @private
      */
-    _onClearTranscript(event) {
+    async _onClearTranscript(event) {
         event.preventDefault();
-        this.clearTranscript();
+
+        // Show confirmation dialog
+        const confirmed = await Dialog.confirm({
+            title: game.i18n.localize('NARRATOR.Panel.ClearTranscript'),
+            content: `<p>${game.i18n.localize('NARRATOR.Panel.ConfirmClearTranscript')}</p>`,
+            yes: () => true,
+            no: () => false,
+            defaultYes: false
+        });
+
+        if (confirmed) {
+            this.clearTranscript();
+        }
     }
 
     /**
