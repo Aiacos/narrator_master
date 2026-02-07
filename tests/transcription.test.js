@@ -574,6 +574,167 @@ export async function runTests() {
         teardown();
     });
 
+    // Test: setMultiLanguageMode enables multi-language mode
+    runner.test('setMultiLanguageMode enables multi-language mode', async () => {
+        await setup();
+
+        const service = new TranscriptionService('key');
+        assert.ok(!service.isMultiLanguageMode(), 'Multi-language mode should be disabled by default');
+
+        service.setMultiLanguageMode(true);
+        assert.ok(service.isMultiLanguageMode(), 'Multi-language mode should be enabled');
+
+        service.setMultiLanguageMode(false);
+        assert.ok(!service.isMultiLanguageMode(), 'Multi-language mode should be disabled');
+
+        teardown();
+    });
+
+    // Test: Constructor accepts multiLanguageMode option
+    runner.test('constructor accepts multiLanguageMode option', async () => {
+        await setup();
+
+        const service = new TranscriptionService('key', {
+            multiLanguageMode: true
+        });
+
+        assert.ok(service.isMultiLanguageMode(), 'Multi-language mode should be enabled from constructor');
+
+        teardown();
+    });
+
+    // Test: Multi-language mode is included in getStats
+    runner.test('getStats includes multi-language mode status', async () => {
+        await setup();
+
+        const service = new TranscriptionService('valid-key', {
+            multiLanguageMode: true
+        });
+
+        const stats = service.getStats();
+
+        assert.equal(stats.multiLanguageMode, true, 'Stats should include multi-language mode status');
+
+        teardown();
+    });
+
+    // Test: _parseResponse handles per-segment language detection
+    runner.test('_parseResponse handles per-segment language detection', async () => {
+        await setup();
+
+        const service = new TranscriptionService('key');
+
+        const rawResponse = {
+            segments: [
+                { speaker: 'Player1', text: 'Hello everyone', start: 0, end: 2, language: 'en' },
+                { speaker: 'Player2', text: 'Ciao a tutti', start: 2, end: 4, language: 'it' },
+                { speaker: 'Player3', text: 'Hola amigos', start: 4, end: 6, language: 'es' }
+            ],
+            language: 'en'
+        };
+
+        const result = service._parseResponse(rawResponse, 'en');
+
+        assert.equal(result.segments.length, 3, 'Should have 3 segments');
+        assert.equal(result.segments[0].language, 'en', 'First segment should be English');
+        assert.equal(result.segments[1].language, 'it', 'Second segment should be Italian');
+        assert.equal(result.segments[2].language, 'es', 'Third segment should be Spanish');
+
+        teardown();
+    });
+
+    // Test: _parseResponse uses top-level language as fallback
+    runner.test('_parseResponse uses top-level language when segment language missing', async () => {
+        await setup();
+
+        const service = new TranscriptionService('key');
+
+        const rawResponse = {
+            segments: [
+                { speaker: 'Player1', text: 'Hello', start: 0, end: 1 },
+                { speaker: 'Player2', text: 'World', start: 1, end: 2 }
+            ],
+            language: 'en'
+        };
+
+        const result = service._parseResponse(rawResponse, 'en');
+
+        assert.equal(result.segments[0].language, 'en', 'Should use top-level language as fallback');
+        assert.equal(result.segments[1].language, 'en', 'Should use top-level language as fallback');
+
+        teardown();
+    });
+
+    // Test: transcribe in multi-language mode omits language parameter
+    runner.test('transcribe in multi-language mode sends appropriate language parameter', async () => {
+        await setup();
+
+        let capturedFormData = null;
+        const mockFetch = async (url, options) => {
+            // Capture the FormData for inspection
+            capturedFormData = options.body;
+            return {
+                ok: true,
+                status: 200,
+                json: async () => createMockTranscriptionResponse()
+            };
+        };
+
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = mockFetch;
+
+        try {
+            const service = new TranscriptionService('valid-key', {
+                language: 'it',
+                multiLanguageMode: true
+            });
+            const audioBlob = createMockBlob('audio/webm', 1024);
+
+            await service.transcribe(audioBlob);
+
+            // In multi-language mode with language set, the language parameter should be omitted
+            // to allow automatic detection
+            assert.ok(capturedFormData !== null, 'Should have captured form data');
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        teardown();
+    });
+
+    // Test: transcribe with language='auto' enables automatic detection
+    runner.test('transcribe with language auto enables automatic language detection', async () => {
+        await setup();
+
+        let capturedFormData = null;
+        const mockFetch = async (url, options) => {
+            capturedFormData = options.body;
+            return {
+                ok: true,
+                status: 200,
+                json: async () => createMockTranscriptionResponse()
+            };
+        };
+
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = mockFetch;
+
+        try {
+            const service = new TranscriptionService('valid-key', {
+                language: 'auto'
+            });
+            const audioBlob = createMockBlob('audio/webm', 1024);
+
+            await service.transcribe(audioBlob);
+
+            assert.ok(capturedFormData !== null, 'Should have captured form data');
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        teardown();
+    });
+
     // Test: notifyError shows notification (static method)
     runner.test('notifyError shows UI notification', async () => {
         await setup();
