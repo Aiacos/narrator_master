@@ -219,6 +219,9 @@ export class NarratorPanel extends Application {
             sceneSegments: this.sceneSegments,
             hasScenes: this.sceneSegments.length > 0,
 
+            // Merged transcript with scene breaks
+            transcriptWithScenes: this._mergeTranscriptWithScenes(),
+
             // Recording state
             recordingState: this.recordingState,
             isRecording: this.recordingState === RECORDING_STATE.RECORDING,
@@ -273,6 +276,20 @@ export class NarratorPanel extends Application {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    /**
+     * Formats Unix timestamp to HH:MM:SS format
+     * @param {number} timestamp - Unix timestamp in milliseconds
+     * @returns {string} Formatted time string
+     * @private
+     */
+    _formatTimestamp(timestamp) {
+        const date = new Date(timestamp);
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const seconds = date.getSeconds().toString().padStart(2, '0');
+        return `${hours}:${minutes}:${seconds}`;
     }
 
     /**
@@ -961,6 +978,50 @@ export class NarratorPanel extends Application {
                 segment.speaker = newLabel;
             }
         }
+    }
+
+    /**
+     * Merges transcript segments with scene breaks for template rendering
+     * @returns {Array<Object>} Merged array of transcript entries and scene breaks
+     * @private
+     */
+    _mergeTranscriptWithScenes() {
+        const merged = [];
+
+        // Build a map of scene breaks by index
+        const scenesByIndex = new Map();
+        for (const scene of this.sceneSegments) {
+            scenesByIndex.set(scene.index, scene);
+        }
+
+        // Iterate through transcript segments and insert scene breaks
+        for (let i = 0; i < this.transcriptSegments.length; i++) {
+            // Check if there's a scene break at this index
+            if (scenesByIndex.has(i)) {
+                const scene = scenesByIndex.get(i);
+                // Capitalize first letter for localization key
+                const sceneTypeKey = scene.type.charAt(0).toUpperCase() + scene.type.slice(1);
+                merged.push({
+                    type: 'scene-break',
+                    sceneType: scene.type,
+                    sceneTypeLabel: game.i18n.localize(`NARRATOR.Scenes.SceneType${sceneTypeKey}`),
+                    timestamp: this._formatTimestamp(scene.timestamp),
+                    isManual: scene.isManual,
+                    manualLabel: scene.isManual ? game.i18n.localize('NARRATOR.Scenes.ManualBreak') : game.i18n.localize('NARRATOR.Scenes.AutomaticBreak')
+                });
+            }
+
+            // Add the transcript segment
+            const segment = this.transcriptSegments[i];
+            merged.push({
+                type: 'transcript',
+                speaker: segment.speaker,
+                text: segment.text,
+                timestamp: segment.timestamp
+            });
+        }
+
+        return merged;
     }
 
     /**
