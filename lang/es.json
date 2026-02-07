@@ -1,0 +1,162 @@
+{
+    "NARRATOR": {
+        "PanelTitle": "Narrator Master - Asistente DM",
+
+        "Settings": {
+            "ApiKeyName": "Clave API de OpenAI",
+            "ApiKeyHint": "Tu clave API de OpenAI. Requiere una cuenta con créditos (mínimo $5). Obténla de platform.openai.com/api-keys",
+            "LanguageName": "Idioma de Transcripción",
+            "LanguageHint": "Idioma para la transcripción de audio (predeterminado: Español)",
+            "PanelPositionName": "Posición del Panel",
+            "PanelPositionHint": "Posición guardada del panel DM",
+            "SensitivityName": "Sensibilidad de Detección Fuera de Tema",
+            "SensitivityHint": "Cuán estrictamente detectar cuando los jugadores se alejan de la trama de la aventura",
+            "SensitivityLow": "Baja - Solo grandes desviaciones",
+            "SensitivityMedium": "Media - Balanceado",
+            "SensitivityHigh": "Alta - Incluso pequeñas variaciones"
+        },
+
+        "Panel": {
+            "Title": "Narrator Master",
+            "TogglePanel": "Abrir/Cerrar Panel DM",
+            "OpenSettings": "Abrir Configuración",
+            "ToggleRecording": "Grabación",
+            "StartRecording": "Iniciar Grabación",
+            "StopRecording": "Detener Grabación",
+            "PauseRecording": "Pausar",
+            "ResumeRecording": "Reanudar",
+            "GenerateImage": "Generar Imagen",
+            "AssistantTab": "Asistente",
+            "ImagesTab": "Imágenes",
+            "NoSuggestions": "No hay sugerencias disponibles. Inicia la grabación y el asistente analizará automáticamente la conversación.",
+            "NoImages": "No hay imágenes generadas. Usa el botón 'Generar Imagen' para crear infografías.",
+            "OffTrackWarning": "ADVERTENCIA: ¡Fuera de Tema!",
+            "ReturnToStory": "Para Devolverlos a la Historia",
+            "NoApiKey": "Clave API no configurada",
+            "ConfigureSettings": "Configurar Ajustes",
+            "Processing": "Procesando...",
+            "ClearImages": "Limpiar Imágenes",
+            "CopyToClipboard": "Copiar al Portapapeles",
+            "GeneratingImage": "Generando imagen...",
+            "GeneratedImage": "Imagen Generada",
+            "ListeningStatus": "Escuchando...",
+            "JournalStatus": "{count} diarios cargados",
+            "JournalStatusEmpty": "No hay diarios disponibles"
+        },
+
+        "Errors": {
+            "NotInitialized": "Narrator Master aún no está inicializado. Espera la carga completa.",
+            "InitFailed": "Inicialización de Narrator Master falló",
+            "NoApiKey": "Clave API de OpenAI no configurada. Ve a la configuración del módulo para añadirla.",
+            "InvalidAudio": "Audio no válido. Asegúrate de que la grabación contenga datos de audio.",
+            "FileTooLarge": "Archivo de audio demasiado grande ({size}MB). El límite máximo es 25MB.",
+            "InvalidApiKey": "Clave API no válida. Verifica tu clave API de OpenAI en la configuración.",
+            "RateLimited": "Límite de solicitudes alcanzado. Espera un momento antes de reintentar.",
+            "BadRequest": "Solicitud no válida: {details}",
+            "ServerError": "Error del servidor OpenAI. Intenta de nuevo más tarde.",
+            "TranscriptionFailed": "Transcripción falló (Error {status}): {message}",
+            "NoTranscription": "No hay transcripción disponible para el análisis.",
+            "NoPrompt": "No se proporcionó ningún prompt para la generación de imagen.",
+            "NoDescription": "No se proporcionó ninguna descripción para la infografía.",
+            "ContentPolicy": "El contenido viola las políticas de OpenAI. Prueba con una descripción diferente.",
+            "AIAssistantFailed": "Asistente AI falló (Error {status}): {message}",
+            "ImageGenerationFailed": "Generación de imagen falló (Error {status}): {message}",
+            "NoContextForImage": "No hay contexto disponible para generar una imagen. Graba algo de audio primero.",
+            "CopyFailed": "No se pudo copiar al portapapeles.",
+            "MicrophoneNotSupported": "Tu navegador no soporta la captura de audio del micrófono.",
+            "MicrophonePermissionDenied": "Permiso de micrófono denegado. Permite el acceso al micrófono en la configuración del navegador.",
+            "MicrophoneNotFound": "No se encontró ningún micrófono. Conecta un micrófono e intenta de nuevo.",
+            "MicrophoneInUse": "El micrófono está en uso por otra aplicación. Cierra las otras aplicaciones que usan el micrófono.",
+            "MicrophoneConstraints": "El micrófono no cumple con los requisitos solicitados.",
+            "MicrophoneSecurityError": "Error de seguridad: la captura de audio requiere HTTPS en producción.",
+            "MicrophoneGeneric": "Error de micrófono: {error}",
+            "RecordingFailed": "Grabación falló. Intenta de nuevo.",
+            "RecorderInitFailed": "No se pudo inicializar el grabador: {error}",
+            "NetworkError": "Error de conexión. Verifica tu conexión a Internet e intenta de nuevo.",
+            "Timeout": "La solicitud tardó demasiado tiempo. Intenta de nuevo más tarde.",
+            "UnexpectedError": "Ocurrió un error inesperado: {message}",
+            "ServiceUnavailable": "Servicio temporalmente no disponible. Intenta de nuevo en unos minutos.",
+            "InvalidJournalId": "ID de Diario no válido.",
+            "JournalNotFound": "Diario no encontrado: {id}"
+        },
+
+        "Warnings": {
+            "ConfigIncomplete": "Configuración incompleta"
+        },
+
+        "Notifications": {
+            "CopiedToClipboard": "¡Copiado al portapapeles!",
+            "RecordingStarted": "Grabación iniciada",
+            "RecordingStopped": "Grabación detenida",
+            "JournalsLoaded": "Todos los diarios cargados ({count})",
+            "ImageGenerated": "Imagen generada con éxito",
+            "SettingsSaved": "Configuración guardada",
+            "ModuleReady": "Narrator Master listo",
+            "TranscriptionComplete": "Transcripción completada",
+            "ApiKeyUpdated": "Clave API actualizada",
+            "MicrophoneReady": "Micrófono listo para grabar",
+            "PlayersOffTrack": "Atención: ¡Los jugadores se están alejando de la trama!"
+        },
+
+        "OffTrack": {
+            "NoContext": "No hay contexto de aventura configurado para la detección fuera de tema.",
+            "ParseError": "No se pudo analizar la respuesta de detección fuera de tema.",
+            "Warning": "Los jugadores se están alejando de la trama de la aventura.",
+            "Severe": "Los jugadores están completamente fuera de tema respecto a la aventura.",
+            "Minor": "Leve desviación de la trama principal."
+        },
+
+        "Suggestions": {
+            "TypeNarration": "Narración",
+            "TypeDialogue": "Diálogo",
+            "TypeAction": "Acción",
+            "TypeReference": "Referencia",
+            "HighConfidence": "Alta confianza",
+            "MediumConfidence": "Media confianza",
+            "LowConfidence": "Baja confianza"
+        },
+
+        "Recording": {
+            "StateInactive": "Inactivo",
+            "StateRecording": "Grabando",
+            "StatePaused": "En pausa",
+            "StateProcessing": "Procesando",
+            "AudioLevelLow": "Nivel de audio bajo",
+            "AudioLevelNormal": "Nivel de audio normal",
+            "AudioLevelHigh": "Nivel de audio alto"
+        },
+
+        "Journal": {
+            "NoJournalFound": "Diario no encontrado",
+            "ParsingJournal": "Analizando Diario...",
+            "JournalEmpty": "El Diario seleccionado está vacío.",
+            "PageCount": "{count} páginas encontradas",
+            "UnnamedPage": "Página sin nombre"
+        },
+
+        "Images": {
+            "Generating": "Generando...",
+            "CacheExpired": "URL de imagen expirada, usando caché local",
+            "NoCache": "Imagen no disponible (URL expirada y sin caché)",
+            "ClickToEnlarge": "Haz clic para ampliar",
+            "Delete": "Eliminar",
+            "Download": "Descargar"
+        },
+
+        "Tooltips": {
+            "ToggleRecording": "Iniciar o detener la grabación de audio",
+            "GenerateImage": "Generar una imagen basada en el contexto actual",
+            "ClearImages": "Limpiar todas las imágenes generadas",
+            "CopyText": "Copiar el texto al portapapeles",
+            "OpenSettings": "Abrir la configuración del módulo"
+        },
+
+        "Accessibility": {
+            "RecordButton": "Botón de grabación",
+            "AudioLevel": "Indicador de nivel de audio",
+            "TabNavigation": "Navegación por pestañas",
+            "ImageGallery": "Galería de imágenes",
+            "SuggestionsList": "Lista de sugerencias"
+        }
+    }
+}
