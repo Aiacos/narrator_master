@@ -13,6 +13,12 @@ import { MODULE_ID } from './settings.js';
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
 /**
+ * Size threshold for chunk processing (20MB = 80% of max)
+ * @constant {number}
+ */
+const SIZE_THRESHOLD = 20 * 1024 * 1024;
+
+/**
  * Default audio constraints for microphone capture
  * @constant {Object}
  */
@@ -65,7 +71,8 @@ export const AudioCaptureEvent = {
     PERMISSION_DENIED: 'permissionDenied',
     PERMISSION_GRANTED: 'permissionGranted',
     STREAM_STARTED: 'streamStarted',
-    STREAM_STOPPED: 'streamStopped'
+    STREAM_STOPPED: 'streamStopped',
+    SIZE_THRESHOLD: 'sizeThreshold'
 };
 
 /**
@@ -179,6 +186,13 @@ export class AudioCapture {
          * @private
          */
         this._analyser = null;
+
+        /**
+         * Cumulative size of recorded audio chunks in bytes
+         * @type {number}
+         * @private
+         */
+        this._cumulativeSize = 0;
     }
 
     /**
@@ -220,6 +234,14 @@ export class AudioCapture {
      */
     get mimeType() {
         return this._mimeType;
+    }
+
+    /**
+     * Gets the cumulative size of recorded audio in bytes
+     * @returns {number} The cumulative size in bytes
+     */
+    get cumulativeSize() {
+        return this._cumulativeSize;
     }
 
     /**
@@ -340,6 +362,7 @@ export class AudioCapture {
 
         // Clear previous chunks
         this._chunks = [];
+        this._cumulativeSize = 0;
 
         // Create MediaRecorder
         try {
@@ -354,7 +377,16 @@ export class AudioCapture {
             this._recorder.ondataavailable = (event) => {
                 if (event.data && event.data.size > 0) {
                     this._chunks.push(event.data);
+                    this._cumulativeSize += event.data.size;
                     this._emit(AudioCaptureEvent.DATA_AVAILABLE, event.data);
+
+                    // Check if approaching size threshold
+                    if (this._cumulativeSize >= SIZE_THRESHOLD) {
+                        this._emit(AudioCaptureEvent.SIZE_THRESHOLD, {
+                            size: this._cumulativeSize,
+                            threshold: SIZE_THRESHOLD
+                        });
+                    }
                 }
             };
 
@@ -489,6 +521,30 @@ export class AudioCapture {
      */
     clearRecording() {
         this._chunks = [];
+        this._cumulativeSize = 0;
+    }
+
+    /**
+     * Resets chunk boundary for long session handling
+     * Returns accumulated chunks as a Blob and resets counters without stopping recording
+     * @returns {Blob|null} The accumulated audio blob or null if no data
+     */
+    resetChunkBoundary() {
+        if (this._chunks.length === 0) {
+            return null;
+        }
+
+        // Create blob from accumulated chunks
+        const blob = new Blob(this._chunks, { type: this._mimeType });
+
+        // Log chunk boundary reset
+        console.log(`${MODULE_ID} | Chunk boundary reset - size: ${blob.size} bytes, chunks: ${this._chunks.length}`);
+
+        // Clear chunks and reset size counter
+        this._chunks = [];
+        this._cumulativeSize = 0;
+
+        return blob;
     }
 
     /**
@@ -675,6 +731,7 @@ export class AudioCapture {
             duration: this.duration,
             chunksCount: this._chunks.length,
             totalSize: this._chunks.reduce((sum, chunk) => sum + chunk.size, 0),
+            cumulativeSize: this._cumulativeSize,
             mimeType: this._mimeType,
             hasStream: !!this._stream,
             hasAnalyser: !!this._analyser

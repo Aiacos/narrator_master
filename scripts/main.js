@@ -11,6 +11,7 @@ import { AIAssistant } from './ai-assistant.js';
 import { ImageGenerator } from './image-generator.js';
 import { JournalParser } from './journal-parser.js';
 import { NarratorPanel, RECORDING_STATE } from './ui-panel.js';
+import { SpeakerLabelService } from './speaker-labels.js';
 
 /**
  * Error notification types for different severity levels
@@ -163,6 +164,12 @@ class NarratorMaster {
         this.journalParser = null;
 
         /**
+         * Speaker label service
+         * @type {SpeakerLabelService|null}
+         */
+        this.speakerLabelService = null;
+
+        /**
          * Audio level update interval ID
          * @type {number|null}
          * @private
@@ -204,6 +211,9 @@ class NarratorMaster {
             // Initialize services
             this._initializeServices(apiKey);
 
+            // Initialize speaker label service
+            await this.speakerLabelService.initialize();
+
             // Initialize UI panel
             this._initializePanel();
 
@@ -212,9 +222,6 @@ class NarratorMaster {
 
             // Register journal update hooks
             this._registerJournalHooks();
-
-            // Load gallery images
-            await this._loadGallery();
 
             // Validate configuration
             const validation = this.settings.validateConfiguration();
@@ -243,6 +250,9 @@ class NarratorMaster {
 
         // Initialize Journal Parser (no API key needed)
         this.journalParser = new JournalParser();
+
+        // Initialize Speaker Label Service (no API key needed)
+        this.speakerLabelService = new SpeakerLabelService();
 
         // Initialize Audio Capture
         this.audioCapture = new AudioCapture({
@@ -316,7 +326,11 @@ class NarratorMaster {
         // Set up panel callbacks
         this.panel.onRecordingControl = this._handleRecordingControl.bind(this);
         this.panel.onGenerateImage = this._handleGenerateImage.bind(this);
-        this.panel.onGalleryAction = this._handleGalleryAction.bind(this);
+
+        // Connect speaker label service to panel
+        if (this.speakerLabelService) {
+            this.panel.setSpeakerLabelService(this.speakerLabelService);
+        }
 
         console.log(`${MODULE_ID} | UI panel initialized`);
     }
@@ -344,25 +358,6 @@ class NarratorMaster {
 
         } catch (error) {
             console.warn(`${MODULE_ID} | Failed to load journals:`, error);
-        }
-    }
-
-    /**
-     * Loads gallery images from persistent storage
-     * @private
-     */
-    async _loadGallery() {
-        try {
-            const gallery = await this.imageGenerator.loadGallery();
-
-            // Update panel with gallery images
-            if (this.panel) {
-                this.panel.generatedImages = gallery;
-                console.log(`${MODULE_ID} | Loaded ${gallery.length} images from gallery`);
-            }
-
-        } catch (error) {
-            console.warn(`${MODULE_ID} | Failed to load gallery:`, error);
         }
     }
 
@@ -462,8 +457,17 @@ class NarratorMaster {
                 this.panel.setLastTranscription(transcription.text);
             }
 
+            // Update transcript display in panel (using addTranscriptSegments for incremental updates)
+            // panel.updateTranscript() would replace all segments, addTranscriptSegments() appends
+            if (this.panel && transcription.segments && transcription.segments.length > 0) {
+                this.panel.addTranscriptSegments(transcription.segments);
+            }
+
+            // Apply speaker labels and format for AI analysis
+            const labeledText = this._formatTranscriptionWithLabels(transcription);
+
             // Analyze transcription with AI (results shown to user)
-            await this._analyzeTranscription(transcription.text);
+            await this._analyzeTranscription(labeledText);
 
         } catch (error) {
             this._handleServiceError(error, 'Transcription');
@@ -604,8 +608,17 @@ class NarratorMaster {
                     this.panel.setLastTranscription(transcription.text);
                 }
 
+                // Update transcript display in panel with final segments
+                if (this.panel && transcription.segments && transcription.segments.length > 0) {
+                    // Use updateTranscript for final audio to include all segments
+                    this.panel.addTranscriptSegments(transcription.segments);
+                }
+
+                // Apply speaker labels and format for AI analysis
+                const labeledText = this._formatTranscriptionWithLabels(transcription);
+
                 // Final AI analysis
-                await this._analyzeTranscription(transcription.text);
+                await this._analyzeTranscription(labeledText);
             }
 
         } catch (error) {
@@ -613,6 +626,34 @@ class NarratorMaster {
         } finally {
             this.panel?.setRecordingState(RECORDING_STATE.INACTIVE);
         }
+    }
+
+    /**
+     * Formats transcription with applied speaker labels for AI analysis
+     * @param {Object} transcription - The transcription result from TranscriptionService
+     * @returns {string} Formatted text with speaker labels
+     * @private
+     */
+    _formatTranscriptionWithLabels(transcription) {
+        // If no segments available, fall back to plain text
+        if (!transcription.segments || !Array.isArray(transcription.segments) || transcription.segments.length === 0) {
+            return transcription.text;
+        }
+
+        // Apply custom speaker labels to segments
+        const labeledSegments = this.speakerLabelService.applyLabelsToSegments(transcription.segments);
+
+        // Format segments into speaker-aware text
+        const formattedText = labeledSegments
+            .map(segment => {
+                const speaker = segment.speaker || 'Unknown';
+                const text = segment.text || '';
+                return `${speaker}: ${text}`;
+            })
+            .join('\n');
+
+        // Fall back to plain text if formatting produced empty result
+        return formattedText.trim() || transcription.text;
     }
 
     /**
@@ -634,97 +675,17 @@ class NarratorMaster {
                 mood: 'dramatic'
             });
 
-            if (result.url || result.base64) {
-                // Add metadata for gallery storage
-                const currentScene = game.scenes.active?.name || '';
-                const sessionTimestamp = new Date().toISOString();
-
-                const imageData = {
-                    ...result,
-                    scene: currentScene,
-                    session: sessionTimestamp,
-                    category: '', // Default empty, user can set via UI
-                    tags: [],
-                    isFavorite: false
-                };
-
-                // Save to persistent gallery
-                await this.imageGenerator.saveToGallery(imageData);
-
-                // Reload gallery in panel
-                await this._loadGallery();
-
-                // Re-render panel to show new image
-                if (this.panel) {
-                    this.panel.render(false);
-                }
+            if (this.panel && result.url) {
+                this.panel.addImage({
+                    url: result.base64 ? `data:image/png;base64,${result.base64}` : result.url,
+                    prompt: result.prompt
+                });
 
                 ErrorNotificationHelper.info(game.i18n.localize('NARRATOR.Notifications.ImageGenerated'));
             }
 
         } catch (error) {
             this._handleServiceError(error, 'Image Generation');
-        }
-    }
-
-    /**
-     * Handles gallery actions from the panel UI
-     * @param {string} action - The action to perform (toggleFavorite, setTags, setCategory, deleteImage, showImage)
-     * @param {Object} data - Action-specific data
-     * @private
-     */
-    async _handleGalleryAction(action, data) {
-        console.log(`${MODULE_ID} | Gallery action: ${action}`, data);
-
-        try {
-            switch (action) {
-                case 'toggleFavorite':
-                    await this.imageGenerator.toggleFavorite(data.imageId);
-                    break;
-
-                case 'setTags':
-                    // Clear existing tags first by getting the image
-                    const image = await this.imageGenerator.getGalleryImage(data.imageId);
-                    if (image && Array.isArray(image.tags)) {
-                        // Remove all existing tags
-                        for (const tag of image.tags) {
-                            await this.imageGenerator.removeTag(data.imageId, tag);
-                        }
-                    }
-                    // Add new tags
-                    if (Array.isArray(data.tags)) {
-                        for (const tag of data.tags) {
-                            if (tag && tag.trim()) {
-                                await this.imageGenerator.addTag(data.imageId, tag.trim());
-                            }
-                        }
-                    }
-                    break;
-
-                case 'setCategory':
-                    await this.imageGenerator.setCategory(data.imageId, data.category);
-                    break;
-
-                case 'deleteImage':
-                    await this.imageGenerator.deleteImage(data.imageId);
-                    break;
-
-                default:
-                    console.warn(`${MODULE_ID} | Unknown gallery action: ${action}`);
-                    return;
-            }
-
-            // Reload gallery after any action
-            await this._loadGallery();
-
-            // Re-render panel to reflect changes
-            if (this.panel) {
-                this.panel.render(false);
-            }
-
-        } catch (error) {
-            console.error(`${MODULE_ID} | Gallery action failed:`, error);
-            ErrorNotificationHelper.error(error.message || error, 'Gallery Action');
         }
     }
 

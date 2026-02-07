@@ -151,12 +151,12 @@ export class JournalParser {
             return '';
         }
 
-        // Use DOMParser to safely parse HTML without executing scripts
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
+        // Create a temporary DOM element to parse HTML
+        const div = document.createElement('div');
+        div.innerHTML = html;
 
-        // Get text content from the parsed document
-        let text = doc.body.textContent || '';
+        // Get text content, handling nested elements
+        let text = div.textContent || div.innerText || '';
 
         // Normalize whitespace
         text = text.replace(/\s+/g, ' ').trim();
@@ -439,5 +439,79 @@ export class JournalParser {
             totalCharacters,
             indexedKeywords: this._keywordIndex.size
         };
+    }
+
+    /**
+     * Extracts proper nouns (character names, locations, etc.) from a journal
+     * Useful for building custom vocabulary for transcription
+     * @param {string} journalId - The journal ID to extract proper nouns from
+     * @returns {string[]} Array of unique proper nouns found in the journal
+     */
+    extractProperNouns(journalId) {
+        const cached = this._cachedContent.get(journalId);
+        if (!cached) {
+            console.warn(`${MODULE_ID} | Journal not cached: ${journalId}`);
+            return [];
+        }
+
+        // Common words to exclude (Italian and English)
+        const commonWords = new Set([
+            // Italian articles, prepositions, conjunctions
+            'il', 'lo', 'la', 'i', 'gli', 'le', 'un', 'uno', 'una',
+            'di', 'a', 'da', 'in', 'con', 'su', 'per', 'tra', 'fra',
+            'e', 'o', 'ma', 'però', 'quindi', 'allora', 'quando', 'se',
+            'che', 'chi', 'cui', 'quale', 'quanto',
+            // Italian common words
+            'non', 'si', 'anche', 'come', 'dove', 'dopo', 'prima',
+            'molto', 'tutto', 'ogni', 'altro', 'stesso', 'sempre',
+            // English articles, prepositions, conjunctions
+            'the', 'a', 'an', 'of', 'to', 'in', 'for', 'on', 'with',
+            'at', 'by', 'from', 'up', 'about', 'into', 'through',
+            'and', 'or', 'but', 'if', 'then', 'when', 'where',
+            'that', 'this', 'these', 'those', 'which', 'who', 'what',
+            // English common words
+            'not', 'all', 'can', 'will', 'just', 'should', 'now',
+            'there', 'their', 'they', 'have', 'has', 'had', 'been'
+        ]);
+
+        const properNouns = new Map(); // Use Map to track frequency
+
+        // Process each page
+        for (const page of cached.pages) {
+            const text = page.text;
+
+            // Split into sentences to identify sentence-starting words
+            const sentences = text.split(/[.!?]+/);
+
+            for (const sentence of sentences) {
+                const words = sentence.trim().split(/\s+/);
+
+                // Skip first word of each sentence (likely capitalized but not proper noun)
+                for (let i = 1; i < words.length; i++) {
+                    const word = words[i];
+
+                    // Check if word starts with capital letter
+                    if (/^[A-ZÀ-ÖØ-Þ]/.test(word)) {
+                        // Clean word (remove punctuation)
+                        const cleanWord = word.replace(/[^a-zA-ZÀ-ÖØ-ÿ'-]/g, '');
+
+                        // Filter out short words and common words
+                        if (cleanWord.length >= 3 && !commonWords.has(cleanWord.toLowerCase())) {
+                            const count = properNouns.get(cleanWord) || 0;
+                            properNouns.set(cleanWord, count + 1);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Convert to array and sort by frequency (most common first)
+        const result = Array.from(properNouns.entries())
+            .sort((a, b) => b[1] - a[1])
+            .map(([word]) => word);
+
+        console.log(`${MODULE_ID} | Extracted ${result.length} proper nouns from journal: ${cached.name}`);
+
+        return result;
     }
 }

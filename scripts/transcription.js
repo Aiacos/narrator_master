@@ -624,6 +624,45 @@ export class TranscriptionService {
     }
 
     /**
+     * Applies custom speaker labels retroactively to transcription history
+     * Updates all segments in history with new speaker labels based on mappings
+     * @param {Object} labelMappings - Map of old speaker IDs to new labels (e.g., {"Speaker 1": "Marco (Gandalf)"})
+     * @returns {number} Number of segments updated
+     */
+    applyCustomLabels(labelMappings) {
+        if (!labelMappings || typeof labelMappings !== 'object') {
+            console.warn(`${MODULE_ID} | Invalid label mappings provided to applyCustomLabels`);
+            return 0;
+        }
+
+        let totalUpdated = 0;
+
+        // Iterate through all history entries
+        for (const result of this._history) {
+            if (!result.segments || !Array.isArray(result.segments)) {
+                continue;
+            }
+
+            // Update each segment's speaker label
+            for (const segment of result.segments) {
+                const oldSpeaker = segment.speaker;
+                if (labelMappings.hasOwnProperty(oldSpeaker)) {
+                    segment.speaker = labelMappings[oldSpeaker];
+                    totalUpdated++;
+                }
+            }
+
+            // Rebuild the speakers array with updated labels
+            const uniqueSpeakers = [...new Set(result.segments.map(seg => seg.speaker))];
+            result.speakers = uniqueSpeakers;
+        }
+
+        console.log(`${MODULE_ID} | Applied custom labels to ${totalUpdated} segments`);
+
+        return totalUpdated;
+    }
+
+    /**
      * Gets service statistics
      * @returns {Object} Statistics about the service usage
      */

@@ -18,19 +18,6 @@ export const RECORDING_STATE = {
 };
 
 /**
- * Escapes HTML special characters to prevent XSS
- * @param {string} text - Text to escape
- * @returns {string} Escaped text safe for HTML attributes
- * @private
- */
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-/**
  * NarratorPanel - Main DM interface Application
  * Provides AI suggestions, off-track detection, and recording controls
  * @extends Application
@@ -141,28 +128,16 @@ export class NarratorPanel extends Application {
         this._lastTranscription = '';
 
         /**
-         * Current gallery filter selection
-         * @type {string}
+         * Transcript segments with speaker labels
+         * @type {Array<{speaker: string, text: string, timestamp: number}>}
          */
-        this.galleryFilter = 'all';
+        this.transcriptSegments = [];
 
         /**
-         * Current gallery search query
-         * @type {string}
+         * Speaker label service instance
+         * @type {SpeakerLabelService|null}
          */
-        this.searchQuery = '';
-
-        /**
-         * Filtered gallery images to display
-         * @type {Array}
-         */
-        this.galleryImages = [];
-
-        /**
-         * Callback for gallery operations (toggle favorite, add tag, etc.)
-         * @type {Function|null}
-         */
-        this.onGalleryAction = null;
+        this.speakerLabelService = null;
     }
 
     /**
@@ -202,22 +177,6 @@ export class NarratorPanel extends Application {
             journalStatusText = game.i18n.localize('NARRATOR.Panel.JournalStatusEmpty');
         }
 
-        // Filter gallery images based on current filter and search
-        const filteredImages = this._filterGalleryImages();
-
-        // Process images to add tagsString for data attribute
-        const processedImages = filteredImages.map(img => ({
-            ...img,
-            tagsString: img.tags ? img.tags.join(',') : ''
-        }));
-
-        // Extract unique categories from all images (not just filtered)
-        const allCategories = [...new Set(
-            this.generatedImages
-                .map(img => img.category)
-                .filter(cat => cat && cat.trim().length > 0)
-        )].sort();
-
         return {
             // Module info
             moduleId: MODULE_ID,
@@ -236,13 +195,13 @@ export class NarratorPanel extends Application {
             journalCount: this.journalCount,
             journalStatusText,
 
-            // Generated images (filtered)
-            generatedImages: processedImages,
-            hasImages: processedImages.length > 0,
+            // Generated images
+            generatedImages: this.generatedImages,
+            hasImages: this.generatedImages.length > 0,
 
-            // Gallery metadata
-            imageCategories: allCategories,
-            hasCategories: allCategories.length > 0,
+            // Transcript segments
+            transcriptEntries: this.transcriptSegments,
+            hasTranscript: this.transcriptSegments.length > 0,
 
             // Recording state
             recordingState: this.recordingState,
@@ -280,18 +239,10 @@ export class NarratorPanel extends Application {
                 clearImages: game.i18n.localize('NARRATOR.Panel.ClearImages'),
                 copyToClipboard: game.i18n.localize('NARRATOR.Panel.CopyToClipboard'),
                 listeningStatus: game.i18n.localize('NARRATOR.Panel.ListeningStatus'),
-                filterLabel: game.i18n.localize('NARRATOR.Gallery.FilterLabel'),
-                filterAll: game.i18n.localize('NARRATOR.Gallery.FilterAll'),
-                filterFavorites: game.i18n.localize('NARRATOR.Gallery.FilterFavorites'),
-                filterByCategory: game.i18n.localize('NARRATOR.Gallery.FilterByCategory'),
-                searchPlaceholder: game.i18n.localize('NARRATOR.Gallery.SearchPlaceholder'),
-                clearSearch: game.i18n.localize('NARRATOR.Gallery.ClearSearch'),
-                toggleFavorite: game.i18n.localize('NARRATOR.Gallery.ToggleFavorite'),
-                manageTags: game.i18n.localize('NARRATOR.Gallery.ManageTags'),
-                showToPlayers: game.i18n.localize('NARRATOR.Gallery.ShowToPlayers'),
-                deleteImage: game.i18n.localize('NARRATOR.Gallery.DeleteImage'),
-                favoriteImage: game.i18n.localize('NARRATOR.Gallery.FavoriteImage'),
-                categoryLabel: game.i18n.localize('NARRATOR.Gallery.CategoryLabel')
+                transcriptTab: game.i18n.localize('NARRATOR.Panel.TranscriptTab'),
+                noTranscript: game.i18n.localize('NARRATOR.Panel.NoTranscript'),
+                clearTranscript: game.i18n.localize('NARRATOR.Panel.ClearTranscript'),
+                exportTranscript: game.i18n.localize('NARRATOR.Panel.ExportTranscript')
             }
         };
     }
@@ -306,44 +257,6 @@ export class NarratorPanel extends Application {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-
-    /**
-     * Filters gallery images based on current filter and search query
-     * @returns {Array} Filtered images
-     * @private
-     */
-    _filterGalleryImages() {
-        let filtered = [...this.generatedImages];
-
-        // Apply filter
-        if (this.galleryFilter === 'favorites') {
-            filtered = filtered.filter(img => img.isFavorite);
-        } else if (this.galleryFilter.startsWith('category:')) {
-            const category = this.galleryFilter.substring(9);
-            filtered = filtered.filter(img => img.category === category);
-        }
-
-        // Apply search query
-        if (this.searchQuery && this.searchQuery.trim().length > 0) {
-            const query = this.searchQuery.toLowerCase().trim();
-            filtered = filtered.filter(img => {
-                // Search in prompt
-                const promptMatch = img.prompt && img.prompt.toLowerCase().includes(query);
-
-                // Search in tags
-                const tagsMatch = img.tags && img.tags.some(tag =>
-                    tag.toLowerCase().includes(query)
-                );
-
-                // Search in category
-                const categoryMatch = img.category && img.category.toLowerCase().includes(query);
-
-                return promptMatch || tagsMatch || categoryMatch;
-            });
-        }
-
-        return filtered;
     }
 
     /**
@@ -378,16 +291,11 @@ export class NarratorPanel extends Application {
         // Narrative bridge copy
         html.find('.copy-bridge').click(this._onCopyNarrativeBridge.bind(this));
 
-        // Gallery controls
-        html.find('.gallery-filter-select').change(this._onFilterGallery.bind(this));
-        html.find('.gallery-search-input').on('input', this._onSearchGallery.bind(this));
-        html.find('.clear-search').click(this._onClearSearch.bind(this));
-
-        // Gallery image actions
-        html.find('.action-favorite').click(this._onToggleFavorite.bind(this));
-        html.find('.action-tag').click(this._onManageTags.bind(this));
-        html.find('.action-show').click(this._onShowImage.bind(this));
-        html.find('.action-delete').click(this._onDeleteImage.bind(this));
+        // Transcript controls
+        html.find('.speaker-label').click(this._onSpeakerLabelClick.bind(this));
+        html.find('.copy-transcript').click(this._onCopyTranscript.bind(this));
+        html.find('.export-transcript').click(this._onExportTranscript.bind(this));
+        html.find('.clear-transcript').click(this._onClearTranscript.bind(this));
     }
 
     /**
@@ -544,176 +452,175 @@ export class NarratorPanel extends Application {
     }
 
     /**
-     * Handles gallery filter dropdown change
-     * @param {Event} event - Change event
-     * @private
-     */
-    _onFilterGallery(event) {
-        event.preventDefault();
-        this.galleryFilter = event.currentTarget.value;
-        this.render(false);
-    }
-
-    /**
-     * Handles gallery search input
-     * @param {Event} event - Input event
-     * @private
-     */
-    _onSearchGallery(event) {
-        event.preventDefault();
-        this.searchQuery = event.currentTarget.value;
-        this.render(false);
-    }
-
-    /**
-     * Handles clear search button click
-     * @param {Event} event - Click event
-     * @private
-     */
-    _onClearSearch(event) {
-        event.preventDefault();
-        this.searchQuery = '';
-        const searchInput = this.element?.find('.gallery-search-input');
-        if (searchInput && searchInput.length) {
-            searchInput.val('');
-        }
-        this.render(false);
-    }
-
-    /**
-     * Handles toggle favorite button click
-     * @param {Event} event - Click event
-     * @private
-     */
-    async _onToggleFavorite(event) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        const index = parseInt(event.currentTarget.dataset.index);
-        if (!isNaN(index) && index >= 0 && index < this.generatedImages.length) {
-            const image = this.generatedImages[index];
-
-            if (this.onGalleryAction) {
-                await this.onGalleryAction('toggleFavorite', { imageId: image.id });
-            } else {
-                // Fallback: toggle locally if no callback
-                image.isFavorite = !image.isFavorite;
-                this.render(false);
-            }
-        }
-    }
-
-    /**
-     * Handles manage tags button click
-     * @param {Event} event - Click event
-     * @private
-     */
-    async _onManageTags(event) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        const index = parseInt(event.currentTarget.dataset.index);
-        if (!isNaN(index) && index >= 0 && index < this.generatedImages.length) {
-            const image = this.generatedImages[index];
-
-            // Show dialog to add/remove tags
-            const currentTags = image.tags || [];
-            const tagsString = currentTags.join(', ');
-            const escapedTagsString = escapeHtml(tagsString);
-
-            const newTagsString = await Dialog.prompt({
-                title: game.i18n.localize('NARRATOR.Gallery.ManageTags'),
-                content: `
-                    <form>
-                        <div class="form-group">
-                            <label>${game.i18n.localize('NARRATOR.Gallery.TagsLabel')}</label>
-                            <input type="text" name="tags" value="${escapedTagsString}"
-                                   placeholder="${game.i18n.localize('NARRATOR.Gallery.TagsPlaceholder')}" />
-                            <p class="notes">${game.i18n.localize('NARRATOR.Gallery.TagsHint')}</p>
-                        </div>
-                    </form>
-                `,
-                callback: (html) => {
-                    return html.find('[name="tags"]').val();
-                },
-                rejectClose: false
-            });
-
-            if (newTagsString !== null && newTagsString !== undefined) {
-                const newTags = newTagsString
-                    .split(',')
-                    .map(tag => tag.trim())
-                    .filter(tag => tag.length > 0);
-
-                if (this.onGalleryAction) {
-                    await this.onGalleryAction('setTags', { imageId: image.id, tags: newTags });
-                } else {
-                    // Fallback: update locally if no callback
-                    image.tags = newTags;
-                    this.render(false);
-                }
-            }
-        }
-    }
-
-    /**
-     * Handles show image to players button click
-     * @param {Event} event - Click event
-     * @private
-     */
-    async _onShowImage(event) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        const index = parseInt(event.currentTarget.dataset.index);
-        if (!isNaN(index) && index >= 0 && index < this.generatedImages.length) {
-            const image = this.generatedImages[index];
-
-            // Use Foundry's ImagePopout to show to all players
-            if (image.url) {
-                new ImagePopout(image.url, {
-                    title: image.prompt || game.i18n.localize('NARRATOR.Panel.GeneratedImage'),
-                    shareable: true
-                }).render(true);
-
-                // Notify that image is being shared
-                ui.notifications.info(game.i18n.localize('NARRATOR.Gallery.ImageShown'));
-            }
-        }
-    }
-
-    /**
      * Handles delete image button click
      * @param {Event} event - Click event
      * @private
      */
-    async _onDeleteImage(event) {
+    _onDeleteImage(event) {
         event.preventDefault();
         event.stopPropagation();
 
         const index = parseInt(event.currentTarget.dataset.index);
         if (!isNaN(index) && index >= 0 && index < this.generatedImages.length) {
-            const image = this.generatedImages[index];
-
-            // Confirm deletion
-            const confirmed = await Dialog.confirm({
-                title: game.i18n.localize('NARRATOR.Gallery.DeleteImage'),
-                content: `<p>${game.i18n.localize('NARRATOR.Gallery.DeleteConfirm')}</p>`,
-                yes: () => true,
-                no: () => false,
-                defaultYes: false
-            });
-
-            if (confirmed) {
-                if (this.onGalleryAction) {
-                    await this.onGalleryAction('deleteImage', { imageId: image.id });
-                } else {
-                    // Fallback: delete locally if no callback
-                    this.generatedImages.splice(index, 1);
-                    this.render(false);
-                }
-            }
+            this.generatedImages.splice(index, 1);
+            this.render(false);
         }
+    }
+
+    /**
+     * Handles speaker label click to edit
+     * @param {Event} event - Click event
+     * @private
+     */
+    async _onSpeakerLabelClick(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!this.speakerLabelService) {
+            return;
+        }
+
+        const speakerElement = event.currentTarget;
+        const originalSpeaker = speakerElement.textContent.trim();
+
+        // Create input element
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'speaker-label-input';
+        input.value = originalSpeaker;
+        input.placeholder = game.i18n.localize('NARRATOR.SpeakerLabels.NamePlaceholder');
+
+        // Replace the speaker label with the input
+        speakerElement.style.display = 'none';
+        speakerElement.parentElement.appendChild(input);
+        input.focus();
+        input.select();
+
+        // Save on blur or Enter key
+        const saveLabel = async () => {
+            const newLabel = input.value.trim();
+
+            if (newLabel && newLabel !== originalSpeaker) {
+                try {
+                    // Find the original speaker ID from the entry
+                    const entryElement = speakerElement.closest('.transcript-segment');
+                    const originalSpeakerId = entryElement?.dataset.speaker || originalSpeaker;
+
+                    await this.speakerLabelService.setLabel(originalSpeakerId, newLabel);
+
+                    // Update all transcript segments with this speaker
+                    this._updateTranscriptSpeakers(originalSpeakerId, newLabel);
+
+                    ui.notifications.info(
+                        game.i18n.format('NARRATOR.SpeakerLabels.NameAssigned', {
+                            speaker: newLabel
+                        })
+                    );
+
+                    // Re-render the panel to show updated labels
+                    this.render(false);
+                } catch (error) {
+                    ui.notifications.error(error.message);
+                    // Restore original display
+                    input.remove();
+                    speakerElement.style.display = '';
+                }
+            } else {
+                // Restore original display without changes
+                input.remove();
+                speakerElement.style.display = '';
+            }
+        };
+
+        // Handle blur event
+        input.addEventListener('blur', saveLabel);
+
+        // Handle key events
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                input.blur(); // Trigger save via blur handler
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                // Cancel editing - restore original display
+                input.remove();
+                speakerElement.style.display = '';
+            }
+        });
+    }
+
+    /**
+     * Handles copy transcript button click
+     * @param {Event} event - Click event
+     * @private
+     */
+    async _onCopyTranscript(event) {
+        event.preventDefault();
+
+        if (this.transcriptSegments.length === 0) {
+            return;
+        }
+
+        // Format transcript as text
+        const text = this.transcriptSegments
+            .map(segment => `[${segment.timestamp}] ${segment.speaker}: ${segment.text}`)
+            .join('\n\n');
+
+        await this._copyToClipboard(text);
+    }
+
+    /**
+     * Handles export transcript button click
+     * @param {Event} event - Click event
+     * @private
+     */
+    _onExportTranscript(event) {
+        event.preventDefault();
+
+        if (this.transcriptSegments.length === 0) {
+            return;
+        }
+
+        try {
+            // Format transcript as text
+            const text = this.transcriptSegments
+                .map(segment => `[${segment.timestamp}] ${segment.speaker}: ${segment.text}`)
+                .join('\n\n');
+
+            // Create blob and download
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const filename = `narrator-transcript-${timestamp}.txt`;
+
+            // Create temporary download link
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+
+            // Cleanup
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }, 100);
+
+            ui.notifications.info(game.i18n.localize('NARRATOR.Notifications.TranscriptExported'));
+        } catch (error) {
+            ui.notifications.error(game.i18n.localize('NARRATOR.Errors.ExportFailed'));
+        }
+    }
+
+    /**
+     * Handles clear transcript button click
+     * @param {Event} event - Click event
+     * @private
+     */
+    _onClearTranscript(event) {
+        event.preventDefault();
+        this.clearTranscript();
     }
 
     /**
@@ -766,15 +673,6 @@ export class NarratorPanel extends Application {
             timestamp: Date.now()
         });
 
-        this.render(false);
-    }
-
-    /**
-     * Updates the gallery with new images (typically from ImageGenerator)
-     * @param {Array} images - Array of gallery images
-     */
-    updateGallery(images) {
-        this.generatedImages = images || [];
         this.render(false);
     }
 
@@ -847,8 +745,63 @@ export class NarratorPanel extends Application {
     clearAll() {
         this.clearSuggestions();
         this.clearImages();
+        this.clearTranscript();
         this._lastTranscription = '';
         this.render(false);
+    }
+
+    /**
+     * Updates transcript segments
+     * @param {Array<{speaker: string, text: string, timestamp: number}>} segments - New transcript segments
+     */
+    updateTranscript(segments) {
+        if (!Array.isArray(segments)) {
+            return;
+        }
+
+        // Apply speaker labels if service is available
+        if (this.speakerLabelService) {
+            this.transcriptSegments = this.speakerLabelService.applyLabelsToSegments(segments);
+        } else {
+            this.transcriptSegments = segments;
+        }
+
+        this.render(false);
+    }
+
+    /**
+     * Adds new transcript segments to existing ones
+     * @param {Array<{speaker: string, text: string, timestamp: number}>} segments - New segments to add
+     */
+    addTranscriptSegments(segments) {
+        if (!Array.isArray(segments)) {
+            return;
+        }
+
+        // Apply speaker labels if service is available
+        let newSegments = segments;
+        if (this.speakerLabelService) {
+            newSegments = this.speakerLabelService.applyLabelsToSegments(segments);
+        }
+
+        this.transcriptSegments.push(...newSegments);
+        this.render(false);
+    }
+
+    /**
+     * Clears the transcript
+     */
+    clearTranscript() {
+        this.transcriptSegments = [];
+        this.render(false);
+    }
+
+    /**
+     * Sets the speaker label service instance
+     * @param {SpeakerLabelService} service - The speaker label service
+     */
+    setSpeakerLabelService(service) {
+        this.speakerLabelService = service;
     }
 
     /**
@@ -871,6 +824,25 @@ export class NarratorPanel extends Application {
         if (this._durationTimer) {
             clearInterval(this._durationTimer);
             this._durationTimer = null;
+        }
+    }
+
+    /**
+     * Updates speaker labels in transcript segments retroactively
+     * @param {string} originalSpeaker - The original speaker ID
+     * @param {string} newLabel - The new custom label
+     * @private
+     */
+    _updateTranscriptSpeakers(originalSpeaker, newLabel) {
+        if (!originalSpeaker || !newLabel) {
+            return;
+        }
+
+        // Update all segments that have this speaker
+        for (const segment of this.transcriptSegments) {
+            if (segment.speaker === originalSpeaker) {
+                segment.speaker = newLabel;
+            }
         }
     }
 

@@ -9,6 +9,7 @@ import { runTests as runTranscriptionTests } from './transcription.test.js';
 import { runTests as runAIAssistantTests } from './ai-assistant.test.js';
 import { runTests as runSettingsTests } from './settings.test.js';
 import { runTests as runValidationTests } from './validation.test.js';
+import { runTests as runSessionAnalyticsTests } from './session-analytics.test.js';
 
 /**
  * Runs all test suites and reports aggregate results
@@ -28,6 +29,7 @@ async function runAllTests() {
         results.push(await runAIAssistantTests());
         results.push(await runSettingsTests());
         results.push(await runValidationTests());
+        results.push(await runSessionAnalyticsTests());
     } catch (error) {
         console.error('\n❌ Test execution error:', error.message);
         return { success: false, error: error.message };

@@ -15,7 +15,9 @@
             "SensitivityHint": "Quanto rigorosamente rilevare quando i giocatori si allontanano dalla trama dell'avventura",
             "SensitivityLow": "Bassa - Solo grandi deviazioni",
             "SensitivityMedium": "Media - Bilanciato",
-            "SensitivityHigh": "Alta - Anche piccole variazioni"
+            "SensitivityHigh": "Alta - Anche piccole variazioni",
+            "SpeakerLabelsName": "Etichette Parlanti",
+            "SpeakerLabelsHint": "Abilita l'assegnazione di nomi personalizzati ai parlanti rilevati nella trascrizione"
         },
 
         "Panel": {
@@ -43,7 +45,11 @@
             "GeneratedImage": "Immagine Generata",
             "ListeningStatus": "In ascolto...",
             "JournalStatus": "{count} journal caricati",
-            "JournalStatusEmpty": "Nessun journal disponibile"
+            "JournalStatusEmpty": "Nessun journal disponibile",
+            "TranscriptTab": "Trascrizione",
+            "NoTranscript": "Nessuna trascrizione disponibile",
+            "ClearTranscript": "Cancella Trascrizione",
+            "ExportTranscript": "Esporta Trascrizione"
         },
 
         "Errors": {
@@ -81,7 +87,12 @@
             "UnexpectedError": "Si e verificato un errore imprevisto: {message}",
             "ServiceUnavailable": "Servizio temporaneamente non disponibile. Riprova tra qualche minuto.",
             "InvalidJournalId": "ID Journal non valido.",
-            "JournalNotFound": "Journal non trovato: {id}"
+            "JournalNotFound": "Journal non trovato: {id}",
+            "ExportFailed": "Esportazione trascrizione fallita. Riprova.",
+            "InvalidSpeaker": "ID parlante non valido",
+            "InvalidLabel": "Etichetta parlante non valida",
+            "EmptyLabel": "L'etichetta non può essere vuota",
+            "SaveMappingsFailed": "Impossibile salvare le mappature dei parlanti"
         },
 
         "Warnings": {
@@ -99,7 +110,8 @@
             "TranscriptionComplete": "Trascrizione completata",
             "ApiKeyUpdated": "Chiave API aggiornata",
             "MicrophoneReady": "Microfono pronto per la registrazione",
-            "PlayersOffTrack": "Attenzione: I giocatori si stanno allontanando dalla trama!"
+            "PlayersOffTrack": "Attenzione: I giocatori si stanno allontanando dalla trama!",
+            "TranscriptExported": "Trascrizione esportata con successo"
         },
 
         "OffTrack": {
@@ -144,38 +156,7 @@
             "NoCache": "Immagine non disponibile (URL scaduto e nessuna cache)",
             "ClickToEnlarge": "Clicca per ingrandire",
             "Delete": "Elimina",
-            "Download": "Scarica",
-            "FilterByCategory": "Filtra per Categoria",
-            "CategoryAll": "Tutte le Categorie",
-            "CategoryNPC": "Personaggi NPC",
-            "CategoryScene": "Scene",
-            "CategoryInfographic": "Infografiche",
-            "CategoryIllustration": "Illustrazioni",
-            "SearchPlaceholder": "Cerca immagini...",
-            "NoImagesFound": "Nessuna immagine trovata con i filtri selezionati.",
-            "ClearFilters": "Cancella Filtri",
-            "ImageCount": "{count} immagini",
-            "ImageCountSingle": "1 immagine"
-        },
-
-        "Gallery": {
-            "FilterLabel": "Filtro",
-            "FilterAll": "Tutte",
-            "FilterFavorites": "Preferite",
-            "FilterByCategory": "Per Categoria",
-            "SearchPlaceholder": "Cerca immagini...",
-            "ClearSearch": "Cancella Ricerca",
-            "ToggleFavorite": "Aggiungi/Rimuovi dai Preferiti",
-            "ManageTags": "Gestisci Tag",
-            "ShowToPlayers": "Mostra ai Giocatori",
-            "DeleteImage": "Elimina Immagine",
-            "FavoriteImage": "Immagine Preferita",
-            "CategoryLabel": "Categoria",
-            "DeleteConfirm": "Sei sicuro di voler eliminare questa immagine? Questa azione non può essere annullata.",
-            "ImageShown": "Immagine mostrata ai giocatori",
-            "TagsLabel": "Tag (separati da virgola)",
-            "TagsPlaceholder": "location, npc, quest, etc.",
-            "TagsHint": "Inserisci tag separati da virgola per organizzare le immagini"
+            "Download": "Scarica"
         },
 
         "Tooltips": {
@@ -183,10 +164,7 @@
             "GenerateImage": "Genera un'immagine basata sul contesto attuale",
             "ClearImages": "Cancella tutte le immagini generate",
             "CopyText": "Copia il testo negli appunti",
-            "OpenSettings": "Apri le impostazioni del modulo",
-            "FilterCategory": "Filtra le immagini per categoria",
-            "SearchImages": "Cerca nelle descrizioni delle immagini",
-            "ClearFilters": "Rimuovi tutti i filtri applicati"
+            "OpenSettings": "Apri le impostazioni del modulo"
         },
 
         "Accessibility": {
@@ -195,6 +173,32 @@
             "TabNavigation": "Navigazione schede",
             "ImageGallery": "Galleria immagini",
             "SuggestionsList": "Lista suggerimenti"
+        },
+
+        "SpeakerLabels": {
+            "Speaker": "Parlante",
+            "SpeakerNumber": "Parlante {number}",
+            "UnknownSpeaker": "Parlante Sconosciuto",
+            "AssignName": "Assegna Nome",
+            "EditName": "Modifica Nome",
+            "ResetName": "Ripristina Nome",
+            "NamePlaceholder": "Inserisci nome giocatore...",
+            "ManageSpeakers": "Gestisci Parlanti",
+            "SpeakerList": "Lista Parlanti",
+            "NoSpeakersDetected": "Nessun parlante rilevato nella trascrizione",
+            "SpeakersDetected": "{count} parlanti rilevati",
+            "ClearAllNames": "Cancella Tutti i Nomi",
+            "ConfirmClearNames": "Sei sicuro di voler cancellare tutti i nomi dei parlanti?",
+            "NameAssigned": "Nome assegnato a {speaker}",
+            "NameCleared": "Nome rimosso da {speaker}",
+            "AllNamesCleared": "Tutti i nomi dei parlanti sono stati cancellati",
+            "DiarizationEnabled": "Identificazione parlanti abilitata",
+            "DiarizationDisabled": "Identificazione parlanti disabilitata",
+            "ShowSpeakerLabels": "Mostra Etichette Parlanti",
+            "HideSpeakerLabels": "Nascondi Etichette Parlanti",
+            "ColorCode": "Codice Colore",
+            "SpeakerColor": "Colore Parlante {number}",
+            "TranscriptionWithSpeakers": "Trascrizione con Parlanti"
         }
     }
 }

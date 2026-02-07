@@ -20,7 +20,7 @@ export const SETTINGS = {
     MULTI_LANGUAGE_MODE: 'multiLanguageMode',
     PANEL_POSITION: 'panelPosition',
     OFF_TRACK_SENSITIVITY: 'offTrackSensitivity',
-    IMAGE_GALLERY: 'imageGallery'
+    SPEAKER_LABELS: 'speakerLabels'
 };
 
 /**
@@ -96,12 +96,14 @@ export function registerSettings() {
         }
     });
 
-    // Image gallery storage (not shown in config UI)
-    game.settings.register(MODULE_ID, SETTINGS.IMAGE_GALLERY, {
+    // Speaker labels for transcription
+    game.settings.register(MODULE_ID, SETTINGS.SPEAKER_LABELS, {
+        name: 'NARRATOR.Settings.SpeakerLabelsName',
+        hint: 'NARRATOR.Settings.SpeakerLabelsHint',
         scope: 'world',
-        config: false,
-        type: Object,
-        default: []
+        config: true,
+        type: Boolean,
+        default: true
     });
 }
 
@@ -176,20 +178,11 @@ export class SettingsManager {
     }
 
     /**
-     * Gets the image gallery
-     * @returns {Array} The image gallery array
+     * Gets the speaker labels setting
+     * @returns {boolean} True if speaker labels are enabled
      */
-    getImageGallery() {
-        return game.settings.get(MODULE_ID, SETTINGS.IMAGE_GALLERY) || [];
-    }
-
-    /**
-     * Sets the image gallery
-     * @param {Array} gallery - The image gallery array
-     * @returns {Promise<void>}
-     */
-    async setImageGallery(gallery) {
-        await game.settings.set(MODULE_ID, SETTINGS.IMAGE_GALLERY, gallery);
+    getSpeakerLabels() {
+        return game.settings.get(MODULE_ID, SETTINGS.SPEAKER_LABELS) ?? true;
     }
 
     /**
@@ -229,7 +222,7 @@ export class SettingsManager {
             multiLanguageMode: this.getMultiLanguageMode(),
             panelPosition: this.getPanelPosition(),
             offTrackSensitivity: this.getOffTrackSensitivity(),
-            imageGallery: this.getImageGallery()
+            speakerLabels: this.getSpeakerLabels()
         };
     }
 }
