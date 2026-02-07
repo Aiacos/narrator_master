@@ -7,6 +7,7 @@ Narrator Master is a Foundry VTT module that helps Dungeon Masters run their ses
 ![Foundry VTT v13+](https://img.shields.io/badge/Foundry%20VTT-v13%2B-green)
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
+![Languages](https://img.shields.io/badge/languages-7-success)
 
 ## Features
 
@@ -17,7 +18,7 @@ Narrator Master is a Foundry VTT module that helps Dungeon Masters run their ses
 - **Off-Track Detection** - Receive red-highlighted warnings when players deviate from the planned adventure
 - **Adaptive Storytelling** - Generate narrative bridges to guide players back on track while staying faithful to the adventure
 - **Image Generation** - Create infographics and scene illustrations on demand via OpenAI's image generation
-- **Italian Interface** - Full Italian localization for all UI elements
+- **Multilingual Support** - Full localization in 7 languages: English, German, French, Spanish, Portuguese, Italian, and Japanese
 
 ## Requirements
 

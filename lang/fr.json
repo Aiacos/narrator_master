@@ -1,0 +1,162 @@
+{
+    "NARRATOR": {
+        "PanelTitle": "Narrator Master - Assistant MJ",
+
+        "Settings": {
+            "ApiKeyName": "Clé API OpenAI",
+            "ApiKeyHint": "Votre clé API OpenAI. Nécessite un compte avec des crédits (minimum 5$). Obtenez-la sur platform.openai.com/api-keys",
+            "LanguageName": "Langue de Transcription",
+            "LanguageHint": "Langue pour la transcription audio (par défaut : Français)",
+            "PanelPositionName": "Position du Panneau",
+            "PanelPositionHint": "Position sauvegardée du panneau MJ",
+            "SensitivityName": "Sensibilité de Détection Hors-Sujet",
+            "SensitivityHint": "Niveau de rigueur pour détecter quand les joueurs s'éloignent de l'intrigue de l'aventure",
+            "SensitivityLow": "Faible - Seulement grandes déviations",
+            "SensitivityMedium": "Moyenne - Équilibrée",
+            "SensitivityHigh": "Élevée - Même petites variations"
+        },
+
+        "Panel": {
+            "Title": "Narrator Master",
+            "TogglePanel": "Ouvrir/Fermer Panneau MJ",
+            "OpenSettings": "Ouvrir Paramètres",
+            "ToggleRecording": "Enregistrement",
+            "StartRecording": "Démarrer Enregistrement",
+            "StopRecording": "Arrêter Enregistrement",
+            "PauseRecording": "Pause",
+            "ResumeRecording": "Reprendre",
+            "GenerateImage": "Générer Image",
+            "AssistantTab": "Assistant",
+            "ImagesTab": "Images",
+            "NoSuggestions": "Aucune suggestion disponible. Démarrez l'enregistrement et l'assistant analysera automatiquement la conversation.",
+            "NoImages": "Aucune image générée. Utilisez le bouton 'Générer Image' pour créer des infographies.",
+            "OffTrackWarning": "ATTENTION : Hors-Sujet !",
+            "ReturnToStory": "Pour les Ramener dans l'Histoire",
+            "NoApiKey": "Clé API non configurée",
+            "ConfigureSettings": "Configurer Paramètres",
+            "Processing": "Traitement en cours...",
+            "ClearImages": "Effacer Images",
+            "CopyToClipboard": "Copier dans le Presse-Papiers",
+            "GeneratingImage": "Génération de l'image en cours...",
+            "GeneratedImage": "Image Générée",
+            "ListeningStatus": "En écoute...",
+            "JournalStatus": "{count} journaux chargés",
+            "JournalStatusEmpty": "Aucun journal disponible"
+        },
+
+        "Errors": {
+            "NotInitialized": "Narrator Master n'est pas encore initialisé. Veuillez attendre le chargement complet.",
+            "InitFailed": "Échec de l'initialisation de Narrator Master",
+            "NoApiKey": "Clé API OpenAI non configurée. Allez dans les paramètres du module pour l'ajouter.",
+            "InvalidAudio": "Audio invalide. Assurez-vous que l'enregistrement contient des données audio.",
+            "FileTooLarge": "Fichier audio trop volumineux ({size}MB). La limite maximale est de 25MB.",
+            "InvalidApiKey": "Clé API invalide. Vérifiez votre clé API OpenAI dans les paramètres.",
+            "RateLimited": "Limite de requêtes atteinte. Veuillez patienter quelques instants avant de réessayer.",
+            "BadRequest": "Requête invalide : {details}",
+            "ServerError": "Erreur du serveur OpenAI. Veuillez réessayer plus tard.",
+            "TranscriptionFailed": "Échec de la transcription (Erreur {status}) : {message}",
+            "NoTranscription": "Aucune transcription disponible pour l'analyse.",
+            "NoPrompt": "Aucun prompt fourni pour la génération de l'image.",
+            "NoDescription": "Aucune description fournie pour l'infographie.",
+            "ContentPolicy": "Le contenu viole les politiques d'OpenAI. Essayez avec une description différente.",
+            "AIAssistantFailed": "Échec de l'assistant IA (Erreur {status}) : {message}",
+            "ImageGenerationFailed": "Échec de la génération d'image (Erreur {status}) : {message}",
+            "NoContextForImage": "Aucun contexte disponible pour générer une image. Enregistrez d'abord de l'audio.",
+            "CopyFailed": "Impossible de copier dans le presse-papiers.",
+            "MicrophoneNotSupported": "Votre navigateur ne prend pas en charge la capture audio du microphone.",
+            "MicrophonePermissionDenied": "Permission du microphone refusée. Autorisez l'accès au microphone dans les paramètres du navigateur.",
+            "MicrophoneNotFound": "Aucun microphone trouvé. Connectez un microphone et réessayez.",
+            "MicrophoneInUse": "Le microphone est utilisé par une autre application. Fermez les autres applications utilisant le microphone.",
+            "MicrophoneConstraints": "Le microphone ne répond pas aux exigences requises.",
+            "MicrophoneSecurityError": "Erreur de sécurité : la capture audio nécessite HTTPS en production.",
+            "MicrophoneGeneric": "Erreur microphone : {error}",
+            "RecordingFailed": "Échec de l'enregistrement. Veuillez réessayer.",
+            "RecorderInitFailed": "Impossible d'initialiser l'enregistreur : {error}",
+            "NetworkError": "Erreur de connexion. Vérifiez votre connexion Internet et réessayez.",
+            "Timeout": "La requête a pris trop de temps. Veuillez réessayer plus tard.",
+            "UnexpectedError": "Une erreur inattendue s'est produite : {message}",
+            "ServiceUnavailable": "Service temporairement indisponible. Veuillez réessayer dans quelques minutes.",
+            "InvalidJournalId": "ID de journal invalide.",
+            "JournalNotFound": "Journal non trouvé : {id}"
+        },
+
+        "Warnings": {
+            "ConfigIncomplete": "Configuration incomplète"
+        },
+
+        "Notifications": {
+            "CopiedToClipboard": "Copié dans le presse-papiers !",
+            "RecordingStarted": "Enregistrement démarré",
+            "RecordingStopped": "Enregistrement arrêté",
+            "JournalsLoaded": "Tous les journaux chargés ({count})",
+            "ImageGenerated": "Image générée avec succès",
+            "SettingsSaved": "Paramètres sauvegardés",
+            "ModuleReady": "Narrator Master prêt",
+            "TranscriptionComplete": "Transcription terminée",
+            "ApiKeyUpdated": "Clé API mise à jour",
+            "MicrophoneReady": "Microphone prêt pour l'enregistrement",
+            "PlayersOffTrack": "Attention : Les joueurs s'éloignent de l'intrigue !"
+        },
+
+        "OffTrack": {
+            "NoContext": "Aucun contexte d'aventure défini pour la détection hors-sujet.",
+            "ParseError": "Impossible d'analyser la réponse de détection hors-sujet.",
+            "Warning": "Les joueurs s'éloignent de l'intrigue de l'aventure.",
+            "Severe": "Les joueurs sont complètement hors-sujet par rapport à l'aventure.",
+            "Minor": "Légère déviation de l'intrigue principale."
+        },
+
+        "Suggestions": {
+            "TypeNarration": "Narration",
+            "TypeDialogue": "Dialogue",
+            "TypeAction": "Action",
+            "TypeReference": "Référence",
+            "HighConfidence": "Haute confiance",
+            "MediumConfidence": "Confiance moyenne",
+            "LowConfidence": "Faible confiance"
+        },
+
+        "Recording": {
+            "StateInactive": "Inactif",
+            "StateRecording": "En enregistrement",
+            "StatePaused": "En pause",
+            "StateProcessing": "Traitement",
+            "AudioLevelLow": "Niveau audio faible",
+            "AudioLevelNormal": "Niveau audio normal",
+            "AudioLevelHigh": "Niveau audio élevé"
+        },
+
+        "Journal": {
+            "NoJournalFound": "Journal non trouvé",
+            "ParsingJournal": "Analyse du journal en cours...",
+            "JournalEmpty": "Le journal sélectionné est vide.",
+            "PageCount": "{count} pages trouvées",
+            "UnnamedPage": "Page sans nom"
+        },
+
+        "Images": {
+            "Generating": "Génération en cours...",
+            "CacheExpired": "URL de l'image expirée, utilisation du cache local",
+            "NoCache": "Image non disponible (URL expirée et aucun cache)",
+            "ClickToEnlarge": "Cliquez pour agrandir",
+            "Delete": "Supprimer",
+            "Download": "Télécharger"
+        },
+
+        "Tooltips": {
+            "ToggleRecording": "Démarrer ou arrêter l'enregistrement audio",
+            "GenerateImage": "Générer une image basée sur le contexte actuel",
+            "ClearImages": "Effacer toutes les images générées",
+            "CopyText": "Copier le texte dans le presse-papiers",
+            "OpenSettings": "Ouvrir les paramètres du module"
+        },
+
+        "Accessibility": {
+            "RecordButton": "Bouton d'enregistrement",
+            "AudioLevel": "Indicateur de niveau audio",
+            "TabNavigation": "Navigation par onglets",
+            "ImageGallery": "Galerie d'images",
+            "SuggestionsList": "Liste de suggestions"
+        }
+    }
+}
