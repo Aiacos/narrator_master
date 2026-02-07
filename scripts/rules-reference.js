@@ -27,6 +27,17 @@ const MAX_CACHE_SIZE = 1000;
  * @property {string} category - Category (e.g., 'combat', 'spells', 'conditions')
  * @property {string[]} tags - Searchable tags
  * @property {string} [source] - Source book reference
+ * @property {Citation} [citation] - Full citation information including page numbers
+ */
+
+/**
+ * Represents citation information for a rule
+ * @typedef {Object} Citation
+ * @property {string} compendiumName - Name of the compendium pack
+ * @property {string} compendiumLabel - Display label of the compendium
+ * @property {string} [sourcebook] - Source book abbreviation (e.g., 'PHB', 'DMG', 'MM')
+ * @property {number|string} [page] - Page number in the source book
+ * @property {string} formatted - Formatted citation string for display
  */
 
 /**
@@ -643,6 +654,9 @@ export class RulesReferenceService {
                 }
             }
 
+            // Extract citation information
+            const citation = this._extractCitation(pack, doc);
+
             // Create rule entry
             return {
                 id: `${pack.collection}.${indexEntry._id}`,
@@ -650,7 +664,8 @@ export class RulesReferenceService {
                 content: content.trim(),
                 category,
                 tags: this._extractTags(doc),
-                source: pack.metadata?.label || pack.collection
+                source: pack.metadata?.label || pack.collection,
+                citation
             };
         } catch (error) {
             console.warn(`${MODULE_ID} | Error extracting compendium entry ${indexEntry._id}:`, error);
@@ -712,5 +727,163 @@ export class RulesReferenceService {
         }
 
         return tags.filter(tag => tag && typeof tag === 'string');
+    }
+
+    /**
+     * Extracts citation information from a compendium document
+     * @param {CompendiumCollection} pack - The compendium pack
+     * @param {Document} doc - The document to extract citation from
+     * @returns {Citation} Citation information
+     * @private
+     */
+    _extractCitation(pack, doc) {
+        const citation = {
+            compendiumName: pack.collection,
+            compendiumLabel: pack.metadata?.label || pack.collection,
+            sourcebook: null,
+            page: null,
+            formatted: ''
+        };
+
+        // Try to extract source book and page from various locations
+        // Check flags (common place for source information)
+        if (doc.flags?.core?.sourceId) {
+            const sourceMatch = doc.flags.core.sourceId.match(/Compendium\.([^.]+)\.([^.]+)/);
+            if (sourceMatch) {
+                citation.sourcebook = this._parseSourcebookAbbreviation(sourceMatch[1]);
+            }
+        }
+
+        // Check system data for source information (dnd5e system)
+        if (doc.system?.source) {
+            const source = doc.system.source;
+
+            // Extract source book abbreviation
+            if (typeof source === 'string') {
+                citation.sourcebook = this._parseSourcebookAbbreviation(source);
+
+                // Try to extract page number from source string (e.g., "PHB pg. 123" or "PHB 123")
+                const pageMatch = source.match(/(?:pg?\.?\s*|p\.?\s*)?(\d+)/i);
+                if (pageMatch) {
+                    citation.page = parseInt(pageMatch[1], 10);
+                }
+            } else if (typeof source === 'object') {
+                // Some systems use object format
+                if (source.book) {
+                    citation.sourcebook = this._parseSourcebookAbbreviation(source.book);
+                }
+                if (source.page) {
+                    citation.page = parseInt(source.page, 10);
+                }
+            }
+        }
+
+        // Check for page in document metadata
+        if (!citation.page && doc.system?.details?.page) {
+            citation.page = parseInt(doc.system.details.page, 10);
+        }
+
+        // Fallback: try to extract source from pack name
+        if (!citation.sourcebook) {
+            citation.sourcebook = this._parseSourcebookAbbreviation(pack.collection);
+        }
+
+        // Format the citation string
+        citation.formatted = this._formatCitation(citation);
+
+        return citation;
+    }
+
+    /**
+     * Parses a source book abbreviation from a string
+     * @param {string} str - String that may contain a source abbreviation
+     * @returns {string|null} The parsed abbreviation or null
+     * @private
+     */
+    _parseSourcebookAbbreviation(str) {
+        if (!str || typeof str !== 'string') {
+            return null;
+        }
+
+        const normalized = str.toUpperCase().trim();
+
+        // Known D&D 5e source abbreviations
+        const knownSources = {
+            'PHB': 'PHB',
+            'PLAYER': 'PHB',
+            'PLAYERS': 'PHB',
+            'PLAYERSHANDBOOK': 'PHB',
+            'DMG': 'DMG',
+            'DUNGEON': 'DMG',
+            'DUNGEONMASTER': 'DMG',
+            'MM': 'MM',
+            'MONSTER': 'MM',
+            'MONSTERS': 'MM',
+            'XGTE': 'XGtE',
+            'XANATHAR': 'XGtE',
+            'TCE': 'TCE',
+            'TASHA': 'TCE',
+            'VGTM': 'VGtM',
+            'VOLO': 'VGtM',
+            'MTOF': 'MToF',
+            'MORDENKAINEN': 'MToF',
+            'SCAG': 'SCAG',
+            'SWORD': 'SCAG',
+            'EE': 'EE',
+            'ELEMENTAL': 'EE',
+            'EEPC': 'EEPC',
+            'SRD': 'SRD',
+            'BASIC': 'SRD'
+        };
+
+        // Try exact match first
+        if (knownSources[normalized]) {
+            return knownSources[normalized];
+        }
+
+        // Try to find known source in the string
+        for (const [key, value] of Object.entries(knownSources)) {
+            if (normalized.includes(key)) {
+                return value;
+            }
+        }
+
+        // If no known source found, try to extract any uppercase abbreviation
+        const abbrevMatch = str.match(/\b([A-Z]{2,5})\b/);
+        if (abbrevMatch) {
+            return abbrevMatch[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * Formats a citation object into a display string
+     * @param {Citation} citation - The citation information
+     * @returns {string} Formatted citation string
+     * @private
+     */
+    _formatCitation(citation) {
+        const parts = [];
+
+        // Add compendium label
+        if (citation.compendiumLabel) {
+            parts.push(citation.compendiumLabel);
+        }
+
+        // Add source book and page
+        if (citation.sourcebook) {
+            if (citation.page) {
+                parts.push(`${citation.sourcebook} p. ${citation.page}`);
+            } else {
+                parts.push(citation.sourcebook);
+            }
+        } else if (citation.page) {
+            // Page without source book
+            parts.push(`p. ${citation.page}`);
+        }
+
+        // Join parts with separator
+        return parts.join(' - ');
     }
 }
