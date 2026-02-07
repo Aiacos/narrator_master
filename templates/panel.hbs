@@ -170,6 +170,62 @@
                 </div>
                 {{/if}}
             </div>
+
+            {{!-- Rules Q&A Section --}}
+            {{#if hasRules}}
+            <div class="rules-qa-section">
+                <div class="rules-header">
+                    <h4>{{i18n.rulesQuestions}}</h4>
+                    <button type="button" class="clear-rules" title="{{i18n.clearAllRules}}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="rules-content">
+                    {{#each rulesAnswers}}
+                    <div class="rule-item {{#if this.expanded}}expanded{{/if}}" data-index="{{@index}}">
+                        <div class="rule-question">
+                            <i class="fas fa-book-open"></i>
+                            <span class="question-text">{{this.question}}</span>
+                            <div class="rule-actions">
+                                <button type="button" class="expand-rule" title="{{#if this.expanded}}{{../i18n.collapseAnswer}}{{else}}{{../i18n.expandAnswer}}{{/if}}">
+                                    <i class="fas {{#if this.expanded}}fa-chevron-up{{else}}fa-chevron-down{{/if}}"></i>
+                                </button>
+                                <button type="button" class="dismiss-rule" title="{{../i18n.dismissRule}}">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        {{#if this.expanded}}
+                        <div class="rule-answer">
+                            <div class="answer-content">
+                                {{this.answer}}
+                            </div>
+
+                            {{#if this.citation}}
+                            <div class="rule-citation">
+                                <i class="fas fa-bookmark"></i>
+                                <span class="citation-text">{{this.citation}}</span>
+                                {{#if this.source}}
+                                <span class="citation-source">{{this.source}}</span>
+                                {{/if}}
+                            </div>
+                            {{/if}}
+
+                            <div class="answer-actions">
+                                <button type="button" class="copy-rule-answer" title="{{../i18n.copyAnswer}}">
+                                    <i class="fas fa-copy"></i>
+                                    {{../i18n.copyAnswer}}
+                                </button>
+                            </div>
+                        </div>
+                        {{/if}}
+                    </div>
+                    {{/each}}
+                </div>
+            </div>
+            {{/if}}
         </div>
 
         {{!-- Images Tab --}}
