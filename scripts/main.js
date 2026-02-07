@@ -670,15 +670,21 @@ class NarratorMaster {
         }
 
         try {
+            // Get current scene type for scene-aware image generation
+            const currentScene = this.panel?.getCurrentScene();
+            const sceneType = currentScene?.type || null;
+
             const result = await this.imageGenerator.generateInfographic(context, {
                 style: 'fantasy',
-                mood: 'dramatic'
+                mood: 'dramatic',
+                sceneType: sceneType
             });
 
             if (this.panel && result.url) {
                 this.panel.addImage({
                     url: result.base64 ? `data:image/png;base64,${result.base64}` : result.url,
-                    prompt: result.prompt
+                    prompt: result.prompt,
+                    sceneType: sceneType
                 });
 
                 ErrorNotificationHelper.info(game.i18n.localize('NARRATOR.Notifications.ImageGenerated'));
