@@ -427,10 +427,10 @@ export class NarratorPanel extends Application {
                 const button = event.currentTarget;
                 button.classList.add('copy-success');
 
-                // Remove the class after animation completes
+                // Remove the class after animation completes (1.5s)
                 setTimeout(() => {
                     button.classList.remove('copy-success');
-                }, 1000);
+                }, 1500);
             }
         } catch (error) {
             ui.notifications.error(game.i18n.localize('NARRATOR.Errors.CopyFailed'));
