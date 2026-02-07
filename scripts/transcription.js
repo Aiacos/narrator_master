@@ -588,13 +588,16 @@ export class TranscriptionService {
      * Gets the combined text from recent transcriptions
      * Useful for providing context to AI assistant
      * @param {number} [count=5] - Number of recent transcriptions to include
-     * @returns {string} Combined text with speaker labels
+     * @returns {string} Combined text with speaker and language labels
      */
     getRecentTranscriptionText(count = 5) {
         const recent = this.getHistory(count);
         return recent.map(result => {
             return result.segments
-                .map(seg => `${seg.speaker}: ${seg.text}`)
+                .map(seg => {
+                    const languageLabel = seg.language ? ` (${seg.language})` : '';
+                    return `${seg.speaker}${languageLabel}: ${seg.text}`;
+                })
                 .join('\n');
         }).join('\n\n');
     }
