@@ -109,6 +109,171 @@ export async function runTests() {
         teardown();
     });
 
+    // XSS Security Tests
+    // Test: stripHtml safely handles script tags
+    runner.test('stripHtml safely strips script tags without execution', async () => {
+        await setup();
+
+        const parser = new JournalParser();
+
+        const result = parser.stripHtml('<p>Hello</p><script>alert(1)</script><p>World</p>');
+
+        assert.equal(result, 'Hello World', 'Script tags should be completely removed');
+        assert.ok(!result.includes('script'), 'Result should not contain script text');
+        assert.ok(!result.includes('alert'), 'Result should not contain script content');
+
+        teardown();
+    });
+
+    // Test: stripHtml safely handles img with onerror
+    runner.test('stripHtml safely strips img onerror handlers', async () => {
+        await setup();
+
+        const parser = new JournalParser();
+
+        const result = parser.stripHtml('<p>Image test</p><img src=x onerror=alert(1)>');
+
+        assert.equal(result, 'Image test', 'Image with onerror should be stripped');
+        assert.ok(!result.includes('onerror'), 'Result should not contain onerror');
+        assert.ok(!result.includes('alert'), 'Result should not contain alert');
+
+        teardown();
+    });
+
+    // Test: stripHtml safely handles SVG with onload
+    runner.test('stripHtml safely strips SVG onload handlers', async () => {
+        await setup();
+
+        const parser = new JournalParser();
+
+        const result = parser.stripHtml('<p>SVG test</p><svg onload=alert(1)></svg>');
+
+        assert.equal(result, 'SVG test', 'SVG with onload should be stripped');
+        assert.ok(!result.includes('onload'), 'Result should not contain onload');
+        assert.ok(!result.includes('alert'), 'Result should not contain alert');
+
+        teardown();
+    });
+
+    // Test: stripHtml safely handles inline event handlers
+    runner.test('stripHtml safely strips inline event handlers', async () => {
+        await setup();
+
+        const parser = new JournalParser();
+
+        const xssPayloads = [
+            '<div onclick=alert(1)>Click me</div>',
+            '<body onload=alert(1)>Content</body>',
+            '<input onfocus=alert(1)>',
+            '<button onmouseover=alert(1)>Hover</button>'
+        ];
+
+        for (const payload of xssPayloads) {
+            const result = parser.stripHtml(payload);
+            assert.ok(!result.includes('alert'), `Should not contain alert for payload: ${payload}`);
+            assert.ok(!result.includes('onclick'), 'Should not contain onclick');
+            assert.ok(!result.includes('onload'), 'Should not contain onload');
+            assert.ok(!result.includes('onfocus'), 'Should not contain onfocus');
+            assert.ok(!result.includes('onmouseover'), 'Should not contain onmouseover');
+        }
+
+        teardown();
+    });
+
+    // Test: stripHtml safely handles javascript: URLs
+    runner.test('stripHtml safely strips javascript: protocol URLs', async () => {
+        await setup();
+
+        const parser = new JournalParser();
+
+        const result = parser.stripHtml('<a href="javascript:alert(1)">Click</a>');
+
+        assert.equal(result, 'Click', 'Link text should be preserved');
+        assert.ok(!result.includes('javascript:'), 'Result should not contain javascript: protocol');
+        assert.ok(!result.includes('alert'), 'Result should not contain alert');
+
+        teardown();
+    });
+
+    // Test: stripHtml safely handles data: URLs with scripts
+    runner.test('stripHtml safely strips data: URLs with scripts', async () => {
+        await setup();
+
+        const parser = new JournalParser();
+
+        const result = parser.stripHtml('<a href="data:text/html,<script>alert(1)</script>">Link</a>');
+
+        assert.equal(result, 'Link', 'Link text should be preserved');
+        assert.ok(!result.includes('data:'), 'Result should not contain data: protocol');
+        assert.ok(!result.includes('alert'), 'Result should not contain alert');
+
+        teardown();
+    });
+
+    // Test: stripHtml safely handles iframe injection
+    runner.test('stripHtml safely strips iframe tags', async () => {
+        await setup();
+
+        const parser = new JournalParser();
+
+        const result = parser.stripHtml('<p>Before</p><iframe src="javascript:alert(1)"></iframe><p>After</p>');
+
+        assert.equal(result, 'Before After', 'Iframe should be completely removed');
+        assert.ok(!result.includes('iframe'), 'Result should not contain iframe');
+        assert.ok(!result.includes('alert'), 'Result should not contain alert');
+
+        teardown();
+    });
+
+    // Test: stripHtml safely handles object and embed tags
+    runner.test('stripHtml safely strips object and embed tags', async () => {
+        await setup();
+
+        const parser = new JournalParser();
+
+        const result1 = parser.stripHtml('<object data="javascript:alert(1)"></object>');
+        const result2 = parser.stripHtml('<embed src="javascript:alert(1)">');
+
+        assert.equal(result1, '', 'Object tag should be removed');
+        assert.equal(result2, '', 'Embed tag should be removed');
+        assert.ok(!result1.includes('alert'), 'Result should not contain alert');
+        assert.ok(!result2.includes('alert'), 'Result should not contain alert');
+
+        teardown();
+    });
+
+    // Test: stripHtml safely handles mixed XSS attacks
+    runner.test('stripHtml safely handles complex mixed XSS payloads', async () => {
+        await setup();
+
+        const parser = new JournalParser();
+
+        const complexPayload = `
+            <p>Legitimate content</p>
+            <script>alert('XSS1')</script>
+            <img src=x onerror=alert('XSS2')>
+            <svg onload=alert('XSS3')></svg>
+            <a href="javascript:alert('XSS4')">Link</a>
+            <div onclick=alert('XSS5')>Click</div>
+            <p>More legitimate content</p>
+        `;
+
+        const result = parser.stripHtml(complexPayload);
+
+        assert.ok(result.includes('Legitimate content'), 'Should preserve legitimate content');
+        assert.ok(result.includes('More legitimate content'), 'Should preserve all legitimate content');
+        assert.ok(result.includes('Link'), 'Should preserve link text');
+        assert.ok(result.includes('Click'), 'Should preserve div text');
+        assert.ok(!result.includes('alert'), 'Should not contain any alert calls');
+        assert.ok(!result.includes('script'), 'Should not contain script tags');
+        assert.ok(!result.includes('onerror'), 'Should not contain onerror handlers');
+        assert.ok(!result.includes('onload'), 'Should not contain onload handlers');
+        assert.ok(!result.includes('onclick'), 'Should not contain onclick handlers');
+        assert.ok(!result.includes('javascript:'), 'Should not contain javascript: protocol');
+
+        teardown();
+    });
+
     // Test: parseJournal throws error for invalid journal ID
     runner.test('parseJournal throws error for invalid journal ID', async () => {
         await setup();
