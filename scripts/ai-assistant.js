@@ -676,9 +676,11 @@ Scrivi una breve narrazione (2-3 frasi) che il DM può usare per riportare delic
 
             return {
                 isOffTrack: Boolean(parsed.isOffTrack),
-                severity: parseFloat(parsed.severity) || 0,
-                reason: parsed.reason || '',
-                narrativeBridge: parsed.narrativeBridge
+                severity: this._validateNumber(parsed.severity, 0, 1, 'severity'),
+                reason: this._validateString(parsed.reason || '', 1000, 'reason'),
+                narrativeBridge: parsed.narrativeBridge ?
+                    this._validateString(parsed.narrativeBridge, 2000, 'narrativeBridge') :
+                    undefined
             };
 
         } catch (error) {
