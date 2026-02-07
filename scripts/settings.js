@@ -17,6 +17,7 @@ export const MODULE_ID = 'narrator-master';
 export const SETTINGS = {
     OPENAI_API_KEY: 'openaiApiKey',
     TRANSCRIPTION_LANGUAGE: 'transcriptionLanguage',
+    MULTI_LANGUAGE_MODE: 'multiLanguageMode',
     PANEL_POSITION: 'panelPosition',
     OFF_TRACK_SENSITIVITY: 'offTrackSensitivity'
 };
@@ -56,6 +57,16 @@ export function registerSettings() {
             'fr': 'Francais',
             'es': 'Espanol'
         }
+    });
+
+    // Multi-language mode - Enable automatic language detection
+    game.settings.register(MODULE_ID, SETTINGS.MULTI_LANGUAGE_MODE, {
+        name: 'NARRATOR.Settings.MultiLanguageModeName',
+        hint: 'NARRATOR.Settings.MultiLanguageModeHint',
+        scope: 'world',
+        config: true,
+        type: Boolean,
+        default: false
     });
 
     // Panel position settings (stored as JSON string)
@@ -122,6 +133,14 @@ export class SettingsManager {
     }
 
     /**
+     * Gets the multi-language mode setting
+     * @returns {boolean} True if multi-language mode is enabled
+     */
+    getMultiLanguageMode() {
+        return game.settings.get(MODULE_ID, SETTINGS.MULTI_LANGUAGE_MODE) || false;
+    }
+
+    /**
      * Gets the panel position
      * @returns {Object} The panel position {top, left}
      */
@@ -180,6 +199,7 @@ export class SettingsManager {
         return {
             apiKey: this.getApiKey(),
             transcriptionLanguage: this.getTranscriptionLanguage(),
+            multiLanguageMode: this.getMultiLanguageMode(),
             panelPosition: this.getPanelPosition(),
             offTrackSensitivity: this.getOffTrackSensitivity()
         };
