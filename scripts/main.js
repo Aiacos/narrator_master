@@ -12,6 +12,7 @@ import { ImageGenerator } from './image-generator.js';
 import { JournalParser } from './journal-parser.js';
 import { NarratorPanel, RECORDING_STATE } from './ui-panel.js';
 import { SpeakerLabelService } from './speaker-labels.js';
+import { RulesReferenceService } from './rules-reference.js';
 
 /**
  * Error notification types for different severity levels
@@ -170,6 +171,12 @@ class NarratorMaster {
         this.speakerLabelService = null;
 
         /**
+         * Rules reference service
+         * @type {RulesReferenceService|null}
+         */
+        this.rulesReferenceService = null;
+
+        /**
          * Audio level update interval ID
          * @type {number|null}
          * @private
@@ -253,6 +260,12 @@ class NarratorMaster {
 
         // Initialize Speaker Label Service (no API key needed)
         this.speakerLabelService = new SpeakerLabelService();
+
+        // Initialize Rules Reference Service (no API key needed)
+        this.rulesReferenceService = new RulesReferenceService({
+            language: this.settings.getTranscriptionLanguage(),
+            resultLimit: 5
+        });
 
         // Initialize Audio Capture
         this.audioCapture = new AudioCapture({
