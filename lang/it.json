@@ -140,7 +140,18 @@
             "NoCache": "Immagine non disponibile (URL scaduto e nessuna cache)",
             "ClickToEnlarge": "Clicca per ingrandire",
             "Delete": "Elimina",
-            "Download": "Scarica"
+            "Download": "Scarica",
+            "FilterByCategory": "Filtra per Categoria",
+            "CategoryAll": "Tutte le Categorie",
+            "CategoryNPC": "Personaggi NPC",
+            "CategoryScene": "Scene",
+            "CategoryInfographic": "Infografiche",
+            "CategoryIllustration": "Illustrazioni",
+            "SearchPlaceholder": "Cerca immagini...",
+            "NoImagesFound": "Nessuna immagine trovata con i filtri selezionati.",
+            "ClearFilters": "Cancella Filtri",
+            "ImageCount": "{count} immagini",
+            "ImageCountSingle": "1 immagine"
         },
 
         "Tooltips": {
@@ -148,7 +159,10 @@
             "GenerateImage": "Genera un'immagine basata sul contesto attuale",
             "ClearImages": "Cancella tutte le immagini generate",
             "CopyText": "Copia il testo negli appunti",
-            "OpenSettings": "Apri le impostazioni del modulo"
+            "OpenSettings": "Apri le impostazioni del modulo",
+            "FilterCategory": "Filtra le immagini per categoria",
+            "SearchImages": "Cerca nelle descrizioni delle immagini",
+            "ClearFilters": "Rimuovi tutti i filtri applicati"
         },
 
         "Accessibility": {
