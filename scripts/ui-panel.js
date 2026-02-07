@@ -261,7 +261,8 @@ export class NarratorPanel extends Application {
                 transcriptTab: game.i18n.localize('NARRATOR.Panel.TranscriptTab'),
                 noTranscript: game.i18n.localize('NARRATOR.Panel.NoTranscript'),
                 clearTranscript: game.i18n.localize('NARRATOR.Panel.ClearTranscript'),
-                exportTranscript: game.i18n.localize('NARRATOR.Panel.ExportTranscript')
+                exportTranscript: game.i18n.localize('NARRATOR.Panel.ExportTranscript'),
+                markSceneBreak: game.i18n.localize('NARRATOR.Scenes.MarkSceneBreak')
             }
         };
     }
