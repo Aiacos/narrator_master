@@ -17,6 +17,7 @@ export const MODULE_ID = 'narrator-master';
 export const SETTINGS = {
     OPENAI_API_KEY: 'openaiApiKey',
     TRANSCRIPTION_LANGUAGE: 'transcriptionLanguage',
+    MULTI_LANGUAGE_MODE: 'multiLanguageMode',
     PANEL_POSITION: 'panelPosition',
     OFF_TRACK_SENSITIVITY: 'offTrackSensitivity',
     IMAGE_GALLERY: 'imageGallery'
@@ -51,12 +52,23 @@ export function registerSettings() {
         type: String,
         default: 'it',
         choices: {
+            'auto': 'Auto-detect',
             'it': 'Italiano',
             'en': 'English',
             'de': 'Deutsch',
             'fr': 'Francais',
             'es': 'Espanol'
         }
+    });
+
+    // Multi-language mode - Enable automatic language detection
+    game.settings.register(MODULE_ID, SETTINGS.MULTI_LANGUAGE_MODE, {
+        name: 'NARRATOR.Settings.MultiLanguageModeName',
+        hint: 'NARRATOR.Settings.MultiLanguageModeHint',
+        scope: 'world',
+        config: true,
+        type: Boolean,
+        default: false
     });
 
     // Panel position settings (stored as JSON string)
@@ -124,10 +136,18 @@ export class SettingsManager {
 
     /**
      * Gets the transcription language
-     * @returns {string} The language code (e.g., 'it', 'en')
+     * @returns {string} The language code (e.g., 'auto', 'it', 'en')
      */
     getTranscriptionLanguage() {
         return game.settings.get(MODULE_ID, SETTINGS.TRANSCRIPTION_LANGUAGE) || 'it';
+    }
+
+    /**
+     * Gets the multi-language mode setting
+     * @returns {boolean} True if multi-language mode is enabled
+     */
+    getMultiLanguageMode() {
+        return game.settings.get(MODULE_ID, SETTINGS.MULTI_LANGUAGE_MODE) || false;
     }
 
     /**
@@ -206,6 +226,7 @@ export class SettingsManager {
         return {
             apiKey: this.getApiKey(),
             transcriptionLanguage: this.getTranscriptionLanguage(),
+            multiLanguageMode: this.getMultiLanguageMode(),
             panelPosition: this.getPanelPosition(),
             offTrackSensitivity: this.getOffTrackSensitivity(),
             imageGallery: this.getImageGallery()

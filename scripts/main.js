@@ -256,7 +256,8 @@ class NarratorMaster {
         // Initialize API-dependent services
         this.transcriptionService = new TranscriptionService(apiKey, {
             language: this.settings.getTranscriptionLanguage(),
-            enableDiarization: true
+            enableDiarization: true,
+            multiLanguageMode: this.settings.getMultiLanguageMode()
         });
 
         this.aiAssistant = new AIAssistant(apiKey, {

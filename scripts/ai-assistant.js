@@ -117,6 +117,13 @@ export class AIAssistant {
             lastOffTrackCheck: null,
             suggestionsCount: 0
         };
+
+        /**
+         * Primary/detected language for AI responses
+         * @type {string}
+         * @private
+         */
+        this._primaryLanguage = 'it'; // Default to Italian for backward compatibility
     }
 
     /**
@@ -186,6 +193,22 @@ export class AIAssistant {
     }
 
     /**
+     * Sets the primary language for AI responses
+     * @param {string} language - The language code (e.g., 'it', 'en', 'de')
+     */
+    setPrimaryLanguage(language) {
+        this._primaryLanguage = language || 'it';
+    }
+
+    /**
+     * Gets the current primary language
+     * @returns {string} The language code
+     */
+    getPrimaryLanguage() {
+        return this._primaryLanguage;
+    }
+
+    /**
      * Analyzes the current game context and generates suggestions
      * @param {string} transcription - Recent transcribed conversation
      * @param {Object} [options={}] - Analysis options
@@ -207,9 +230,12 @@ export class AIAssistant {
 
         console.log(`${MODULE_ID} | Analyzing context, transcription length: ${transcription.length}`);
 
+        // Detect languages in transcription
+        const detectedLanguages = this._detectLanguagesInTranscription(transcription);
+
         try {
             // Build the analysis prompt
-            const messages = this._buildAnalysisMessages(transcription, includeSuggestions, checkOffTrack);
+            const messages = this._buildAnalysisMessages(transcription, includeSuggestions, checkOffTrack, detectedLanguages);
 
             // Make API request
             const response = await this._makeApiRequest(messages);
@@ -256,8 +282,11 @@ export class AIAssistant {
 
         console.log(`${MODULE_ID} | Checking off-track status`);
 
+        // Detect languages in transcription
+        const detectedLanguages = this._detectLanguagesInTranscription(transcription);
+
         try {
-            const messages = this._buildOffTrackMessages(transcription);
+            const messages = this._buildOffTrackMessages(transcription, detectedLanguages);
             const response = await this._makeApiRequest(messages);
             const result = this._parseOffTrackResponse(response);
 
@@ -290,8 +319,11 @@ export class AIAssistant {
 
         console.log(`${MODULE_ID} | Generating suggestions`);
 
+        // Detect languages in transcription
+        const detectedLanguages = this._detectLanguagesInTranscription(transcription);
+
         try {
-            const messages = this._buildSuggestionMessages(transcription, maxSuggestions);
+            const messages = this._buildSuggestionMessages(transcription, maxSuggestions, detectedLanguages);
             const response = await this._makeApiRequest(messages);
             const suggestions = this._parseSuggestionsResponse(response, maxSuggestions);
 
@@ -346,6 +378,33 @@ export class AIAssistant {
             high: 'Monitora attentamente ogni deviazione dalla trama e segnala anche variazioni minori.'
         };
 
+        // Map language codes to language names for instructions
+        const languageNames = {
+            'it': 'italiano',
+            'en': 'inglese',
+            'de': 'tedesco',
+            'fr': 'francese',
+            'es': 'spagnolo',
+            'pt': 'portoghese',
+            'pl': 'polacco',
+            'ru': 'russo',
+            'ja': 'giapponese',
+            'ko': 'coreano',
+            'zh': 'cinese',
+            'ar': 'arabo',
+            'nl': 'olandese',
+            'sv': 'svedese',
+            'da': 'danese',
+            'no': 'norvegese',
+            'fi': 'finlandese',
+            'tr': 'turco',
+            'cs': 'ceco',
+            'hu': 'ungherese',
+            'ro': 'rumeno'
+        };
+
+        const responseLang = languageNames[this._primaryLanguage] || languageNames['it'];
+
         return `Sei un assistente per Dungeon Master esperto in giochi di ruolo fantasy.
 Il tuo compito è aiutare il DM durante le sessioni di gioco fornendo:
 1. Suggerimenti contestuali basati sulla conversazione dei giocatori
@@ -353,10 +412,31 @@ Il tuo compito è aiutare il DM durante le sessioni di gioco fornendo:
 3. Rilevamento di quando i giocatori escono dal tema dell'avventura
 4. Suggerimenti per riportare delicatamente i giocatori nella storia
 
-Rispondi SEMPRE in italiano.
+Rispondi nella stessa lingua della trascrizione (${responseLang}).
 ${sensitivityGuide[this._sensitivity]}
 
 Quando i giocatori sono fuori tema, suggerisci modi creativi per riportarli nella storia senza forzarli.`;
+    }
+
+    /**
+     * Detects languages present in transcription based on language labels
+     * @param {string} transcription - The transcription text (may include language labels)
+     * @returns {string[]} Array of detected language codes (e.g., ['it', 'en'])
+     * @private
+     */
+    _detectLanguagesInTranscription(transcription) {
+        // Match language labels in format "Speaker (lang): text"
+        const languagePattern = /\(([a-z]{2,3})\):/gi;
+        const matches = transcription.matchAll(languagePattern);
+
+        const languages = new Set();
+        for (const match of matches) {
+            if (match[1]) {
+                languages.add(match[1].toLowerCase());
+            }
+        }
+
+        return Array.from(languages);
     }
 
     /**
@@ -364,10 +444,11 @@ Quando i giocatori sono fuori tema, suggerisci modi creativi per riportarli nell
      * @param {string} transcription - The transcription to analyze
      * @param {boolean} includeSuggestions - Whether to include suggestions
      * @param {boolean} checkOffTrack - Whether to check off-track status
+     * @param {string[]} [detectedLanguages=[]] - Detected languages in transcription
      * @returns {Array<{role: string, content: string}>} The messages array
      * @private
      */
-    _buildAnalysisMessages(transcription, includeSuggestions, checkOffTrack) {
+    _buildAnalysisMessages(transcription, includeSuggestions, checkOffTrack, detectedLanguages = []) {
         const messages = [
             { role: 'system', content: this._buildSystemPrompt() }
         ];
@@ -387,6 +468,14 @@ Quando i giocatori sono fuori tema, suggerisci modi creativi per riportarli nell
 
         // Build the analysis request
         let requestContent = `Analizza questa trascrizione della sessione:\n\n"${transcription}"\n\n`;
+
+        // Add multi-language context if detected
+        if (detectedLanguages.length > 1) {
+            requestContent += `NOTA: Questa trascrizione contiene più lingue (${detectedLanguages.join(', ')}). Le etichette di lingua sono indicate tra parentesi dopo il nome del parlante (es. "Speaker (en):"). Rispondi nella lingua primaria identificata o in una miscela appropriata delle lingue usate.\n\n`;
+        } else if (detectedLanguages.length === 1) {
+            // Update primary language based on detected language
+            this._primaryLanguage = detectedLanguages[0];
+        }
 
         if (includeSuggestions && checkOffTrack) {
             requestContent += `Rispondi in formato JSON con questa struttura:
@@ -418,10 +507,11 @@ Quando i giocatori sono fuori tema, suggerisci modi creativi per riportarli nell
     /**
      * Builds messages for off-track detection
      * @param {string} transcription - The transcription to analyze
+     * @param {string[]} [detectedLanguages=[]] - Detected languages in transcription
      * @returns {Array<{role: string, content: string}>} The messages array
      * @private
      */
-    _buildOffTrackMessages(transcription) {
+    _buildOffTrackMessages(transcription, detectedLanguages = []) {
         const messages = [
             { role: 'system', content: this._buildSystemPrompt() }
         ];
@@ -433,20 +523,29 @@ Quando i giocatori sono fuori tema, suggerisci modi creativi per riportarli nell
             });
         }
 
-        messages.push({
-            role: 'user',
-            content: `Analizza se i giocatori stanno seguendo la trama dell'avventura basandoti su questa trascrizione:
+        let requestContent = `Analizza se i giocatori stanno seguendo la trama dell'avventura basandoti su questa trascrizione:
 
 "${transcription}"
 
-Rispondi in formato JSON:
+`;
+
+        // Add multi-language context if detected
+        if (detectedLanguages.length > 1) {
+            requestContent += `NOTA: Questa trascrizione contiene più lingue (${detectedLanguages.join(', ')}). Le etichette di lingua sono indicate tra parentesi.\n\n`;
+        } else if (detectedLanguages.length === 1) {
+            // Update primary language based on detected language
+            this._primaryLanguage = detectedLanguages[0];
+        }
+
+        requestContent += `Rispondi in formato JSON:
 {
   "isOffTrack": boolean,
   "severity": 0.0-1.0,
   "reason": "spiegazione breve",
   "narrativeBridge": "suggerimento opzionale per riportarli in tema"
-}`
-        });
+}`;
+
+        messages.push({ role: 'user', content: requestContent });
 
         return messages;
     }
@@ -455,10 +554,11 @@ Rispondi in formato JSON:
      * Builds messages for suggestion generation
      * @param {string} transcription - The transcription to analyze
      * @param {number} maxSuggestions - Maximum suggestions to generate
+     * @param {string[]} [detectedLanguages=[]] - Detected languages in transcription
      * @returns {Array<{role: string, content: string}>} The messages array
      * @private
      */
-    _buildSuggestionMessages(transcription, maxSuggestions) {
+    _buildSuggestionMessages(transcription, maxSuggestions, detectedLanguages = []) {
         const messages = [
             { role: 'system', content: this._buildSystemPrompt() }
         ];
@@ -470,13 +570,21 @@ Rispondi in formato JSON:
             });
         }
 
-        messages.push({
-            role: 'user',
-            content: `Basandoti su questa trascrizione, genera fino a ${maxSuggestions} suggerimenti per il DM:
+        let requestContent = `Basandoti su questa trascrizione, genera fino a ${maxSuggestions} suggerimenti per il DM:
 
 "${transcription}"
 
-Rispondi in formato JSON:
+`;
+
+        // Add multi-language context if detected
+        if (detectedLanguages.length > 1) {
+            requestContent += `NOTA: Questa trascrizione contiene più lingue (${detectedLanguages.join(', ')}). Le etichette di lingua sono indicate tra parentesi.\n\n`;
+        } else if (detectedLanguages.length === 1) {
+            // Update primary language based on detected language
+            this._primaryLanguage = detectedLanguages[0];
+        }
+
+        requestContent += `Rispondi in formato JSON:
 {
   "suggestions": [
     {
@@ -486,8 +594,9 @@ Rispondi in formato JSON:
       "confidence": 0.0-1.0
     }
   ]
-}`
-        });
+}`;
+
+        messages.push({ role: 'user', content: requestContent });
 
         return messages;
     }
@@ -852,6 +961,7 @@ Scrivi una breve narrazione (2-3 frasi) che il DM può usare per riportare delic
             configured: this.isConfigured(),
             model: this._model,
             sensitivity: this._sensitivity,
+            primaryLanguage: this._primaryLanguage,
             hasContext: Boolean(this._adventureContext),
             contextLength: this._adventureContext.length,
             historySize: this._conversationHistory.length,

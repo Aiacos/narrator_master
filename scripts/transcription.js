@@ -25,6 +25,7 @@ const CHUNKING_THRESHOLD_SECONDS = 30;
  * @property {string} text - The transcribed text for this segment
  * @property {number} start - Start time in seconds
  * @property {number} end - End time in seconds
+ * @property {string} [language] - The detected language for this segment (if available)
  */
 
 /**
@@ -54,8 +55,9 @@ export class TranscriptionService {
      * Creates a new TranscriptionService instance
      * @param {string} apiKey - The OpenAI API key
      * @param {Object} [options={}] - Configuration options
-     * @param {string} [options.language='it'] - Default transcription language
+     * @param {string} [options.language='it'] - Default transcription language (use 'auto' for auto-detection)
      * @param {boolean} [options.enableDiarization=true] - Enable speaker diarization
+     * @param {boolean} [options.multiLanguageMode=false] - Enable multi-language mode with automatic language detection
      */
     constructor(apiKey, options = {}) {
         /**
@@ -85,6 +87,13 @@ export class TranscriptionService {
          * @private
          */
         this._enableDiarization = options.enableDiarization !== false;
+
+        /**
+         * Whether to enable multi-language mode with automatic language detection
+         * @type {boolean}
+         * @private
+         */
+        this._multiLanguageMode = options.multiLanguageMode === true;
 
         /**
          * List of known speaker names for improved identification
@@ -126,7 +135,7 @@ export class TranscriptionService {
 
     /**
      * Sets the default transcription language
-     * @param {string} language - Language code (e.g., 'it', 'en')
+     * @param {string} language - Language code (e.g., 'it', 'en', 'auto')
      */
     setLanguage(language) {
         this._language = language || 'it';
@@ -138,6 +147,22 @@ export class TranscriptionService {
      */
     getLanguage() {
         return this._language;
+    }
+
+    /**
+     * Enables or disables multi-language mode
+     * @param {boolean} enabled - Whether to enable multi-language mode
+     */
+    setMultiLanguageMode(enabled) {
+        this._multiLanguageMode = enabled === true;
+    }
+
+    /**
+     * Checks if multi-language mode is enabled
+     * @returns {boolean} True if multi-language mode is enabled
+     */
+    isMultiLanguageMode() {
+        return this._multiLanguageMode;
     }
 
     /**
@@ -258,7 +283,12 @@ export class TranscriptionService {
             const formData = new FormData();
             formData.append('file', audioBlob, 'audio.webm');
             formData.append('model', 'whisper-1');
-            formData.append('language', language);
+
+            // Set language - omit for automatic detection
+            if (language && language !== 'auto' && !this._multiLanguageMode) {
+                formData.append('language', language);
+            }
+
             formData.append('response_format', 'verbose_json');
 
             const response = await fetch(`${this._baseUrl}/audio/transcriptions`, {
@@ -309,7 +339,7 @@ export class TranscriptionService {
     /**
      * Builds the form data for the transcription API request
      * @param {Blob} audioBlob - The audio blob
-     * @param {string} language - The transcription language
+     * @param {string} language - The transcription language (omit or use 'auto' for auto-detection)
      * @param {string[]} speakerNames - Known speaker names
      * @returns {FormData} The constructed form data
      * @private
@@ -326,8 +356,12 @@ export class TranscriptionService {
         // Set response format for diarization data
         formData.append('response_format', 'diarized_json');
 
-        // Set language
-        formData.append('language', language);
+        // Set language - omit for automatic detection
+        // When language is 'auto' or multiLanguageMode is enabled, omit the parameter
+        // to enable OpenAI's automatic language detection
+        if (language && language !== 'auto' && !this._multiLanguageMode) {
+            formData.append('language', language);
+        }
 
         // Add chunking strategy for longer audio
         formData.append('chunking_strategy', 'auto');
@@ -410,13 +444,28 @@ export class TranscriptionService {
      * @private
      */
     _parseResponse(response, language) {
+        // Determine the top-level language (fallback for segments without language field)
+        const topLevelLanguage = response.language || language;
+
         // Extract segments from diarized response
-        const segments = (response.segments || []).map(seg => ({
-            speaker: seg.speaker || 'Unknown',
-            text: seg.text || '',
-            start: seg.start || 0,
-            end: seg.end || 0
-        }));
+        // Include per-segment language if available, otherwise use top-level language
+        const segments = (response.segments || []).map(seg => {
+            const segment = {
+                speaker: seg.speaker || 'Unknown',
+                text: seg.text || '',
+                start: seg.start || 0,
+                end: seg.end || 0
+            };
+
+            // Add language field if present in segment or use top-level language
+            if (seg.language) {
+                segment.language = seg.language;
+            } else if (topLevelLanguage) {
+                segment.language = topLevelLanguage;
+            }
+
+            return segment;
+        });
 
         // Build full text from segments
         const text = segments.map(seg => seg.text).join(' ');
@@ -432,7 +481,7 @@ export class TranscriptionService {
         return {
             text,
             segments,
-            language: response.language || language,
+            language: topLevelLanguage,
             duration,
             speakers
         };
@@ -539,13 +588,16 @@ export class TranscriptionService {
      * Gets the combined text from recent transcriptions
      * Useful for providing context to AI assistant
      * @param {number} [count=5] - Number of recent transcriptions to include
-     * @returns {string} Combined text with speaker labels
+     * @returns {string} Combined text with speaker and language labels
      */
     getRecentTranscriptionText(count = 5) {
         const recent = this.getHistory(count);
         return recent.map(result => {
             return result.segments
-                .map(seg => `${seg.speaker}: ${seg.text}`)
+                .map(seg => {
+                    const languageLabel = seg.language ? ` (${seg.language})` : '';
+                    return `${seg.speaker}${languageLabel}: ${seg.text}`;
+                })
                 .join('\n');
         }).join('\n\n');
     }
@@ -579,6 +631,7 @@ export class TranscriptionService {
         return {
             configured: this.isConfigured(),
             language: this._language,
+            multiLanguageMode: this._multiLanguageMode,
             diarizationEnabled: this._enableDiarization,
             knownSpeakers: this._knownSpeakerNames.length,
             historySize: this._history.length,
