@@ -117,6 +117,13 @@ export class AIAssistant {
             lastOffTrackCheck: null,
             suggestionsCount: 0
         };
+
+        /**
+         * Primary/detected language for AI responses
+         * @type {string}
+         * @private
+         */
+        this._primaryLanguage = 'it'; // Default to Italian for backward compatibility
     }
 
     /**
@@ -183,6 +190,22 @@ export class AIAssistant {
      */
     getAdventureContext() {
         return this._adventureContext;
+    }
+
+    /**
+     * Sets the primary language for AI responses
+     * @param {string} language - The language code (e.g., 'it', 'en', 'de')
+     */
+    setPrimaryLanguage(language) {
+        this._primaryLanguage = language || 'it';
+    }
+
+    /**
+     * Gets the current primary language
+     * @returns {string} The language code
+     */
+    getPrimaryLanguage() {
+        return this._primaryLanguage;
     }
 
     /**
@@ -346,6 +369,33 @@ export class AIAssistant {
             high: 'Monitora attentamente ogni deviazione dalla trama e segnala anche variazioni minori.'
         };
 
+        // Map language codes to language names for instructions
+        const languageNames = {
+            'it': 'italiano',
+            'en': 'inglese',
+            'de': 'tedesco',
+            'fr': 'francese',
+            'es': 'spagnolo',
+            'pt': 'portoghese',
+            'pl': 'polacco',
+            'ru': 'russo',
+            'ja': 'giapponese',
+            'ko': 'coreano',
+            'zh': 'cinese',
+            'ar': 'arabo',
+            'nl': 'olandese',
+            'sv': 'svedese',
+            'da': 'danese',
+            'no': 'norvegese',
+            'fi': 'finlandese',
+            'tr': 'turco',
+            'cs': 'ceco',
+            'hu': 'ungherese',
+            'ro': 'rumeno'
+        };
+
+        const responseLang = languageNames[this._primaryLanguage] || languageNames['it'];
+
         return `Sei un assistente per Dungeon Master esperto in giochi di ruolo fantasy.
 Il tuo compito è aiutare il DM durante le sessioni di gioco fornendo:
 1. Suggerimenti contestuali basati sulla conversazione dei giocatori
@@ -353,7 +403,7 @@ Il tuo compito è aiutare il DM durante le sessioni di gioco fornendo:
 3. Rilevamento di quando i giocatori escono dal tema dell'avventura
 4. Suggerimenti per riportare delicatamente i giocatori nella storia
 
-Rispondi SEMPRE in italiano.
+Rispondi nella stessa lingua della trascrizione (${responseLang}).
 ${sensitivityGuide[this._sensitivity]}
 
 Quando i giocatori sono fuori tema, suggerisci modi creativi per riportarli nella storia senza forzarli.`;
@@ -852,6 +902,7 @@ Scrivi una breve narrazione (2-3 frasi) che il DM può usare per riportare delic
             configured: this.isConfigured(),
             model: this._model,
             sensitivity: this._sensitivity,
+            primaryLanguage: this._primaryLanguage,
             hasContext: Boolean(this._adventureContext),
             contextLength: this._adventureContext.length,
             historySize: this._conversationHistory.length,
