@@ -1,0 +1,162 @@
+{
+    "NARRATOR": {
+        "PanelTitle": "",
+
+        "Settings": {
+            "ApiKeyName": "",
+            "ApiKeyHint": "",
+            "LanguageName": "",
+            "LanguageHint": "",
+            "PanelPositionName": "",
+            "PanelPositionHint": "",
+            "SensitivityName": "",
+            "SensitivityHint": "",
+            "SensitivityLow": "",
+            "SensitivityMedium": "",
+            "SensitivityHigh": ""
+        },
+
+        "Panel": {
+            "Title": "",
+            "TogglePanel": "",
+            "OpenSettings": "",
+            "ToggleRecording": "",
+            "StartRecording": "",
+            "StopRecording": "",
+            "PauseRecording": "",
+            "ResumeRecording": "",
+            "GenerateImage": "",
+            "AssistantTab": "",
+            "ImagesTab": "",
+            "NoSuggestions": "",
+            "NoImages": "",
+            "OffTrackWarning": "",
+            "ReturnToStory": "",
+            "NoApiKey": "",
+            "ConfigureSettings": "",
+            "Processing": "",
+            "ClearImages": "",
+            "CopyToClipboard": "",
+            "GeneratingImage": "",
+            "GeneratedImage": "",
+            "ListeningStatus": "",
+            "JournalStatus": "",
+            "JournalStatusEmpty": ""
+        },
+
+        "Errors": {
+            "NotInitialized": "",
+            "InitFailed": "",
+            "NoApiKey": "",
+            "InvalidAudio": "",
+            "FileTooLarge": "",
+            "InvalidApiKey": "",
+            "RateLimited": "",
+            "BadRequest": "",
+            "ServerError": "",
+            "TranscriptionFailed": "",
+            "NoTranscription": "",
+            "NoPrompt": "",
+            "NoDescription": "",
+            "ContentPolicy": "",
+            "AIAssistantFailed": "",
+            "ImageGenerationFailed": "",
+            "NoContextForImage": "",
+            "CopyFailed": "",
+            "MicrophoneNotSupported": "",
+            "MicrophonePermissionDenied": "",
+            "MicrophoneNotFound": "",
+            "MicrophoneInUse": "",
+            "MicrophoneConstraints": "",
+            "MicrophoneSecurityError": "",
+            "MicrophoneGeneric": "",
+            "RecordingFailed": "",
+            "RecorderInitFailed": "",
+            "NetworkError": "",
+            "Timeout": "",
+            "UnexpectedError": "",
+            "ServiceUnavailable": "",
+            "InvalidJournalId": "",
+            "JournalNotFound": ""
+        },
+
+        "Warnings": {
+            "ConfigIncomplete": ""
+        },
+
+        "Notifications": {
+            "CopiedToClipboard": "",
+            "RecordingStarted": "",
+            "RecordingStopped": "",
+            "JournalsLoaded": "",
+            "ImageGenerated": "",
+            "SettingsSaved": "",
+            "ModuleReady": "",
+            "TranscriptionComplete": "",
+            "ApiKeyUpdated": "",
+            "MicrophoneReady": "",
+            "PlayersOffTrack": ""
+        },
+
+        "OffTrack": {
+            "NoContext": "",
+            "ParseError": "",
+            "Warning": "",
+            "Severe": "",
+            "Minor": ""
+        },
+
+        "Suggestions": {
+            "TypeNarration": "",
+            "TypeDialogue": "",
+            "TypeAction": "",
+            "TypeReference": "",
+            "HighConfidence": "",
+            "MediumConfidence": "",
+            "LowConfidence": ""
+        },
+
+        "Recording": {
+            "StateInactive": "",
+            "StateRecording": "",
+            "StatePaused": "",
+            "StateProcessing": "",
+            "AudioLevelLow": "",
+            "AudioLevelNormal": "",
+            "AudioLevelHigh": ""
+        },
+
+        "Journal": {
+            "NoJournalFound": "",
+            "ParsingJournal": "",
+            "JournalEmpty": "",
+            "PageCount": "",
+            "UnnamedPage": ""
+        },
+
+        "Images": {
+            "Generating": "",
+            "CacheExpired": "",
+            "NoCache": "",
+            "ClickToEnlarge": "",
+            "Delete": "",
+            "Download": ""
+        },
+
+        "Tooltips": {
+            "ToggleRecording": "",
+            "GenerateImage": "",
+            "ClearImages": "",
+            "CopyText": "",
+            "OpenSettings": ""
+        },
+
+        "Accessibility": {
+            "RecordButton": "",
+            "AudioLevel": "",
+            "TabNavigation": "",
+            "ImageGallery": "",
+            "SuggestionsList": ""
+        }
+    }
+}
