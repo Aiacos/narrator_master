@@ -385,9 +385,21 @@ export class NarratorPanel extends Application {
      * @param {Event} event - Click event
      * @private
      */
-    _onClearImages(event) {
+    async _onClearImages(event) {
         event.preventDefault();
-        this.clearImages();
+
+        // Show confirmation dialog
+        const confirmed = await Dialog.confirm({
+            title: game.i18n.localize('NARRATOR.Panel.ClearImages'),
+            content: `<p>${game.i18n.localize('NARRATOR.Panel.ConfirmClearImages')}</p>`,
+            yes: () => true,
+            no: () => false,
+            defaultYes: false
+        });
+
+        if (confirmed) {
+            this.clearImages();
+        }
     }
 
     /**
