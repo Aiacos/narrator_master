@@ -706,20 +706,30 @@ Scrivi una breve narrazione (2-3 frasi) che il DM può usare per riportare delic
         try {
             const parsed = JSON.parse(this._extractJson(content));
 
-            return (parsed.suggestions || [])
-                .slice(0, maxSuggestions)
+            // Validate and sanitize suggestions array (max 10 items)
+            const validatedSuggestions = this._validateArray(
+                parsed.suggestions,
+                10,
+                'suggestions'
+            ).slice(0, maxSuggestions)
                 .map(s => ({
                     type: s.type || 'narration',
-                    content: s.content || '',
-                    pageReference: s.pageReference,
-                    confidence: parseFloat(s.confidence) || 0.5
+                    content: this._validateString(s.content || '', 5000, 'suggestion.content'),
+                    pageReference: s.pageReference ? this._validateString(s.pageReference, 200, 'suggestion.pageReference') : undefined,
+                    confidence: this._validateNumber(s.confidence, 0, 1, 'suggestion.confidence')
                 }));
+
+            return validatedSuggestions;
 
         } catch (error) {
             console.warn(`${MODULE_ID} | Failed to parse suggestions response`);
+
+            // Apply validation even to fallback content
+            const sanitizedContent = this._validateString(content, 5000, 'fallback.content');
+
             return [{
                 type: 'narration',
-                content: content,
+                content: sanitizedContent,
                 confidence: 0.3
             }];
         }
