@@ -48,6 +48,7 @@ Prima di iniziare, assicurati di avere:
 | [Installazione](installation.md) | Come installare il modulo in Foundry VTT |
 | [Configurazione](configuration.md) | Impostazioni, chiave API e opzioni |
 | [Utilizzo](usage.md) | Guida completa alle funzionalita |
+| [Risoluzione Problemi](troubleshooting.md) | Guida alla risoluzione di errori comuni |
 
 ## Costi Stimati
 
@@ -63,7 +64,7 @@ Una sessione tipica di 3 ore costa circa **$1.31**:
 
 Se hai problemi o domande:
 
-- Consulta la sezione [Risoluzione Problemi](usage.md#risoluzione-problemi) nella guida all'utilizzo
+- Consulta la [Guida alla Risoluzione Problemi](troubleshooting.md) per errori comuni
 - Apri una [Issue su GitHub](https://github.com/narrator-master/narrator-master/issues)
 - Partecipa alle [Discussioni](https://github.com/narrator-master/narrator-master/discussions)
 
