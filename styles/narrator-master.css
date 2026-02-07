@@ -662,6 +662,49 @@
 }
 
 /* ============================================
+   Copy Button Success Feedback
+   ============================================ */
+.copy-success {
+    background: var(--narrator-success) !important;
+    color: white !important;
+    animation: copy-success-flash 0.6s ease;
+}
+
+.copy-success i::before {
+    content: "\f00c" !important; /* FontAwesome checkmark icon */
+    animation: checkmark-appear 0.3s ease;
+}
+
+@keyframes copy-success-flash {
+    0% {
+        background: var(--narrator-success);
+        transform: scale(1);
+    }
+    50% {
+        background: #27ae60;
+        transform: scale(1.05);
+    }
+    100% {
+        background: var(--narrator-success);
+        transform: scale(1);
+    }
+}
+
+@keyframes checkmark-appear {
+    0% {
+        opacity: 0;
+        transform: scale(0.5) rotate(-45deg);
+    }
+    60% {
+        transform: scale(1.2) rotate(5deg);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
+}
+
+/* ============================================
    Images Content
    ============================================ */
 .images-content {
