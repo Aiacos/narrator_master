@@ -398,7 +398,7 @@ export class NarratorPanel extends Application {
     async _onCopySuggestions(event) {
         event.preventDefault();
         const text = this.suggestions.join('\n\n');
-        await this._copyToClipboard(text);
+        await this._copyToClipboard(text, event);
     }
 
     /**
@@ -408,18 +408,30 @@ export class NarratorPanel extends Application {
      */
     async _onCopyNarrativeBridge(event) {
         event.preventDefault();
-        await this._copyToClipboard(this.narrativeBridge);
+        await this._copyToClipboard(this.narrativeBridge, event);
     }
 
     /**
      * Copies text to clipboard
      * @param {string} text - Text to copy
+     * @param {Event} event - Click event to provide visual feedback
      * @private
      */
-    async _copyToClipboard(text) {
+    async _copyToClipboard(text, event) {
         try {
             await navigator.clipboard.writeText(text);
             ui.notifications.info(game.i18n.localize('NARRATOR.Notifications.CopiedToClipboard'));
+
+            // Add visual feedback to the button
+            if (event && event.currentTarget) {
+                const button = event.currentTarget;
+                button.classList.add('copy-success');
+
+                // Remove the class after animation completes
+                setTimeout(() => {
+                    button.classList.remove('copy-success');
+                }, 1000);
+            }
         } catch (error) {
             ui.notifications.error(game.i18n.localize('NARRATOR.Errors.CopyFailed'));
         }
@@ -566,7 +578,7 @@ export class NarratorPanel extends Application {
             .map(segment => `[${segment.timestamp}] ${segment.speaker}: ${segment.text}`)
             .join('\n\n');
 
-        await this._copyToClipboard(text);
+        await this._copyToClipboard(text, event);
     }
 
     /**
