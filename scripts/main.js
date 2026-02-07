@@ -12,6 +12,7 @@ import { ImageGenerator } from './image-generator.js';
 import { JournalParser } from './journal-parser.js';
 import { NarratorPanel, RECORDING_STATE } from './ui-panel.js';
 import { SpeakerLabelService } from './speaker-labels.js';
+import { SceneDetector } from './scene-detector.js';
 
 /**
  * Error notification types for different severity levels
@@ -170,6 +171,12 @@ class NarratorMaster {
         this.speakerLabelService = null;
 
         /**
+         * Scene detector service
+         * @type {SceneDetector|null}
+         */
+        this.sceneDetector = null;
+
+        /**
          * Audio level update interval ID
          * @type {number|null}
          * @private
@@ -253,6 +260,11 @@ class NarratorMaster {
 
         // Initialize Speaker Label Service (no API key needed)
         this.speakerLabelService = new SpeakerLabelService();
+
+        // Initialize Scene Detector (no API key needed)
+        this.sceneDetector = new SceneDetector({
+            sensitivity: this.settings.getOffTrackSensitivity()
+        });
 
         // Initialize Audio Capture
         this.audioCapture = new AudioCapture({
