@@ -126,6 +126,30 @@ export class NarratorPanel extends Application {
          * @private
          */
         this._lastTranscription = '';
+
+        /**
+         * Current gallery filter selection
+         * @type {string}
+         */
+        this.galleryFilter = 'all';
+
+        /**
+         * Current gallery search query
+         * @type {string}
+         */
+        this.searchQuery = '';
+
+        /**
+         * Filtered gallery images to display
+         * @type {Array}
+         */
+        this.galleryImages = [];
+
+        /**
+         * Callback for gallery operations (toggle favorite, add tag, etc.)
+         * @type {Function|null}
+         */
+        this.onGalleryAction = null;
     }
 
     /**
@@ -165,6 +189,22 @@ export class NarratorPanel extends Application {
             journalStatusText = game.i18n.localize('NARRATOR.Panel.JournalStatusEmpty');
         }
 
+        // Filter gallery images based on current filter and search
+        const filteredImages = this._filterGalleryImages();
+
+        // Process images to add tagsString for data attribute
+        const processedImages = filteredImages.map(img => ({
+            ...img,
+            tagsString: img.tags ? img.tags.join(',') : ''
+        }));
+
+        // Extract unique categories from all images (not just filtered)
+        const allCategories = [...new Set(
+            this.generatedImages
+                .map(img => img.category)
+                .filter(cat => cat && cat.trim().length > 0)
+        )].sort();
+
         return {
             // Module info
             moduleId: MODULE_ID,
@@ -183,9 +223,13 @@ export class NarratorPanel extends Application {
             journalCount: this.journalCount,
             journalStatusText,
 
-            // Generated images
-            generatedImages: this.generatedImages,
-            hasImages: this.generatedImages.length > 0,
+            // Generated images (filtered)
+            generatedImages: processedImages,
+            hasImages: processedImages.length > 0,
+
+            // Gallery metadata
+            imageCategories: allCategories,
+            hasCategories: allCategories.length > 0,
 
             // Recording state
             recordingState: this.recordingState,
@@ -222,7 +266,19 @@ export class NarratorPanel extends Application {
                 processing: game.i18n.localize('NARRATOR.Panel.Processing'),
                 clearImages: game.i18n.localize('NARRATOR.Panel.ClearImages'),
                 copyToClipboard: game.i18n.localize('NARRATOR.Panel.CopyToClipboard'),
-                listeningStatus: game.i18n.localize('NARRATOR.Panel.ListeningStatus')
+                listeningStatus: game.i18n.localize('NARRATOR.Panel.ListeningStatus'),
+                filterLabel: game.i18n.localize('NARRATOR.Gallery.FilterLabel'),
+                filterAll: game.i18n.localize('NARRATOR.Gallery.FilterAll'),
+                filterFavorites: game.i18n.localize('NARRATOR.Gallery.FilterFavorites'),
+                filterByCategory: game.i18n.localize('NARRATOR.Gallery.FilterByCategory'),
+                searchPlaceholder: game.i18n.localize('NARRATOR.Gallery.SearchPlaceholder'),
+                clearSearch: game.i18n.localize('NARRATOR.Gallery.ClearSearch'),
+                toggleFavorite: game.i18n.localize('NARRATOR.Gallery.ToggleFavorite'),
+                manageTags: game.i18n.localize('NARRATOR.Gallery.ManageTags'),
+                showToPlayers: game.i18n.localize('NARRATOR.Gallery.ShowToPlayers'),
+                deleteImage: game.i18n.localize('NARRATOR.Gallery.DeleteImage'),
+                favoriteImage: game.i18n.localize('NARRATOR.Gallery.FavoriteImage'),
+                categoryLabel: game.i18n.localize('NARRATOR.Gallery.CategoryLabel')
             }
         };
     }
@@ -237,6 +293,44 @@ export class NarratorPanel extends Application {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    /**
+     * Filters gallery images based on current filter and search query
+     * @returns {Array} Filtered images
+     * @private
+     */
+    _filterGalleryImages() {
+        let filtered = [...this.generatedImages];
+
+        // Apply filter
+        if (this.galleryFilter === 'favorites') {
+            filtered = filtered.filter(img => img.isFavorite);
+        } else if (this.galleryFilter.startsWith('category:')) {
+            const category = this.galleryFilter.substring(9);
+            filtered = filtered.filter(img => img.category === category);
+        }
+
+        // Apply search query
+        if (this.searchQuery && this.searchQuery.trim().length > 0) {
+            const query = this.searchQuery.toLowerCase().trim();
+            filtered = filtered.filter(img => {
+                // Search in prompt
+                const promptMatch = img.prompt && img.prompt.toLowerCase().includes(query);
+
+                // Search in tags
+                const tagsMatch = img.tags && img.tags.some(tag =>
+                    tag.toLowerCase().includes(query)
+                );
+
+                // Search in category
+                const categoryMatch = img.category && img.category.toLowerCase().includes(query);
+
+                return promptMatch || tagsMatch || categoryMatch;
+            });
+        }
+
+        return filtered;
     }
 
     /**
@@ -270,6 +364,17 @@ export class NarratorPanel extends Application {
 
         // Narrative bridge copy
         html.find('.copy-bridge').click(this._onCopyNarrativeBridge.bind(this));
+
+        // Gallery controls
+        html.find('.gallery-filter-select').change(this._onFilterGallery.bind(this));
+        html.find('.gallery-search-input').on('input', this._onSearchGallery.bind(this));
+        html.find('.clear-search').click(this._onClearSearch.bind(this));
+
+        // Gallery image actions
+        html.find('.action-favorite').click(this._onToggleFavorite.bind(this));
+        html.find('.action-tag').click(this._onManageTags.bind(this));
+        html.find('.action-show').click(this._onShowImage.bind(this));
+        html.find('.action-delete').click(this._onDeleteImage.bind(this));
     }
 
     /**
@@ -426,18 +531,174 @@ export class NarratorPanel extends Application {
     }
 
     /**
-     * Handles delete image button click
+     * Handles gallery filter dropdown change
+     * @param {Event} event - Change event
+     * @private
+     */
+    _onFilterGallery(event) {
+        event.preventDefault();
+        this.galleryFilter = event.currentTarget.value;
+        this.render(false);
+    }
+
+    /**
+     * Handles gallery search input
+     * @param {Event} event - Input event
+     * @private
+     */
+    _onSearchGallery(event) {
+        event.preventDefault();
+        this.searchQuery = event.currentTarget.value;
+        this.render(false);
+    }
+
+    /**
+     * Handles clear search button click
      * @param {Event} event - Click event
      * @private
      */
-    _onDeleteImage(event) {
+    _onClearSearch(event) {
+        event.preventDefault();
+        this.searchQuery = '';
+        const searchInput = this.element?.find('.gallery-search-input');
+        if (searchInput && searchInput.length) {
+            searchInput.val('');
+        }
+        this.render(false);
+    }
+
+    /**
+     * Handles toggle favorite button click
+     * @param {Event} event - Click event
+     * @private
+     */
+    async _onToggleFavorite(event) {
         event.preventDefault();
         event.stopPropagation();
 
         const index = parseInt(event.currentTarget.dataset.index);
         if (!isNaN(index) && index >= 0 && index < this.generatedImages.length) {
-            this.generatedImages.splice(index, 1);
-            this.render(false);
+            const image = this.generatedImages[index];
+
+            if (this.onGalleryAction) {
+                await this.onGalleryAction('toggleFavorite', { imageId: image.id });
+            } else {
+                // Fallback: toggle locally if no callback
+                image.isFavorite = !image.isFavorite;
+                this.render(false);
+            }
+        }
+    }
+
+    /**
+     * Handles manage tags button click
+     * @param {Event} event - Click event
+     * @private
+     */
+    async _onManageTags(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const index = parseInt(event.currentTarget.dataset.index);
+        if (!isNaN(index) && index >= 0 && index < this.generatedImages.length) {
+            const image = this.generatedImages[index];
+
+            // Show dialog to add/remove tags
+            const currentTags = image.tags || [];
+            const tagsString = currentTags.join(', ');
+
+            const newTagsString = await Dialog.prompt({
+                title: game.i18n.localize('NARRATOR.Gallery.ManageTags'),
+                content: `
+                    <form>
+                        <div class="form-group">
+                            <label>${game.i18n.localize('NARRATOR.Gallery.TagsLabel')}</label>
+                            <input type="text" name="tags" value="${tagsString}"
+                                   placeholder="${game.i18n.localize('NARRATOR.Gallery.TagsPlaceholder')}" />
+                            <p class="notes">${game.i18n.localize('NARRATOR.Gallery.TagsHint')}</p>
+                        </div>
+                    </form>
+                `,
+                callback: (html) => {
+                    return html.find('[name="tags"]').val();
+                },
+                rejectClose: false
+            });
+
+            if (newTagsString !== null && newTagsString !== undefined) {
+                const newTags = newTagsString
+                    .split(',')
+                    .map(tag => tag.trim())
+                    .filter(tag => tag.length > 0);
+
+                if (this.onGalleryAction) {
+                    await this.onGalleryAction('setTags', { imageId: image.id, tags: newTags });
+                } else {
+                    // Fallback: update locally if no callback
+                    image.tags = newTags;
+                    this.render(false);
+                }
+            }
+        }
+    }
+
+    /**
+     * Handles show image to players button click
+     * @param {Event} event - Click event
+     * @private
+     */
+    async _onShowImage(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const index = parseInt(event.currentTarget.dataset.index);
+        if (!isNaN(index) && index >= 0 && index < this.generatedImages.length) {
+            const image = this.generatedImages[index];
+
+            // Use Foundry's ImagePopout to show to all players
+            if (image.url) {
+                new ImagePopout(image.url, {
+                    title: image.prompt || game.i18n.localize('NARRATOR.Panel.GeneratedImage'),
+                    shareable: true
+                }).render(true);
+
+                // Notify that image is being shared
+                ui.notifications.info(game.i18n.localize('NARRATOR.Gallery.ImageShown'));
+            }
+        }
+    }
+
+    /**
+     * Handles delete image button click
+     * @param {Event} event - Click event
+     * @private
+     */
+    async _onDeleteImage(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const index = parseInt(event.currentTarget.dataset.index);
+        if (!isNaN(index) && index >= 0 && index < this.generatedImages.length) {
+            const image = this.generatedImages[index];
+
+            // Confirm deletion
+            const confirmed = await Dialog.confirm({
+                title: game.i18n.localize('NARRATOR.Gallery.DeleteImage'),
+                content: `<p>${game.i18n.localize('NARRATOR.Gallery.DeleteConfirm')}</p>`,
+                yes: () => true,
+                no: () => false,
+                defaultYes: false
+            });
+
+            if (confirmed) {
+                if (this.onGalleryAction) {
+                    await this.onGalleryAction('deleteImage', { imageId: image.id });
+                } else {
+                    // Fallback: delete locally if no callback
+                    this.generatedImages.splice(index, 1);
+                    this.render(false);
+                }
+            }
         }
     }
 
@@ -491,6 +752,15 @@ export class NarratorPanel extends Application {
             timestamp: Date.now()
         });
 
+        this.render(false);
+    }
+
+    /**
+     * Updates the gallery with new images (typically from ImageGenerator)
+     * @param {Array} images - Array of gallery images
+     */
+    updateGallery(images) {
+        this.generatedImages = images || [];
         this.render(false);
     }
 
