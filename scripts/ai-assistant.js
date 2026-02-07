@@ -741,6 +741,103 @@ Scrivi una breve narrazione (2-3 frasi) che il DM può usare per riportare delic
     }
 
     /**
+     * Validates and sanitizes a string value, enforcing maximum length
+     * @param {any} str - The value to validate
+     * @param {number} maxLength - Maximum allowed length
+     * @param {string} fieldName - Name of the field (for logging)
+     * @returns {string} The validated and sanitized string
+     * @private
+     */
+    _validateString(str, maxLength, fieldName) {
+        // Handle null/undefined
+        if (str == null) {
+            return '';
+        }
+
+        // Convert to string if not already
+        const stringValue = String(str);
+
+        // Check for excessive length
+        if (stringValue.length > maxLength) {
+            console.warn(
+                `${MODULE_ID} | ${fieldName} exceeds max length (${stringValue.length} > ${maxLength}), truncating`
+            );
+            return stringValue.substring(0, maxLength);
+        }
+
+        return stringValue;
+    }
+
+    /**
+     * Validates and clamps a numeric value to a range
+     * @param {any} num - The value to validate
+     * @param {number} min - Minimum allowed value
+     * @param {number} max - Maximum allowed value
+     * @param {string} fieldName - Name of the field (for logging)
+     * @returns {number} The validated and clamped number
+     * @private
+     */
+    _validateNumber(num, min, max, fieldName) {
+        // Handle null/undefined
+        if (num == null) {
+            return min;
+        }
+
+        // Parse as float
+        const numValue = parseFloat(num);
+
+        // Handle NaN
+        if (isNaN(numValue)) {
+            console.warn(`${MODULE_ID} | ${fieldName} is not a valid number, using min value`);
+            return min;
+        }
+
+        // Clamp to range
+        if (numValue < min) {
+            console.warn(`${MODULE_ID} | ${fieldName} below min (${numValue} < ${min}), clamping`);
+            return min;
+        }
+
+        if (numValue > max) {
+            console.warn(`${MODULE_ID} | ${fieldName} above max (${numValue} > ${max}), clamping`);
+            return max;
+        }
+
+        return numValue;
+    }
+
+    /**
+     * Validates and limits an array to maximum size
+     * @param {any} arr - The value to validate
+     * @param {number} maxItems - Maximum allowed items
+     * @param {string} fieldName - Name of the field (for logging)
+     * @returns {Array} The validated and limited array
+     * @private
+     */
+    _validateArray(arr, maxItems, fieldName) {
+        // Handle null/undefined
+        if (arr == null) {
+            return [];
+        }
+
+        // Ensure it's an array
+        if (!Array.isArray(arr)) {
+            console.warn(`${MODULE_ID} | ${fieldName} is not an array, converting to empty array`);
+            return [];
+        }
+
+        // Check for excessive size
+        if (arr.length > maxItems) {
+            console.warn(
+                `${MODULE_ID} | ${fieldName} exceeds max items (${arr.length} > ${maxItems}), truncating`
+            );
+            return arr.slice(0, maxItems);
+        }
+
+        return arr;
+    }
+
+    /**
      * Adds a message to conversation history
      * @param {string} role - The message role
      * @param {string} content - The message content
