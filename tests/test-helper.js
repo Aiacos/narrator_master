@@ -193,6 +193,15 @@ export function setupMockGame(overrides = {}) {
         ...overrides
     };
 
+    // Set up mock window object if it doesn't exist
+    if (typeof window === 'undefined') {
+        if (typeof globalThis !== 'undefined') {
+            globalThis.window = {};
+        } else if (typeof global !== 'undefined') {
+            global.window = {};
+        }
+    }
+
     // Make it available globally
     if (typeof globalThis !== 'undefined') {
         globalThis.game = game;
@@ -271,6 +280,40 @@ export function setupMockDocument() {
         global.document = mockDocument;
     }
 
+    // Set up DOMParser mock for safe HTML parsing
+    const MockDOMParser = class {
+        parseFromString(htmlString, mimeType) {
+            // Create a mock document that safely extracts text without executing scripts
+            const bodyElement = {
+                textContent: '',
+                innerHTML: ''
+            };
+
+            // Simple HTML to text conversion that strips all tags
+            // This simulates DOMParser's safe parsing without script execution
+            bodyElement.textContent = htmlString
+                .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
+                .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') // Remove style tags
+                .replace(/<[^>]*>/g, ' ') // Remove all other tags
+                .replace(/\s+/g, ' ') // Normalize whitespace
+                .trim();
+
+            return {
+                body: bodyElement,
+                documentElement: bodyElement
+            };
+        }
+    };
+
+    // Install DOMParser globally
+    if (typeof globalThis !== 'undefined') {
+        globalThis.DOMParser = MockDOMParser;
+    } else if (typeof global !== 'undefined') {
+        global.DOMParser = MockDOMParser;
+    } else if (typeof window !== 'undefined') {
+        window.DOMParser = MockDOMParser;
+    }
+
     return mockDocument;
 }
 
@@ -278,13 +321,27 @@ export function setupMockDocument() {
  * Cleans up all global mocks
  */
 export function cleanupMocks() {
-    const targets = [globalThis, global, window].filter(t => typeof t !== 'undefined');
+    const targets = [globalThis, global].filter(t => typeof t !== 'undefined');
 
     for (const target of targets) {
         delete target.game;
         delete target.ui;
         delete target.document;
+        delete target.DOMParser;
         delete target.fetch;
+        // Clean up window if we created it
+        if (target.window && !target.window.document) {
+            delete target.window;
+        }
+    }
+
+    // Clean window object if it exists
+    if (typeof window !== 'undefined') {
+        delete window.game;
+        delete window.ui;
+        delete window.document;
+        delete window.DOMParser;
+        delete window.fetch;
     }
 }
 
