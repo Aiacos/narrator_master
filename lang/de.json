@@ -1,0 +1,162 @@
+{
+    "NARRATOR": {
+        "PanelTitle": "Narrator Master - Spielleiter-Assistent",
+
+        "Settings": {
+            "ApiKeyName": "OpenAI API-Schlüssel",
+            "ApiKeyHint": "Ihr OpenAI API-Schlüssel. Erfordert ein Konto mit Guthaben (mindestens $5). Erhalten Sie ihn von platform.openai.com/api-keys",
+            "LanguageName": "Transkriptionssprache",
+            "LanguageHint": "Sprache für die Audiotranskription (Standard: Deutsch)",
+            "PanelPositionName": "Panel-Position",
+            "PanelPositionHint": "Gespeicherte Position des Spielleiter-Panels",
+            "SensitivityName": "Empfindlichkeit Abweichungserkennung",
+            "SensitivityHint": "Wie streng erkannt werden soll, wenn Spieler von der Handlung abweichen",
+            "SensitivityLow": "Niedrig - Nur große Abweichungen",
+            "SensitivityMedium": "Mittel - Ausgewogen",
+            "SensitivityHigh": "Hoch - Auch kleine Abweichungen"
+        },
+
+        "Panel": {
+            "Title": "Narrator Master",
+            "TogglePanel": "Spielleiter-Panel öffnen/schließen",
+            "OpenSettings": "Einstellungen öffnen",
+            "ToggleRecording": "Aufnahme",
+            "StartRecording": "Aufnahme starten",
+            "StopRecording": "Aufnahme stoppen",
+            "PauseRecording": "Pause",
+            "ResumeRecording": "Fortsetzen",
+            "GenerateImage": "Bild generieren",
+            "AssistantTab": "Assistent",
+            "ImagesTab": "Bilder",
+            "NoSuggestions": "Keine Vorschläge verfügbar. Starten Sie die Aufnahme und der Assistent wird automatisch das Gespräch analysieren.",
+            "NoImages": "Keine Bilder generiert. Verwenden Sie die Schaltfläche 'Bild generieren', um Infografiken zu erstellen.",
+            "OffTrackWarning": "WARNUNG: Abweichung!",
+            "ReturnToStory": "Um sie zur Geschichte zurückzubringen",
+            "NoApiKey": "API-Schlüssel nicht konfiguriert",
+            "ConfigureSettings": "Einstellungen konfigurieren",
+            "Processing": "Verarbeitung läuft...",
+            "ClearImages": "Bilder löschen",
+            "CopyToClipboard": "In Zwischenablage kopieren",
+            "GeneratingImage": "Bildgenerierung läuft...",
+            "GeneratedImage": "Generiertes Bild",
+            "ListeningStatus": "Höre zu...",
+            "JournalStatus": "{count} Journale geladen",
+            "JournalStatusEmpty": "Keine Journale verfügbar"
+        },
+
+        "Errors": {
+            "NotInitialized": "Narrator Master ist noch nicht initialisiert. Warten Sie, bis das Laden abgeschlossen ist.",
+            "InitFailed": "Narrator Master Initialisierung fehlgeschlagen",
+            "NoApiKey": "OpenAI API-Schlüssel nicht konfiguriert. Gehen Sie zu den Moduleinstellungen, um ihn hinzuzufügen.",
+            "InvalidAudio": "Ungültiges Audio. Stellen Sie sicher, dass die Aufnahme Audiodaten enthält.",
+            "FileTooLarge": "Audiodatei zu groß ({size}MB). Das maximale Limit ist 25MB.",
+            "InvalidApiKey": "Ungültiger API-Schlüssel. Überprüfen Sie Ihren OpenAI API-Schlüssel in den Einstellungen.",
+            "RateLimited": "Anfragelimit erreicht. Warten Sie einen Moment, bevor Sie es erneut versuchen.",
+            "BadRequest": "Ungültige Anfrage: {details}",
+            "ServerError": "OpenAI Server-Fehler. Versuchen Sie es später erneut.",
+            "TranscriptionFailed": "Transkription fehlgeschlagen (Fehler {status}): {message}",
+            "NoTranscription": "Keine Transkription für die Analyse verfügbar.",
+            "NoPrompt": "Kein Prompt für die Bildgenerierung bereitgestellt.",
+            "NoDescription": "Keine Beschreibung für die Infografik bereitgestellt.",
+            "ContentPolicy": "Der Inhalt verstößt gegen die OpenAI-Richtlinien. Versuchen Sie es mit einer anderen Beschreibung.",
+            "AIAssistantFailed": "KI-Assistent fehlgeschlagen (Fehler {status}): {message}",
+            "ImageGenerationFailed": "Bildgenerierung fehlgeschlagen (Fehler {status}): {message}",
+            "NoContextForImage": "Kein Kontext verfügbar, um ein Bild zu generieren. Nehmen Sie zuerst Audio auf.",
+            "CopyFailed": "Kopieren in die Zwischenablage fehlgeschlagen.",
+            "MicrophoneNotSupported": "Ihr Browser unterstützt keine Mikrofon-Audioaufnahme.",
+            "MicrophonePermissionDenied": "Mikrofonberechtigung verweigert. Erlauben Sie den Mikrofonzugriff in Ihren Browsereinstellungen.",
+            "MicrophoneNotFound": "Kein Mikrofon gefunden. Schließen Sie ein Mikrofon an und versuchen Sie es erneut.",
+            "MicrophoneInUse": "Das Mikrofon wird von einer anderen Anwendung verwendet. Schließen Sie andere Apps, die das Mikrofon verwenden.",
+            "MicrophoneConstraints": "Das Mikrofon erfüllt nicht die erforderlichen Anforderungen.",
+            "MicrophoneSecurityError": "Sicherheitsfehler: Audioaufnahme erfordert HTTPS in der Produktion.",
+            "MicrophoneGeneric": "Mikrofonfehler: {error}",
+            "RecordingFailed": "Aufnahme fehlgeschlagen. Versuchen Sie es erneut.",
+            "RecorderInitFailed": "Rekorder konnte nicht initialisiert werden: {error}",
+            "NetworkError": "Verbindungsfehler. Überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.",
+            "Timeout": "Die Anfrage hat zu lange gedauert. Versuchen Sie es später erneut.",
+            "UnexpectedError": "Ein unerwarteter Fehler ist aufgetreten: {message}",
+            "ServiceUnavailable": "Dienst vorübergehend nicht verfügbar. Versuchen Sie es in einigen Minuten erneut.",
+            "InvalidJournalId": "Ungültige Journal-ID.",
+            "JournalNotFound": "Journal nicht gefunden: {id}"
+        },
+
+        "Warnings": {
+            "ConfigIncomplete": "Konfiguration unvollständig"
+        },
+
+        "Notifications": {
+            "CopiedToClipboard": "In Zwischenablage kopiert!",
+            "RecordingStarted": "Aufnahme gestartet",
+            "RecordingStopped": "Aufnahme gestoppt",
+            "JournalsLoaded": "Alle Journale geladen ({count})",
+            "ImageGenerated": "Bild erfolgreich generiert",
+            "SettingsSaved": "Einstellungen gespeichert",
+            "ModuleReady": "Narrator Master bereit",
+            "TranscriptionComplete": "Transkription abgeschlossen",
+            "ApiKeyUpdated": "API-Schlüssel aktualisiert",
+            "MicrophoneReady": "Mikrofon bereit für die Aufnahme",
+            "PlayersOffTrack": "Achtung: Die Spieler weichen von der Handlung ab!"
+        },
+
+        "OffTrack": {
+            "NoContext": "Kein Abenteuerkontext für die Abweichungserkennung festgelegt.",
+            "ParseError": "Die Antwort der Abweichungserkennung konnte nicht analysiert werden.",
+            "Warning": "Die Spieler weichen von der Abenteuerhandlung ab.",
+            "Severe": "Die Spieler sind völlig vom Abenteuer abgewichen.",
+            "Minor": "Leichte Abweichung von der Haupthandlung."
+        },
+
+        "Suggestions": {
+            "TypeNarration": "Erzählung",
+            "TypeDialogue": "Dialog",
+            "TypeAction": "Aktion",
+            "TypeReference": "Referenz",
+            "HighConfidence": "Hohe Konfidenz",
+            "MediumConfidence": "Mittlere Konfidenz",
+            "LowConfidence": "Niedrige Konfidenz"
+        },
+
+        "Recording": {
+            "StateInactive": "Inaktiv",
+            "StateRecording": "Aufnahme läuft",
+            "StatePaused": "Pausiert",
+            "StateProcessing": "Verarbeitung",
+            "AudioLevelLow": "Niedriger Audiopegel",
+            "AudioLevelNormal": "Normaler Audiopegel",
+            "AudioLevelHigh": "Hoher Audiopegel"
+        },
+
+        "Journal": {
+            "NoJournalFound": "Journal nicht gefunden",
+            "ParsingJournal": "Journal wird analysiert...",
+            "JournalEmpty": "Das ausgewählte Journal ist leer.",
+            "PageCount": "{count} Seiten gefunden",
+            "UnnamedPage": "Seite ohne Namen"
+        },
+
+        "Images": {
+            "Generating": "Generierung läuft...",
+            "CacheExpired": "Bild-URL abgelaufen, verwende lokalen Cache",
+            "NoCache": "Bild nicht verfügbar (URL abgelaufen und kein Cache)",
+            "ClickToEnlarge": "Zum Vergrößern klicken",
+            "Delete": "Löschen",
+            "Download": "Herunterladen"
+        },
+
+        "Tooltips": {
+            "ToggleRecording": "Audioaufnahme starten oder stoppen",
+            "GenerateImage": "Ein Bild basierend auf dem aktuellen Kontext generieren",
+            "ClearImages": "Alle generierten Bilder löschen",
+            "CopyText": "Text in die Zwischenablage kopieren",
+            "OpenSettings": "Moduleinstellungen öffnen"
+        },
+
+        "Accessibility": {
+            "RecordButton": "Aufnahme-Schaltfläche",
+            "AudioLevel": "Audiopegel-Indikator",
+            "TabNavigation": "Tab-Navigation",
+            "ImageGallery": "Bildergalerie",
+            "SuggestionsList": "Vorschlagsliste"
+        }
+    }
+}
