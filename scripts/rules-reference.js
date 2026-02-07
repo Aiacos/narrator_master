@@ -210,4 +210,274 @@ export class RulesReferenceService {
         // TODO: Implementation
         return [];
     }
+
+    /**
+     * Detects if text contains a rules question
+     * @param {string} text - The text to analyze (transcription or query)
+     * @returns {Object} Detection result with isRulesQuestion flag and details
+     * @property {boolean} isRulesQuestion - Whether text contains a rules question
+     * @property {number} confidence - Confidence score 0-1
+     * @property {string[]} detectedTerms - Rules-related terms found
+     * @property {string} questionType - Type of question ('mechanic', 'spell', 'condition', 'action', 'general')
+     * @property {string} [extractedTopic] - The specific topic/mechanic being asked about
+     */
+    detectRulesQuestion(text) {
+        if (!text || typeof text !== 'string' || text.trim().length === 0) {
+            return {
+                isRulesQuestion: false,
+                confidence: 0,
+                detectedTerms: [],
+                questionType: 'general'
+            };
+        }
+
+        const normalizedText = text.toLowerCase().trim();
+        const detectedTerms = [];
+        let confidence = 0;
+        let questionType = 'general';
+        let extractedTopic = null;
+
+        // Check for explicit rules question patterns
+        const questionPatterns = this._getQuestionPatterns();
+        let patternMatchType = null;
+        for (const pattern of questionPatterns) {
+            if (pattern.regex.test(normalizedText)) {
+                confidence = Math.max(confidence, pattern.confidence);
+                patternMatchType = pattern.type;
+
+                // Try to extract the topic being asked about
+                const match = normalizedText.match(pattern.regex);
+                if (match && match[1]) {
+                    extractedTopic = match[1].trim();
+                }
+
+                detectedTerms.push(pattern.name);
+            }
+        }
+
+        // Check for common D&D mechanics terms (more specific, takes priority)
+        const mechanicTerms = this._getMechanicTerms();
+        let hasSpecificMechanic = false;
+        for (const [term, category] of Object.entries(mechanicTerms)) {
+            if (normalizedText.includes(term)) {
+                detectedTerms.push(term);
+                confidence = Math.max(confidence, 0.6);
+                questionType = category; // More specific category from mechanic term
+                hasSpecificMechanic = true;
+
+                if (!extractedTopic) {
+                    extractedTopic = term;
+                }
+            }
+        }
+
+        // Use pattern type if no specific mechanic was found
+        if (!hasSpecificMechanic && patternMatchType) {
+            questionType = patternMatchType;
+        }
+
+        // Check for question words combined with rules context
+        if (this._hasQuestionWord(normalizedText) && detectedTerms.length > 0) {
+            confidence = Math.min(confidence + 0.2, 1.0);
+        }
+
+        return {
+            isRulesQuestion: confidence > 0.3,
+            confidence: Math.min(confidence, 1.0),
+            detectedTerms,
+            questionType,
+            extractedTopic
+        };
+    }
+
+    /**
+     * Returns question patterns for rules detection
+     * @returns {Array<{regex: RegExp, confidence: number, type: string, name: string}>}
+     * @private
+     */
+    _getQuestionPatterns() {
+        return [
+            // English patterns
+            {
+                regex: /(?:how does|how do|what is the rule for|what are the rules for)\s+([a-z\s]+?)(?:\s+work|\?|$)/i,
+                confidence: 0.9,
+                type: 'mechanic',
+                name: 'how_does_work'
+            },
+            {
+                regex: /(?:can i|can you|am i able to|is it possible to)\s+([a-z\s]+?)(?:\?|$)/i,
+                confidence: 0.7,
+                type: 'action',
+                name: 'can_i'
+            },
+            {
+                regex: /(?:what happens when|what happens if)\s+([a-z\s]+?)(?:\?|$)/i,
+                confidence: 0.8,
+                type: 'mechanic',
+                name: 'what_happens'
+            },
+
+            // Italian patterns
+            {
+                regex: /(?:come funziona|come funzionano|qual è la regola per|quali sono le regole per)\s+([a-z\s]+?)(?:\?|$)/i,
+                confidence: 0.9,
+                type: 'mechanic',
+                name: 'come_funziona'
+            },
+            {
+                regex: /(?:posso|possiamo|è possibile|si può)\s+([a-z\s]+?)(?:\?|$)/i,
+                confidence: 0.7,
+                type: 'action',
+                name: 'posso'
+            },
+            {
+                regex: /(?:cosa succede quando|cosa succede se|che succede se)\s+([a-z\s]+?)(?:\?|$)/i,
+                confidence: 0.8,
+                type: 'mechanic',
+                name: 'cosa_succede'
+            },
+            {
+                regex: /(?:quanto costa|quanti slot|quante azioni)\s+([a-z\s]+?)(?:\?|$)/i,
+                confidence: 0.8,
+                type: 'spell',
+                name: 'quanto_costa'
+            },
+
+            // General rules keywords
+            {
+                regex: /\b(?:regola|regole|meccanica|meccaniche|rule|rules|mechanic|mechanics)\b/i,
+                confidence: 0.6,
+                type: 'general',
+                name: 'rules_keyword'
+            }
+        ];
+    }
+
+    /**
+     * Returns common D&D mechanic terms and their categories
+     * @returns {Object<string, string>}
+     * @private
+     */
+    _getMechanicTerms() {
+        return {
+            // Combat mechanics
+            'grappling': 'combat',
+            'lotta': 'combat',
+            'opportunity attack': 'combat',
+            'attacco di opportunità': 'combat',
+            'advantage': 'combat',
+            'vantaggio': 'combat',
+            'disadvantage': 'combat',
+            'svantaggio': 'combat',
+            'critical hit': 'combat',
+            'colpo critico': 'combat',
+            'initiative': 'combat',
+            'iniziativa': 'combat',
+            'dodge': 'combat',
+            'schivare': 'combat',
+            'dash': 'combat',
+            'scattare': 'combat',
+            'disengage': 'combat',
+            'disimpegno': 'combat',
+
+            // Spell mechanics
+            'concentration': 'spell',
+            'concentrazione': 'spell',
+            'spell slot': 'spell',
+            'slot incantesimo': 'spell',
+            'ritual': 'spell',
+            'rituale': 'spell',
+            'cantrip': 'spell',
+            'trucchetto': 'spell',
+            'casting time': 'spell',
+            'tempo di lancio': 'spell',
+
+            // Conditions
+            'prone': 'condition',
+            'prono': 'condition',
+            'stunned': 'condition',
+            'stordito': 'condition',
+            'paralyzed': 'condition',
+            'paralizzato': 'condition',
+            'blinded': 'condition',
+            'accecato': 'condition',
+            'charmed': 'condition',
+            'affascinato': 'condition',
+            'frightened': 'condition',
+            'spaventato': 'condition',
+            'poisoned': 'condition',
+            'avvelenato': 'condition',
+            'restrained': 'condition',
+            'trattenuto': 'condition',
+
+            // Abilities and checks
+            'saving throw': 'ability',
+            'tiro salvezza': 'ability',
+            'ability check': 'ability',
+            'prova di caratteristica': 'ability',
+            'skill check': 'ability',
+            'prova di abilità': 'ability',
+
+            // Movement
+            'difficult terrain': 'movement',
+            'terreno difficile': 'movement',
+            'jump': 'movement',
+            'saltare': 'movement',
+            'climb': 'movement',
+            'scalare': 'movement',
+            'swimming': 'movement',
+            'nuotare': 'movement',
+
+            // Rest
+            'short rest': 'rest',
+            'riposo breve': 'rest',
+            'long rest': 'rest',
+            'riposo lungo': 'rest'
+        };
+    }
+
+    /**
+     * Checks if text contains a question word
+     * @param {string} text - The normalized text
+     * @returns {boolean}
+     * @private
+     */
+    _hasQuestionWord(text) {
+        const questionWords = [
+            // English
+            'how', 'what', 'when', 'where', 'why', 'who', 'can', 'does', 'do', 'is', 'are',
+            // Italian
+            'come', 'cosa', 'quando', 'dove', 'perché', 'chi', 'posso', 'può', 'puoi',
+            'è', 'sono', 'qual', 'quale', 'quanti', 'quante', 'quanto'
+        ];
+
+        const words = text.split(/\s+/);
+        return words.some(word => questionWords.includes(word));
+    }
+
+    /**
+     * Extracts the primary topic from a rules question
+     * @param {string} text - The text containing the question
+     * @returns {string|null} The extracted topic or null
+     */
+    extractRulesTopic(text) {
+        const detection = this.detectRulesQuestion(text);
+        return detection.extractedTopic || null;
+    }
+
+    /**
+     * Checks if a specific term is a known rules mechanic
+     * @param {string} term - The term to check
+     * @returns {boolean}
+     */
+    isKnownMechanic(term) {
+        if (!term || typeof term !== 'string') {
+            return false;
+        }
+
+        const normalizedTerm = term.toLowerCase().trim();
+        const mechanicTerms = this._getMechanicTerms();
+
+        return normalizedTerm in mechanicTerms;
+    }
 }
