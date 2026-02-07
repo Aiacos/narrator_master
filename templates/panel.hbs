@@ -1,5 +1,5 @@
 {{!-- Narrator Master - DM Panel Template --}}
-{{!-- Handlebars template for the main DM interface --}}
+{{!-- Interactive narrative assistant panel --}}
 
 <div class="narrator-panel-container" data-module-id="{{moduleId}}">
     {{!-- Configuration Warning --}}
@@ -22,34 +22,35 @@
     </div>
     {{/if}}
 
-    {{!-- Recording Controls Section --}}
+    {{!-- Recording Controls - Compact Toggle --}}
     <section class="narrator-recording-section">
         <div class="recording-controls">
             {{#if isInactive}}
             <button type="button" class="start-recording {{#unless apiKeyConfigured}}disabled{{/unless}}"
-                    {{#unless apiKeyConfigured}}disabled{{/unless}}>
+                    {{#unless apiKeyConfigured}}disabled{{/unless}}
+                    title="{{i18n.startRecording}}">
                 <i class="fas fa-microphone"></i>
                 {{i18n.startRecording}}
             </button>
             {{/if}}
 
             {{#if isRecording}}
-            <button type="button" class="pause-recording">
+            <button type="button" class="pause-recording" title="{{i18n.pauseRecording}}">
                 <i class="fas fa-pause"></i>
                 {{i18n.pauseRecording}}
             </button>
-            <button type="button" class="stop-recording">
+            <button type="button" class="stop-recording" title="{{i18n.stopRecording}}">
                 <i class="fas fa-stop"></i>
                 {{i18n.stopRecording}}
             </button>
             {{/if}}
 
             {{#if isPaused}}
-            <button type="button" class="resume-recording">
+            <button type="button" class="resume-recording" title="{{i18n.resumeRecording}}">
                 <i class="fas fa-play"></i>
                 {{i18n.resumeRecording}}
             </button>
-            <button type="button" class="stop-recording">
+            <button type="button" class="stop-recording" title="{{i18n.stopRecording}}">
                 <i class="fas fa-stop"></i>
                 {{i18n.stopRecording}}
             </button>
@@ -70,6 +71,9 @@
                 <i class="fas fa-circle"></i>
             </span>
             <span class="recording-duration">{{recordingDuration}}</span>
+            {{#if isRecording}}
+            <span class="listening-label">{{i18n.listeningStatus}}</span>
+            {{/if}}
         </div>
 
         {{!-- Audio Level Indicator --}}
@@ -79,28 +83,17 @@
         {{/unless}}
     </section>
 
-    {{!-- Journal Selection --}}
-    <section class="narrator-journal-section">
-        <label for="journal-select">{{i18n.selectJournal}}</label>
-        <select class="journal-select" id="journal-select">
-            <option value="">-- {{i18n.selectJournal}} --</option>
-            {{#each availableJournals}}
-            <option value="{{this.id}}" {{#if (eq this.id ../selectedJournal)}}selected{{/if}}>
-                {{this.name}}
-            </option>
-            {{/each}}
-        </select>
-    </section>
+    {{!-- Journal Status --}}
+    <div class="narrator-journal-status">
+        <i class="fas fa-book"></i>
+        <span>{{journalStatusText}}</span>
+    </div>
 
     {{!-- Tab Navigation --}}
     <nav class="tabs" data-group="primary">
-        <a class="item" data-tab="transcription">
-            <i class="fas fa-file-alt"></i>
-            {{i18n.transcriptionTab}}
-        </a>
-        <a class="item" data-tab="suggestions">
+        <a class="item" data-tab="assistant">
             <i class="fas fa-lightbulb"></i>
-            {{i18n.suggestionsTab}}
+            {{i18n.assistantTab}}
             {{#if offTrack}}
             <span class="off-track-badge" title="{{i18n.offTrackWarning}}">!</span>
             {{/if}}
@@ -116,65 +109,10 @@
 
     {{!-- Tab Content --}}
     <section class="tab-content">
-        {{!-- Transcription Tab --}}
-        <div class="tab" data-tab="transcription" data-group="primary">
-            <div class="transcription-header">
-                <h3>{{i18n.transcriptionTab}}</h3>
-                <div class="transcription-actions">
-                    {{#if hasTranscription}}
-                    <button type="button" class="copy-transcription" title="{{i18n.copyToClipboard}}">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                    <button type="button" class="clear-transcription" title="{{i18n.clearTranscription}}">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                    {{/if}}
-                </div>
-            </div>
-
-            <div class="transcription-content">
-                {{#if hasTranscription}}
-                    {{#if transcriptionSegments.length}}
-                        {{!-- Diarized Transcription with Speaker Labels --}}
-                        <div class="transcription-segments">
-                            {{#each transcriptionSegments}}
-                            <div class="transcription-segment">
-                                {{#if ../showSpeakerLabels}}
-                                <span class="speaker-label">{{this.speaker}}:</span>
-                                {{/if}}
-                                <span class="segment-text">{{this.text}}</span>
-                            </div>
-                            {{/each}}
-                        </div>
-                    {{else}}
-                        {{!-- Plain Transcription --}}
-                        <div class="transcription-text">
-                            {{transcription}}
-                        </div>
-                    {{/if}}
-                {{else}}
-                    <div class="empty-state">
-                        <i class="fas fa-microphone-slash"></i>
-                        <p>{{i18n.noTranscription}}</p>
-                    </div>
-                {{/if}}
-            </div>
-
-            {{!-- Current Journal Context --}}
-            {{#if hasJournalRef}}
-            <div class="journal-context">
-                <h4>{{i18n.currentContext}}</h4>
-                <div class="journal-ref-content">
-                    {{journalRef}}
-                </div>
-            </div>
-            {{/if}}
-        </div>
-
-        {{!-- Suggestions Tab --}}
-        <div class="tab" data-tab="suggestions" data-group="primary">
+        {{!-- Assistant Tab --}}
+        <div class="tab" data-tab="assistant" data-group="primary">
             <div class="suggestions-header">
-                <h3>{{i18n.suggestionsTab}}</h3>
+                <h3>{{i18n.assistantTab}}</h3>
                 <div class="suggestions-actions">
                     {{#if hasSuggestions}}
                     <button type="button" class="copy-suggestions" title="{{i18n.copyToClipboard}}">

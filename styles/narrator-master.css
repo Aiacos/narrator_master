@@ -39,14 +39,6 @@
     --narrator-border: #444444;
     --narrator-border-light: #555555;
 
-    /* Speaker label colors */
-    --narrator-speaker-dm: #9b59b6;
-    --narrator-speaker-player1: #3498db;
-    --narrator-speaker-player2: #2ecc71;
-    --narrator-speaker-player3: #f39c12;
-    --narrator-speaker-player4: #e74c3c;
-    --narrator-speaker-unknown: #95a5a6;
-
     /* Spacing */
     --narrator-spacing-xs: 4px;
     --narrator-spacing-sm: 8px;
@@ -281,6 +273,12 @@
     color: var(--narrator-text-secondary);
 }
 
+.listening-label {
+    font-size: 0.85em;
+    color: var(--narrator-text-muted);
+    font-style: italic;
+}
+
 /* Audio Level Indicator */
 .audio-level-container {
     height: 6px;
@@ -297,39 +295,22 @@
 }
 
 /* ============================================
-   Journal Selection Section
+   Journal Status
    ============================================ */
-.narrator-journal-section {
+.narrator-journal-status {
     display: flex;
-    flex-direction: column;
-    gap: var(--narrator-spacing-xs);
-}
-
-.narrator-journal-section label {
+    align-items: center;
+    gap: var(--narrator-spacing-sm);
+    padding: var(--narrator-spacing-sm) var(--narrator-spacing-md);
+    background: var(--narrator-primary-light);
+    border: 1px solid rgba(123, 104, 238, 0.2);
+    border-radius: var(--narrator-radius-sm);
     font-size: 0.85em;
     color: var(--narrator-text-secondary);
-    font-weight: 500;
 }
 
-.journal-select {
-    width: 100%;
-    padding: var(--narrator-spacing-sm);
-    background: var(--narrator-bg-secondary);
-    border: 1px solid var(--narrator-border);
-    border-radius: var(--narrator-radius-sm);
-    color: var(--narrator-text-primary);
-    font-size: 0.9em;
-    cursor: pointer;
-    transition: border-color var(--narrator-transition);
-}
-
-.journal-select:hover {
-    border-color: var(--narrator-border-light);
-}
-
-.journal-select:focus {
-    outline: none;
-    border-color: var(--narrator-primary);
+.narrator-journal-status i {
+    color: var(--narrator-primary);
 }
 
 /* ============================================
@@ -441,7 +422,6 @@
 }
 
 /* Tab Headers */
-.transcription-header,
 .suggestions-header,
 .images-header {
     display: flex;
@@ -452,7 +432,6 @@
     margin-bottom: var(--narrator-spacing-md);
 }
 
-.transcription-header h3,
 .suggestions-header h3,
 .images-header h3 {
     margin: 0;
@@ -461,14 +440,12 @@
     color: var(--narrator-text-primary);
 }
 
-.transcription-actions,
 .suggestions-actions,
 .images-actions {
     display: flex;
     gap: var(--narrator-spacing-xs);
 }
 
-.transcription-actions button,
 .suggestions-actions button,
 .images-actions button {
     display: flex;
@@ -485,7 +462,6 @@
     transition: all var(--narrator-transition);
 }
 
-.transcription-actions button:hover,
 .suggestions-actions button:hover,
 .images-actions button:hover {
     background: var(--narrator-bg-tertiary);
@@ -508,80 +484,6 @@
 .generate-image.disabled {
     opacity: 0.5;
     cursor: not-allowed;
-}
-
-/* ============================================
-   Transcription Content
-   ============================================ */
-.transcription-content {
-    flex: 1;
-    overflow-y: auto;
-    padding-right: var(--narrator-spacing-xs);
-}
-
-.transcription-segments {
-    display: flex;
-    flex-direction: column;
-    gap: var(--narrator-spacing-sm);
-}
-
-.transcription-segment {
-    padding: var(--narrator-spacing-sm) var(--narrator-spacing-md);
-    background: var(--narrator-bg-secondary);
-    border-radius: var(--narrator-radius-sm);
-    border-left: 3px solid var(--narrator-speaker-unknown);
-}
-
-/* Speaker Label Colors */
-.transcription-segment:has(.speaker-label:contains('DM')),
-.transcription-segment:has(.speaker-label:contains('Master')),
-.transcription-segment:has(.speaker-label:contains('GM')) {
-    border-left-color: var(--narrator-speaker-dm);
-}
-
-.speaker-label {
-    font-weight: 600;
-    margin-right: var(--narrator-spacing-xs);
-    color: var(--narrator-primary);
-    font-size: 0.9em;
-}
-
-.segment-text {
-    color: var(--narrator-text-primary);
-    line-height: 1.5;
-}
-
-.transcription-text {
-    padding: var(--narrator-spacing-md);
-    background: var(--narrator-bg-secondary);
-    border-radius: var(--narrator-radius-sm);
-    color: var(--narrator-text-primary);
-    line-height: 1.6;
-    white-space: pre-wrap;
-}
-
-/* Journal Context */
-.journal-context {
-    margin-top: var(--narrator-spacing-md);
-    padding: var(--narrator-spacing-md);
-    background: var(--narrator-primary-light);
-    border: 1px solid rgba(123, 104, 238, 0.3);
-    border-radius: var(--narrator-radius-md);
-}
-
-.journal-context h4 {
-    margin: 0 0 var(--narrator-spacing-sm) 0;
-    font-size: 0.9em;
-    font-weight: 600;
-    color: var(--narrator-primary);
-}
-
-.journal-ref-content {
-    font-size: 0.9em;
-    color: var(--narrator-text-secondary);
-    line-height: 1.5;
-    max-height: 100px;
-    overflow-y: auto;
 }
 
 /* ============================================
@@ -930,7 +832,6 @@
 
     .recording-controls,
     .images-actions,
-    .transcription-actions,
     .suggestions-actions {
         display: none;
     }

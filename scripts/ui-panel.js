@@ -19,7 +19,7 @@ export const RECORDING_STATE = {
 
 /**
  * NarratorPanel - Main DM interface Application
- * Provides real-time transcription display, AI suggestions, and recording controls
+ * Provides AI suggestions, off-track detection, and recording controls
  * @extends Application
  */
 export class NarratorPanel extends Application {
@@ -35,18 +35,6 @@ export class NarratorPanel extends Application {
          * @type {SettingsManager}
          */
         this.settingsManager = new SettingsManager();
-
-        /**
-         * Current transcription text
-         * @type {string}
-         */
-        this.transcription = '';
-
-        /**
-         * Array of transcription segments with speaker info
-         * @type {Array<{speaker: string, text: string, timestamp: number}>}
-         */
-        this.transcriptionSegments = [];
 
         /**
          * Current AI suggestions
@@ -73,10 +61,10 @@ export class NarratorPanel extends Application {
         this.narrativeBridge = '';
 
         /**
-         * Current journal reference/context
-         * @type {string}
+         * Number of journals loaded for AI context
+         * @type {number}
          */
-        this.journalRef = '';
+        this.journalCount = 0;
 
         /**
          * Generated images
@@ -121,12 +109,6 @@ export class NarratorPanel extends Application {
         this.onGenerateImage = null;
 
         /**
-         * Callback for journal selection
-         * @type {Function|null}
-         */
-        this.onJournalSelect = null;
-
-        /**
          * Whether the module is loading/processing
          * @type {boolean}
          */
@@ -137,6 +119,13 @@ export class NarratorPanel extends Application {
          * @type {string}
          */
         this.loadingMessage = '';
+
+        /**
+         * Internal transcription text for image generation context
+         * @type {string}
+         * @private
+         */
+        this._lastTranscription = '';
     }
 
     /**
@@ -158,7 +147,7 @@ export class NarratorPanel extends Application {
             tabs: [{
                 navSelector: '.tabs',
                 contentSelector: '.tab-content',
-                initial: 'transcription'
+                initial: 'assistant'
             }]
         });
     }
@@ -168,17 +157,17 @@ export class NarratorPanel extends Application {
      * @returns {Object} Template data
      */
     getData() {
-        const settings = this.settingsManager.getAllSettings();
+        // Build journal status text
+        let journalStatusText;
+        if (this.journalCount > 0) {
+            journalStatusText = game.i18n.format('NARRATOR.Panel.JournalStatus', { count: this.journalCount });
+        } else {
+            journalStatusText = game.i18n.localize('NARRATOR.Panel.JournalStatusEmpty');
+        }
 
         return {
             // Module info
             moduleId: MODULE_ID,
-
-            // Transcription data
-            transcription: this.transcription,
-            transcriptionSegments: this.transcriptionSegments,
-            hasTranscription: this.transcription.length > 0 || this.transcriptionSegments.length > 0,
-            showSpeakerLabels: settings.showSpeakerLabels,
 
             // AI suggestions
             suggestions: this.suggestions,
@@ -190,11 +179,9 @@ export class NarratorPanel extends Application {
             narrativeBridge: this.narrativeBridge,
             hasNarrativeBridge: this.narrativeBridge.length > 0,
 
-            // Journal reference
-            journalRef: this.journalRef,
-            hasJournalRef: this.journalRef.length > 0,
-            selectedJournal: settings.selectedJournal,
-            availableJournals: this._getAvailableJournals(),
+            // Journal status
+            journalCount: this.journalCount,
+            journalStatusText,
 
             // Generated images
             generatedImages: this.generatedImages,
@@ -211,7 +198,6 @@ export class NarratorPanel extends Application {
 
             // Configuration status
             apiKeyConfigured: this.settingsManager.isApiKeyConfigured(),
-            journalSelected: this.settingsManager.isJournalSelected(),
             isConfigured: this.settingsManager.isApiKeyConfigured(),
 
             // Loading state
@@ -225,40 +211,20 @@ export class NarratorPanel extends Application {
                 pauseRecording: game.i18n.localize('NARRATOR.Panel.PauseRecording'),
                 resumeRecording: game.i18n.localize('NARRATOR.Panel.ResumeRecording'),
                 generateImage: game.i18n.localize('NARRATOR.Panel.GenerateImage'),
-                transcriptionTab: game.i18n.localize('NARRATOR.Panel.TranscriptionTab'),
-                suggestionsTab: game.i18n.localize('NARRATOR.Panel.SuggestionsTab'),
+                assistantTab: game.i18n.localize('NARRATOR.Panel.AssistantTab'),
                 imagesTab: game.i18n.localize('NARRATOR.Panel.ImagesTab'),
-                noTranscription: game.i18n.localize('NARRATOR.Panel.NoTranscription'),
                 noSuggestions: game.i18n.localize('NARRATOR.Panel.NoSuggestions'),
                 noImages: game.i18n.localize('NARRATOR.Panel.NoImages'),
                 offTrackWarning: game.i18n.localize('NARRATOR.Panel.OffTrackWarning'),
                 returnToStory: game.i18n.localize('NARRATOR.Panel.ReturnToStory'),
-                selectJournal: game.i18n.localize('NARRATOR.Panel.SelectJournal'),
-                currentContext: game.i18n.localize('NARRATOR.Panel.CurrentContext'),
                 noApiKey: game.i18n.localize('NARRATOR.Panel.NoApiKey'),
                 configureSettings: game.i18n.localize('NARRATOR.Panel.ConfigureSettings'),
                 processing: game.i18n.localize('NARRATOR.Panel.Processing'),
-                clearTranscription: game.i18n.localize('NARRATOR.Panel.ClearTranscription'),
                 clearImages: game.i18n.localize('NARRATOR.Panel.ClearImages'),
-                copyToClipboard: game.i18n.localize('NARRATOR.Panel.CopyToClipboard')
+                copyToClipboard: game.i18n.localize('NARRATOR.Panel.CopyToClipboard'),
+                listeningStatus: game.i18n.localize('NARRATOR.Panel.ListeningStatus')
             }
         };
-    }
-
-    /**
-     * Gets the list of available journals for selection
-     * @returns {Array<{id: string, name: string}>}
-     * @private
-     */
-    _getAvailableJournals() {
-        if (!game.journal) {
-            return [];
-        }
-
-        return game.journal.contents.map(journal => ({
-            id: journal.id,
-            name: journal.name
-        })).sort((a, b) => a.name.localeCompare(b.name));
     }
 
     /**
@@ -289,15 +255,10 @@ export class NarratorPanel extends Application {
         // Image generation
         html.find('.generate-image').click(this._onGenerateImage.bind(this));
 
-        // Journal selection
-        html.find('.journal-select').change(this._onJournalSelect.bind(this));
-
         // Clear buttons
-        html.find('.clear-transcription').click(this._onClearTranscription.bind(this));
         html.find('.clear-images').click(this._onClearImages.bind(this));
 
         // Copy to clipboard
-        html.find('.copy-transcription').click(this._onCopyTranscription.bind(this));
         html.find('.copy-suggestions').click(this._onCopySuggestions.bind(this));
 
         // Settings link
@@ -382,8 +343,7 @@ export class NarratorPanel extends Application {
         }
 
         if (this.onGenerateImage) {
-            // Generate based on current context
-            const context = this.transcription || this.journalRef;
+            const context = this._lastTranscription;
             if (context) {
                 this.setLoading(true, game.i18n.localize('NARRATOR.Panel.GeneratingImage'));
                 await this.onGenerateImage(context);
@@ -395,33 +355,6 @@ export class NarratorPanel extends Application {
     }
 
     /**
-     * Handles journal selection change
-     * @param {Event} event - Change event
-     * @private
-     */
-    async _onJournalSelect(event) {
-        event.preventDefault();
-        const journalId = event.target.value;
-
-        if (this.onJournalSelect) {
-            await this.onJournalSelect(journalId);
-        }
-
-        // Also update the setting
-        await this.settingsManager.setSelectedJournal(journalId);
-    }
-
-    /**
-     * Handles clear transcription button click
-     * @param {Event} event - Click event
-     * @private
-     */
-    _onClearTranscription(event) {
-        event.preventDefault();
-        this.clearTranscription();
-    }
-
-    /**
      * Handles clear images button click
      * @param {Event} event - Click event
      * @private
@@ -429,26 +362,6 @@ export class NarratorPanel extends Application {
     _onClearImages(event) {
         event.preventDefault();
         this.clearImages();
-    }
-
-    /**
-     * Handles copy transcription button click
-     * @param {Event} event - Click event
-     * @private
-     */
-    async _onCopyTranscription(event) {
-        event.preventDefault();
-
-        let text = this.transcription;
-        if (this.transcriptionSegments.length > 0) {
-            text = this.transcriptionSegments
-                .map(seg => this.settingsManager.getShowSpeakerLabels()
-                    ? `[${seg.speaker}]: ${seg.text}`
-                    : seg.text)
-                .join('\n');
-        }
-
-        await this._copyToClipboard(text);
     }
 
     /**
@@ -493,7 +406,6 @@ export class NarratorPanel extends Application {
      */
     _onOpenSettings(event) {
         event.preventDefault();
-        // Open the module settings
         game.settings.sheet.render(true);
     }
 
@@ -506,7 +418,6 @@ export class NarratorPanel extends Application {
         event.preventDefault();
         const imageUrl = event.currentTarget.dataset.url;
         if (imageUrl) {
-            // Create a simple lightbox
             new ImagePopout(imageUrl, {
                 title: game.i18n.localize('NARRATOR.Panel.GeneratedImage'),
                 shareable: true
@@ -533,21 +444,13 @@ export class NarratorPanel extends Application {
     /**
      * Updates the panel with new content data
      * @param {Object} data - Content data to update
-     * @param {string} [data.transcription] - New transcription text
-     * @param {Array} [data.transcriptionSegments] - New transcription segments
      * @param {Array<string>} [data.suggestions] - New AI suggestions
      * @param {boolean} [data.offTrack] - Off-track status
      * @param {string} [data.offTrackMessage] - Off-track warning message
      * @param {string} [data.narrativeBridge] - Narrative bridge suggestion
-     * @param {string} [data.journalRef] - Journal reference context
+     * @param {number} [data.journalCount] - Number of journals loaded
      */
     updateContent(data) {
-        if (data.transcription !== undefined) {
-            this.transcription = data.transcription;
-        }
-        if (data.transcriptionSegments !== undefined) {
-            this.transcriptionSegments = data.transcriptionSegments;
-        }
         if (data.suggestions !== undefined) {
             this.suggestions = data.suggestions;
         }
@@ -560,31 +463,19 @@ export class NarratorPanel extends Application {
         if (data.narrativeBridge !== undefined) {
             this.narrativeBridge = data.narrativeBridge;
         }
-        if (data.journalRef !== undefined) {
-            this.journalRef = data.journalRef;
+        if (data.journalCount !== undefined) {
+            this.journalCount = data.journalCount;
         }
 
         this.render(false);
     }
 
     /**
-     * Appends new transcription segment
-     * @param {Object} segment - Transcription segment
-     * @param {string} segment.speaker - Speaker name
-     * @param {string} segment.text - Transcribed text
-     * @param {number} [segment.timestamp] - Timestamp in seconds
+     * Sets the last transcription text (used internally for image generation context)
+     * @param {string} text - Transcribed text
      */
-    appendTranscription(segment) {
-        this.transcriptionSegments.push({
-            speaker: segment.speaker || 'Unknown',
-            text: segment.text,
-            timestamp: segment.timestamp || Date.now()
-        });
-
-        // Update combined transcription text
-        this.transcription = this.transcriptionSegments.map(s => s.text).join(' ');
-
-        this.render(false);
+    setLastTranscription(text) {
+        this._lastTranscription = text;
     }
 
     /**
@@ -648,15 +539,6 @@ export class NarratorPanel extends Application {
     }
 
     /**
-     * Clears the transcription data
-     */
-    clearTranscription() {
-        this.transcription = '';
-        this.transcriptionSegments = [];
-        this.render(false);
-    }
-
-    /**
      * Clears the generated images
      */
     clearImages() {
@@ -679,10 +561,9 @@ export class NarratorPanel extends Application {
      * Clears all panel content
      */
     clearAll() {
-        this.clearTranscription();
         this.clearSuggestions();
         this.clearImages();
-        this.journalRef = '';
+        this._lastTranscription = '';
         this.render(false);
     }
 
@@ -714,7 +595,6 @@ export class NarratorPanel extends Application {
      * @override
      */
     async close(options = {}) {
-        // Save position before closing
         if (this.position) {
             await this.settingsManager.setPanelPosition({
                 top: this.position.top,
@@ -722,7 +602,6 @@ export class NarratorPanel extends Application {
             });
         }
 
-        // Clean up timer
         this._stopDurationTimer();
 
         return super.close(options);
@@ -733,7 +612,6 @@ export class NarratorPanel extends Application {
      * @override
      */
     setPosition(options = {}) {
-        // On first render, restore position from settings
         if (!this._positionRestored) {
             const savedPosition = this.settingsManager.getPanelPosition();
             if (savedPosition && savedPosition.top && savedPosition.left) {

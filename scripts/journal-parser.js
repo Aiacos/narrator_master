@@ -338,10 +338,10 @@ export class JournalParser {
      * Gets the content formatted for AI context
      * Includes structure markers and page references
      * @param {string} journalId - The journal ID
-     * @param {number} [maxLength=10000] - Maximum length of output
+     * @param {number} [maxLength=50000] - Maximum length of output
      * @returns {string} Formatted content for AI
      */
-    getContentForAI(journalId, maxLength = 10000) {
+    getContentForAI(journalId, maxLength = 50000) {
         const cached = this._cachedContent.get(journalId);
         if (!cached) {
             return '';
@@ -358,6 +358,63 @@ export class JournalParser {
             }
 
             content += section;
+        }
+
+        return content;
+    }
+
+    /**
+     * Parses all journals available in the game
+     * @returns {Promise<ParsedJournal[]>} Array of all parsed journals
+     */
+    async parseAllJournals() {
+        if (!game.journal) {
+            console.warn(`${MODULE_ID} | Journal collection not available`);
+            return [];
+        }
+
+        const results = [];
+        for (const journal of game.journal.contents) {
+            try {
+                const parsed = await this.parseJournal(journal.id);
+                results.push(parsed);
+            } catch (error) {
+                console.warn(`${MODULE_ID} | Failed to parse journal "${journal.name}":`, error);
+            }
+        }
+
+        console.log(`${MODULE_ID} | Parsed ${results.length} journals total`);
+        return results;
+    }
+
+    /**
+     * Gets the combined content of all cached journals formatted for AI context
+     * @param {number} [maxLength=50000] - Maximum total length of output
+     * @returns {string} Combined formatted content for AI
+     */
+    getAllContentForAI(maxLength = 50000) {
+        let content = '';
+
+        for (const cached of this._cachedContent.values()) {
+            const journalHeader = `# ${cached.name}\n\n`;
+
+            if (content.length + journalHeader.length > maxLength) {
+                content += `\n[... contenuto troncato per lunghezza ...]\n`;
+                break;
+            }
+
+            content += journalHeader;
+
+            for (const page of cached.pages) {
+                const section = `## ${page.name}\n${page.text}\n\n`;
+
+                if (content.length + section.length > maxLength) {
+                    content += `\n[... contenuto troncato per lunghezza ...]\n`;
+                    break;
+                }
+
+                content += section;
+            }
         }
 
         return content;

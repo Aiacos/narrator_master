@@ -1,6 +1,6 @@
 /**
  * Settings Module for Narrator Master
- * Handles module configuration including API key and journal selection
+ * Handles module configuration for the interactive narrative assistant
  * @module settings
  */
 
@@ -16,11 +16,8 @@ export const MODULE_ID = 'narrator-master';
  */
 export const SETTINGS = {
     OPENAI_API_KEY: 'openaiApiKey',
-    SELECTED_JOURNAL: 'selectedJournal',
-    AUTO_START_RECORDING: 'autoStartRecording',
     TRANSCRIPTION_LANGUAGE: 'transcriptionLanguage',
     PANEL_POSITION: 'panelPosition',
-    SHOW_SPEAKER_LABELS: 'showSpeakerLabels',
     OFF_TRACK_SENSITIVITY: 'offTrackSensitivity'
 };
 
@@ -38,37 +35,10 @@ export function registerSettings() {
         type: String,
         default: '',
         onChange: value => {
-            // Notify the module instance of API key change
             if (window.narratorMaster) {
                 window.narratorMaster.updateApiKey(value);
             }
         }
-    });
-
-    // Selected Journal - The adventure journal to use for context
-    game.settings.register(MODULE_ID, SETTINGS.SELECTED_JOURNAL, {
-        name: 'NARRATOR.Settings.JournalName',
-        hint: 'NARRATOR.Settings.JournalHint',
-        scope: 'world',
-        config: true,
-        type: String,
-        default: '',
-        onChange: value => {
-            // Notify the module instance of journal change
-            if (window.narratorMaster) {
-                window.narratorMaster.updateSelectedJournal(value);
-            }
-        }
-    });
-
-    // Auto-start recording when panel opens
-    game.settings.register(MODULE_ID, SETTINGS.AUTO_START_RECORDING, {
-        name: 'NARRATOR.Settings.AutoStartName',
-        hint: 'NARRATOR.Settings.AutoStartHint',
-        scope: 'world',
-        config: true,
-        type: Boolean,
-        default: false
     });
 
     // Transcription language (default Italian)
@@ -96,16 +66,6 @@ export function registerSettings() {
         config: false,
         type: Object,
         default: { top: 100, left: 100 }
-    });
-
-    // Show speaker labels in transcription
-    game.settings.register(MODULE_ID, SETTINGS.SHOW_SPEAKER_LABELS, {
-        name: 'NARRATOR.Settings.SpeakerLabelsName',
-        hint: 'NARRATOR.Settings.SpeakerLabelsHint',
-        scope: 'world',
-        config: true,
-        type: Boolean,
-        default: true
     });
 
     // Off-track detection sensitivity
@@ -154,31 +114,6 @@ export class SettingsManager {
     }
 
     /**
-     * Gets the selected journal ID
-     * @returns {string} The journal ID or empty string
-     */
-    getSelectedJournal() {
-        return game.settings.get(MODULE_ID, SETTINGS.SELECTED_JOURNAL) || '';
-    }
-
-    /**
-     * Sets the selected journal ID
-     * @param {string} journalId - The journal ID to store
-     * @returns {Promise<void>}
-     */
-    async setSelectedJournal(journalId) {
-        await game.settings.set(MODULE_ID, SETTINGS.SELECTED_JOURNAL, journalId);
-    }
-
-    /**
-     * Gets the auto-start recording setting
-     * @returns {boolean} Whether to auto-start recording
-     */
-    getAutoStartRecording() {
-        return game.settings.get(MODULE_ID, SETTINGS.AUTO_START_RECORDING);
-    }
-
-    /**
      * Gets the transcription language
      * @returns {string} The language code (e.g., 'it', 'en')
      */
@@ -204,14 +139,6 @@ export class SettingsManager {
     }
 
     /**
-     * Gets whether to show speaker labels
-     * @returns {boolean} Whether to show speaker labels
-     */
-    getShowSpeakerLabels() {
-        return game.settings.get(MODULE_ID, SETTINGS.SHOW_SPEAKER_LABELS);
-    }
-
-    /**
      * Gets the off-track detection sensitivity
      * @returns {string} The sensitivity level ('low', 'medium', 'high')
      */
@@ -229,15 +156,6 @@ export class SettingsManager {
     }
 
     /**
-     * Checks if a journal is selected
-     * @returns {boolean} True if a journal is selected
-     */
-    isJournalSelected() {
-        const journalId = this.getSelectedJournal();
-        return journalId && journalId.trim().length > 0;
-    }
-
-    /**
      * Validates the current configuration
      * @returns {Object} Validation result {valid: boolean, errors: string[]}
      */
@@ -246,10 +164,6 @@ export class SettingsManager {
 
         if (!this.isApiKeyConfigured()) {
             errors.push(game.i18n.localize('NARRATOR.Errors.NoApiKey'));
-        }
-
-        if (!this.isJournalSelected()) {
-            errors.push(game.i18n.localize('NARRATOR.Errors.NoJournal'));
         }
 
         return {
@@ -265,11 +179,8 @@ export class SettingsManager {
     getAllSettings() {
         return {
             apiKey: this.getApiKey(),
-            selectedJournal: this.getSelectedJournal(),
-            autoStartRecording: this.getAutoStartRecording(),
             transcriptionLanguage: this.getTranscriptionLanguage(),
             panelPosition: this.getPanelPosition(),
-            showSpeakerLabels: this.getShowSpeakerLabels(),
             offTrackSensitivity: this.getOffTrackSensitivity()
         };
     }

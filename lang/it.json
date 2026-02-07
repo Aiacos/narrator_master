@@ -5,16 +5,10 @@
         "Settings": {
             "ApiKeyName": "Chiave API OpenAI",
             "ApiKeyHint": "La tua chiave API OpenAI. Richiede un account con crediti (minimo $5). Ottienila da platform.openai.com/api-keys",
-            "JournalName": "Journal dell'Avventura",
-            "JournalHint": "Seleziona il Journal che contiene i dettagli dell'avventura per il contesto AI",
-            "AutoStartName": "Avvio Automatico Registrazione",
-            "AutoStartHint": "Avvia automaticamente la registrazione audio quando il pannello viene aperto",
             "LanguageName": "Lingua Trascrizione",
             "LanguageHint": "Lingua per la trascrizione audio (predefinito: Italiano)",
             "PanelPositionName": "Posizione Pannello",
             "PanelPositionHint": "Posizione salvata del pannello DM",
-            "SpeakerLabelsName": "Mostra Etichette Parlanti",
-            "SpeakerLabelsHint": "Mostra i nomi degli speaker nella trascrizione quando viene rilevata la diarizzazione",
             "SensitivityName": "Sensibilita Rilevamento Fuori Tema",
             "SensitivityHint": "Quanto rigorosamente rilevare quando i giocatori si allontanano dalla trama dell'avventura",
             "SensitivityLow": "Bassa - Solo grandi deviazioni",
@@ -26,37 +20,34 @@
             "Title": "Narrator Master",
             "TogglePanel": "Apri/Chiudi Pannello DM",
             "OpenSettings": "Apri Impostazioni",
+            "ToggleRecording": "Registrazione",
             "StartRecording": "Avvia Registrazione",
             "StopRecording": "Ferma Registrazione",
             "PauseRecording": "Pausa",
             "ResumeRecording": "Riprendi",
             "GenerateImage": "Genera Immagine",
-            "TranscriptionTab": "Trascrizione",
-            "SuggestionsTab": "Suggerimenti",
+            "AssistantTab": "Assistente",
             "ImagesTab": "Immagini",
-            "NoTranscription": "Nessuna trascrizione disponibile. Avvia la registrazione per catturare l'audio della sessione.",
-            "NoSuggestions": "Nessun suggerimento disponibile. I suggerimenti appariranno dopo la trascrizione dell'audio.",
+            "NoSuggestions": "Nessun suggerimento disponibile. Avvia la registrazione e l'assistente analizzerà automaticamente la conversazione.",
             "NoImages": "Nessuna immagine generata. Usa il pulsante 'Genera Immagine' per creare infografiche.",
             "OffTrackWarning": "ATTENZIONE: Fuori Tema!",
             "ReturnToStory": "Per Riportarli nella Storia",
-            "SelectJournal": "Seleziona Journal",
-            "CurrentContext": "Contesto Attuale",
             "NoApiKey": "Chiave API non configurata",
             "ConfigureSettings": "Configura Impostazioni",
             "Processing": "Elaborazione in corso...",
-            "ClearTranscription": "Cancella Trascrizione",
             "ClearImages": "Cancella Immagini",
             "CopyToClipboard": "Copia negli Appunti",
             "GeneratingImage": "Generazione immagine in corso...",
             "GeneratedImage": "Immagine Generata",
-            "LoadingJournal": "Caricamento Journal..."
+            "ListeningStatus": "In ascolto...",
+            "JournalStatus": "{count} journal caricati",
+            "JournalStatusEmpty": "Nessun journal disponibile"
         },
 
         "Errors": {
             "NotInitialized": "Narrator Master non e ancora inizializzato. Attendi il caricamento completo.",
             "InitFailed": "Inizializzazione Narrator Master fallita",
             "NoApiKey": "Chiave API OpenAI non configurata. Vai nelle impostazioni del modulo per aggiungerla.",
-            "NoJournal": "Nessun Journal selezionato. Seleziona un Journal dell'avventura nelle impostazioni.",
             "InvalidAudio": "Audio non valido. Assicurati che la registrazione contenga dati audio.",
             "FileTooLarge": "File audio troppo grande ({size}MB). Il limite massimo e 25MB.",
             "InvalidApiKey": "Chiave API non valida. Verifica la tua chiave API OpenAI nelle impostazioni.",
@@ -70,7 +61,7 @@
             "ContentPolicy": "Il contenuto viola le policy di OpenAI. Prova con una descrizione diversa.",
             "AIAssistantFailed": "Assistente AI fallito (Errore {status}): {message}",
             "ImageGenerationFailed": "Generazione immagine fallita (Errore {status}): {message}",
-            "NoContextForImage": "Nessun contesto disponibile per generare un'immagine. Registra prima dell'audio o seleziona un Journal.",
+            "NoContextForImage": "Nessun contesto disponibile per generare un'immagine. Registra prima dell'audio.",
             "CopyFailed": "Impossibile copiare negli appunti.",
             "MicrophoneNotSupported": "Il tuo browser non supporta la cattura audio del microfono.",
             "MicrophonePermissionDenied": "Permesso microfono negato. Consenti l'accesso al microfono nelle impostazioni del browser.",
@@ -84,7 +75,9 @@
             "NetworkError": "Errore di connessione. Verifica la tua connessione Internet e riprova.",
             "Timeout": "La richiesta ha impiegato troppo tempo. Riprova piu tardi.",
             "UnexpectedError": "Si e verificato un errore imprevisto: {message}",
-            "ServiceUnavailable": "Servizio temporaneamente non disponibile. Riprova tra qualche minuto."
+            "ServiceUnavailable": "Servizio temporaneamente non disponibile. Riprova tra qualche minuto.",
+            "InvalidJournalId": "ID Journal non valido.",
+            "JournalNotFound": "Journal non trovato: {id}"
         },
 
         "Warnings": {
@@ -95,8 +88,7 @@
             "CopiedToClipboard": "Copiato negli appunti!",
             "RecordingStarted": "Registrazione avviata",
             "RecordingStopped": "Registrazione fermata",
-            "JournalParsed": "Journal analizzato con successo",
-            "JournalLoaded": "Journal caricato con successo",
+            "JournalsLoaded": "Tutti i journal caricati ({count})",
             "ImageGenerated": "Immagine generata con successo",
             "SettingsSaved": "Impostazioni salvate",
             "ModuleReady": "Narrator Master pronto",
@@ -138,7 +130,8 @@
             "NoJournalFound": "Journal non trovato",
             "ParsingJournal": "Analisi Journal in corso...",
             "JournalEmpty": "Il Journal selezionato e vuoto.",
-            "PageCount": "{count} pagine trovate"
+            "PageCount": "{count} pagine trovate",
+            "UnnamedPage": "Pagina senza nome"
         },
 
         "Images": {
@@ -151,16 +144,11 @@
         },
 
         "Tooltips": {
-            "StartRecording": "Inizia a registrare l'audio della sessione",
-            "StopRecording": "Ferma la registrazione e elabora l'audio",
-            "PauseRecording": "Metti in pausa la registrazione",
-            "ResumeRecording": "Riprendi la registrazione",
+            "ToggleRecording": "Avvia o ferma la registrazione audio",
             "GenerateImage": "Genera un'immagine basata sul contesto attuale",
-            "ClearTranscription": "Cancella tutta la trascrizione corrente",
             "ClearImages": "Cancella tutte le immagini generate",
             "CopyText": "Copia il testo negli appunti",
-            "OpenSettings": "Apri le impostazioni del modulo",
-            "SelectJournal": "Seleziona il Journal dell'avventura per il contesto AI"
+            "OpenSettings": "Apri le impostazioni del modulo"
         },
 
         "Accessibility": {
@@ -168,8 +156,7 @@
             "AudioLevel": "Indicatore livello audio",
             "TabNavigation": "Navigazione schede",
             "ImageGallery": "Galleria immagini",
-            "SuggestionsList": "Lista suggerimenti",
-            "TranscriptionContent": "Contenuto trascrizione"
+            "SuggestionsList": "Lista suggerimenti"
         }
     }
 }

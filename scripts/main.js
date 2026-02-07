@@ -207,14 +207,16 @@ class NarratorMaster {
             // Initialize UI panel
             this._initializePanel();
 
-            // Load selected journal if configured
-            await this._loadSelectedJournal();
+            // Auto-load all journals
+            await this._loadAllJournals();
+
+            // Register journal update hooks
+            this._registerJournalHooks();
 
             // Validate configuration
             const validation = this.settings.validateConfiguration();
             if (!validation.valid) {
                 console.warn(`${MODULE_ID} | Configuration incomplete:`, validation.errors);
-                // Don't block initialization - show warning to user
                 this._showConfigurationWarning(validation.errors);
             }
 
@@ -310,51 +312,46 @@ class NarratorMaster {
         // Set up panel callbacks
         this.panel.onRecordingControl = this._handleRecordingControl.bind(this);
         this.panel.onGenerateImage = this._handleGenerateImage.bind(this);
-        this.panel.onJournalSelect = this._handleJournalSelect.bind(this);
 
         console.log(`${MODULE_ID} | UI panel initialized`);
     }
 
     /**
-     * Loads the selected journal from settings
+     * Loads all available journals and sets AI context
      * @private
      */
-    async _loadSelectedJournal() {
-        const journalId = this.settings.getSelectedJournal();
-        if (!journalId) {
-            console.log(`${MODULE_ID} | No journal selected`);
-            return;
-        }
-
+    async _loadAllJournals() {
         try {
-            await this._parseAndSetJournal(journalId);
+            const parsedJournals = await this.journalParser.parseAllJournals();
+            const context = this.journalParser.getAllContentForAI();
+
+            // Set context in AI assistant
+            this.aiAssistant.setAdventureContext(context);
+
+            // Update panel with journal count
+            if (this.panel) {
+                this.panel.updateContent({
+                    journalCount: parsedJournals.length
+                });
+            }
+
+            console.log(`${MODULE_ID} | Loaded ${parsedJournals.length} journals, ${context.length} chars context`);
+
         } catch (error) {
-            console.warn(`${MODULE_ID} | Failed to load selected journal:`, error);
+            console.warn(`${MODULE_ID} | Failed to load journals:`, error);
         }
     }
 
     /**
-     * Parses a journal and sets up the AI context
-     * @param {string} journalId - The journal ID to parse
+     * Registers hooks for automatic journal reload on changes
      * @private
      */
-    async _parseAndSetJournal(journalId) {
-        console.log(`${MODULE_ID} | Parsing journal: ${journalId}`);
+    _registerJournalHooks() {
+        const reloadJournals = () => this._loadAllJournals();
 
-        const parsedJournal = await this.journalParser.parseJournal(journalId);
-        const context = this.journalParser.getContentForAI(journalId);
-
-        // Set context in AI assistant
-        this.aiAssistant.setAdventureContext(context);
-
-        // Update panel with journal reference
-        if (this.panel) {
-            this.panel.updateContent({
-                journalRef: `${parsedJournal.name} (${parsedJournal.pages.length} pagine)`
-            });
-        }
-
-        console.log(`${MODULE_ID} | Journal context set: ${context.length} chars`);
+        Hooks.on('updateJournalEntry', reloadJournals);
+        Hooks.on('createJournalEntry', reloadJournals);
+        Hooks.on('deleteJournalEntry', reloadJournals);
     }
 
     /**
@@ -410,6 +407,7 @@ class NarratorMaster {
 
     /**
      * Processes accumulated audio chunks through transcription
+     * Transcription is internal - only AI analysis results are shown to the user
      * @private
      */
     async _processAudioChunks() {
@@ -435,18 +433,12 @@ class NarratorMaster {
                 return;
             }
 
-            // Update panel with transcription segments
+            // Store transcription internally for image generation context
             if (this.panel) {
-                for (const segment of transcription.segments) {
-                    this.panel.appendTranscription({
-                        speaker: segment.speaker,
-                        text: segment.text,
-                        timestamp: segment.start
-                    });
-                }
+                this.panel.setLastTranscription(transcription.text);
             }
 
-            // Analyze transcription with AI
+            // Analyze transcription with AI (results shown to user)
             await this._analyzeTranscription(transcription.text);
 
         } catch (error) {
@@ -583,15 +575,9 @@ class NarratorMaster {
             const transcription = await this.transcriptionService.transcribe(audioBlob);
 
             if (transcription.text && transcription.text.trim().length > 0) {
-                // Update panel with final transcription
+                // Store transcription internally for image generation context
                 if (this.panel) {
-                    for (const segment of transcription.segments) {
-                        this.panel.appendTranscription({
-                            speaker: segment.speaker,
-                            text: segment.text,
-                            timestamp: segment.start
-                        });
-                    }
+                    this.panel.setLastTranscription(transcription.text);
                 }
 
                 // Final AI analysis
@@ -639,34 +625,6 @@ class NarratorMaster {
     }
 
     /**
-     * Handles journal selection from the panel
-     * @param {string} journalId - Selected journal ID
-     * @private
-     */
-    async _handleJournalSelect(journalId) {
-        console.log(`${MODULE_ID} | Journal selected: ${journalId}`);
-
-        if (!journalId) {
-            // Clear journal context
-            this.aiAssistant.setAdventureContext('');
-            if (this.panel) {
-                this.panel.updateContent({ journalRef: '' });
-            }
-            return;
-        }
-
-        try {
-            this.panel?.setLoading(true, game.i18n.localize('NARRATOR.Panel.LoadingJournal'));
-            await this._parseAndSetJournal(journalId);
-            ErrorNotificationHelper.info(game.i18n.localize('NARRATOR.Notifications.JournalLoaded'));
-        } catch (error) {
-            this._handleServiceError(error, 'Journal Loading');
-        } finally {
-            this.panel?.setLoading(false);
-        }
-    }
-
-    /**
      * Updates the API key and reinitializes dependent services
      * Called when the API key setting changes
      * @param {string} newApiKey - The new API key
@@ -688,30 +646,6 @@ class NarratorMaster {
 
         // Update panel to reflect configuration status
         this.panel?.render(false);
-    }
-
-    /**
-     * Updates the selected journal and reloads journal content
-     * Called when the selected journal setting changes
-     * @param {string} journalId - The new journal ID
-     */
-    async updateSelectedJournal(journalId) {
-        console.log(`${MODULE_ID} | Selected journal updated:`, journalId);
-
-        if (journalId && journalId.trim().length > 0) {
-            try {
-                await this._parseAndSetJournal(journalId);
-            } catch (error) {
-                console.warn(`${MODULE_ID} | Failed to load journal:`, error);
-            }
-        } else {
-            // Clear journal context
-            this.aiAssistant?.setAdventureContext('');
-            if (this.panel) {
-                this.panel.updateContent({ journalRef: '' });
-            }
-            console.warn(`${MODULE_ID} | No journal selected`);
-        }
     }
 
     /**
@@ -791,9 +725,9 @@ class NarratorMaster {
         return {
             initialized: this._initialized,
             apiKeyConfigured: this.settings.isApiKeyConfigured(),
-            journalSelected: this.settings.isJournalSelected(),
             panelOpen: this.panel?.rendered ?? false,
             isRecording: this.audioCapture?.isRecording ?? false,
+            journalCount: this.journalParser?.getCacheStats()?.cachedJournals ?? 0,
             services: {
                 audioCapture: !!this.audioCapture,
                 transcription: this.transcriptionService?.isConfigured() ?? false,
@@ -870,14 +804,12 @@ Hooks.once('ready', async function() {
 /**
  * Add Narrator Master panel toggle button to the scene controls sidebar
  * Only visible to GM users
- * Uses getSceneControlButtons hook to add a custom control group
  */
 Hooks.on('getSceneControlButtons', (controls) => {
     // Only add controls for GM users
     if (!game.user.isGM) return;
 
     // Foundry v13: controls is Record<string, SceneControl>, tools is Record<string, SceneControlTool>
-    // activeTool is required and must point to a non-button tool with onChange
     controls['narrator-master'] = {
         name: 'narrator-master',
         title: game.i18n.localize('NARRATOR.PanelTitle'),
@@ -893,24 +825,6 @@ Hooks.on('getSceneControlButtons', (controls) => {
                 onChange: () => {
                     if (window.narratorMaster) {
                         window.narratorMaster.togglePanel();
-                    } else {
-                        ui.notifications.warn(game.i18n.localize('NARRATOR.Errors.NotInitialized'));
-                    }
-                }
-            },
-            'start-recording': {
-                name: 'start-recording',
-                title: game.i18n.localize('NARRATOR.Panel.StartRecording'),
-                icon: 'fas fa-circle',
-                button: true,
-                onClick: () => {
-                    if (window.narratorMaster?.audioCapture) {
-                        const isRecording = window.narratorMaster.audioCapture.isRecording;
-                        if (isRecording) {
-                            window.narratorMaster.audioCapture.stop();
-                        } else {
-                            window.narratorMaster.audioCapture.start();
-                        }
                     } else {
                         ui.notifications.warn(game.i18n.localize('NARRATOR.Errors.NotInitialized'));
                     }
