@@ -37,12 +37,23 @@ const MAX_CONTEXT_TOKENS = 8000;
  */
 
 /**
+ * Represents a detected rules question
+ * @typedef {Object} RulesQuestion
+ * @property {string} text - The question text or matched phrase
+ * @property {number} confidence - Confidence score 0-1
+ * @property {string} type - Question type ('mechanic', 'action', 'spell', 'condition', 'general', etc.)
+ * @property {string} [extractedTopic] - Extracted topic from the question
+ * @property {string[]} detectedTerms - Array of detected D&D mechanic terms
+ */
+
+/**
  * Represents the context analysis result
  * @typedef {Object} ContextAnalysis
  * @property {Suggestion[]} suggestions - Array of contextual suggestions
  * @property {OffTrackResult} offTrackStatus - Off-track detection result
  * @property {string[]} relevantPages - IDs of relevant journal pages
  * @property {string} summary - Brief summary of current situation
+ * @property {RulesQuestion[]} rulesQuestions - Array of detected rules questions
  */
 
 /**
@@ -253,6 +264,9 @@ export class AIAssistant {
 
             // Parse the response
             const analysis = this._parseAnalysisResponse(response);
+
+            // Add rules questions to analysis if detected
+            analysis.rulesQuestions = rulesDetection?.questions || [];
 
             // Update conversation history
             this._addToHistory('user', transcription);
@@ -891,7 +905,8 @@ Scrivi una breve narrazione (2-3 frasi) che il DM può usare per riportare delic
                 suggestions: validatedSuggestions,
                 offTrackStatus: offTrackStatus,
                 relevantPages: this._validateArray(parsed.relevantPages, 20, 'relevantPages'),
-                summary: this._validateString(parsed.summary || '', 2000, 'summary')
+                summary: this._validateString(parsed.summary || '', 2000, 'summary'),
+                rulesQuestions: [] // Will be populated by analyzeContext
             };
 
         } catch (error) {
@@ -913,7 +928,8 @@ Scrivi una breve narrazione (2-3 frasi) che il DM può usare per riportare delic
                     reason: ''
                 },
                 relevantPages: [],
-                summary: sanitizedSummary
+                summary: sanitizedSummary,
+                rulesQuestions: [] // Will be populated by analyzeContext
             };
         }
     }
