@@ -1,0 +1,162 @@
+{
+    "NARRATOR": {
+        "PanelTitle": "Narrator Master - DMアシスタント",
+
+        "Settings": {
+            "ApiKeyName": "OpenAI APIキー",
+            "ApiKeyHint": "OpenAI APIキーを入力してください。クレジット付きアカウントが必要です（最低$5）。platform.openai.com/api-keysから取得できます",
+            "LanguageName": "文字起こし言語",
+            "LanguageHint": "音声文字起こしの言語（デフォルト：日本語）",
+            "PanelPositionName": "パネル位置",
+            "PanelPositionHint": "DMパネルの保存された位置",
+            "SensitivityName": "脱線検知感度",
+            "SensitivityHint": "プレイヤーが冒険のストーリーから外れた際の検知の厳密さ",
+            "SensitivityLow": "低 - 大きな逸脱のみ",
+            "SensitivityMedium": "中 - バランス型",
+            "SensitivityHigh": "高 - 小さな変化も検知"
+        },
+
+        "Panel": {
+            "Title": "Narrator Master",
+            "TogglePanel": "DMパネルを開く/閉じる",
+            "OpenSettings": "設定を開く",
+            "ToggleRecording": "録音",
+            "StartRecording": "録音開始",
+            "StopRecording": "録音停止",
+            "PauseRecording": "一時停止",
+            "ResumeRecording": "再開",
+            "GenerateImage": "画像生成",
+            "AssistantTab": "アシスタント",
+            "ImagesTab": "画像",
+            "NoSuggestions": "提案はありません。録音を開始すると、アシスタントが自動的に会話を分析します。",
+            "NoImages": "画像は生成されていません。「画像生成」ボタンを使用してインフォグラフィックを作成してください。",
+            "OffTrackWarning": "警告：脱線しています！",
+            "ReturnToStory": "ストーリーに戻すには",
+            "NoApiKey": "APIキーが設定されていません",
+            "ConfigureSettings": "設定を構成",
+            "Processing": "処理中...",
+            "ClearImages": "画像をクリア",
+            "CopyToClipboard": "クリップボードにコピー",
+            "GeneratingImage": "画像生成中...",
+            "GeneratedImage": "生成された画像",
+            "ListeningStatus": "リスニング中...",
+            "JournalStatus": "{count}個のジャーナルを読み込み済み",
+            "JournalStatusEmpty": "利用可能なジャーナルはありません"
+        },
+
+        "Errors": {
+            "NotInitialized": "Narrator Masterはまだ初期化されていません。完全に読み込まれるまでお待ちください。",
+            "InitFailed": "Narrator Masterの初期化に失敗しました",
+            "NoApiKey": "OpenAI APIキーが設定されていません。モジュール設定で追加してください。",
+            "InvalidAudio": "無効な音声です。録音に音声データが含まれていることを確認してください。",
+            "FileTooLarge": "音声ファイルが大きすぎます（{size}MB）。最大サイズは25MBです。",
+            "InvalidApiKey": "無効なAPIキーです。設定でOpenAI APIキーを確認してください。",
+            "RateLimited": "リクエスト制限に達しました。しばらく待ってから再試行してください。",
+            "BadRequest": "無効なリクエスト：{details}",
+            "ServerError": "OpenAIサーバーエラーです。後で再試行してください。",
+            "TranscriptionFailed": "文字起こしに失敗しました（エラー{status}）：{message}",
+            "NoTranscription": "分析用の文字起こしがありません。",
+            "NoPrompt": "画像生成用のプロンプトが提供されていません。",
+            "NoDescription": "インフォグラフィック用の説明が提供されていません。",
+            "ContentPolicy": "コンテンツがOpenAIのポリシーに違反しています。別の説明を試してください。",
+            "AIAssistantFailed": "AIアシスタントに失敗しました（エラー{status}）：{message}",
+            "ImageGenerationFailed": "画像生成に失敗しました（エラー{status}）：{message}",
+            "NoContextForImage": "画像を生成するためのコンテキストがありません。まず音声を録音してください。",
+            "CopyFailed": "クリップボードにコピーできませんでした。",
+            "MicrophoneNotSupported": "お使いのブラウザはマイク音声キャプチャをサポートしていません。",
+            "MicrophonePermissionDenied": "マイクの許可が拒否されました。ブラウザ設定でマイクアクセスを許可してください。",
+            "MicrophoneNotFound": "マイクが見つかりません。マイクを接続して再試行してください。",
+            "MicrophoneInUse": "マイクは別のアプリケーションで使用中です。マイクを使用している他のアプリを閉じてください。",
+            "MicrophoneConstraints": "マイクが要求された要件を満たしていません。",
+            "MicrophoneSecurityError": "セキュリティエラー：本番環境では音声キャプチャにHTTPSが必要です。",
+            "MicrophoneGeneric": "マイクエラー：{error}",
+            "RecordingFailed": "録音に失敗しました。再試行してください。",
+            "RecorderInitFailed": "レコーダーの初期化に失敗しました：{error}",
+            "NetworkError": "接続エラーです。インターネット接続を確認して再試行してください。",
+            "Timeout": "リクエストに時間がかかりすぎました。後で再試行してください。",
+            "UnexpectedError": "予期しないエラーが発生しました：{message}",
+            "ServiceUnavailable": "サービスが一時的に利用できません。数分後に再試行してください。",
+            "InvalidJournalId": "無効なジャーナルIDです。",
+            "JournalNotFound": "ジャーナルが見つかりません：{id}"
+        },
+
+        "Warnings": {
+            "ConfigIncomplete": "設定が不完全です"
+        },
+
+        "Notifications": {
+            "CopiedToClipboard": "クリップボードにコピーしました！",
+            "RecordingStarted": "録音を開始しました",
+            "RecordingStopped": "録音を停止しました",
+            "JournalsLoaded": "すべてのジャーナルを読み込みました（{count}個）",
+            "ImageGenerated": "画像の生成に成功しました",
+            "SettingsSaved": "設定を保存しました",
+            "ModuleReady": "Narrator Masterの準備ができました",
+            "TranscriptionComplete": "文字起こしが完了しました",
+            "ApiKeyUpdated": "APIキーを更新しました",
+            "MicrophoneReady": "マイクが録音準備完了です",
+            "PlayersOffTrack": "注意：プレイヤーがストーリーから外れています！"
+        },
+
+        "OffTrack": {
+            "NoContext": "脱線検知のための冒険コンテキストが設定されていません。",
+            "ParseError": "脱線検知のレスポンスを解析できませんでした。",
+            "Warning": "プレイヤーが冒険のストーリーから外れています。",
+            "Severe": "プレイヤーが冒険から完全に脱線しています。",
+            "Minor": "メインストーリーからわずかに逸脱しています。"
+        },
+
+        "Suggestions": {
+            "TypeNarration": "ナレーション",
+            "TypeDialogue": "対話",
+            "TypeAction": "アクション",
+            "TypeReference": "参照",
+            "HighConfidence": "高信頼度",
+            "MediumConfidence": "中信頼度",
+            "LowConfidence": "低信頼度"
+        },
+
+        "Recording": {
+            "StateInactive": "非アクティブ",
+            "StateRecording": "録音中",
+            "StatePaused": "一時停止中",
+            "StateProcessing": "処理中",
+            "AudioLevelLow": "音声レベル：低",
+            "AudioLevelNormal": "音声レベル：通常",
+            "AudioLevelHigh": "音声レベル：高"
+        },
+
+        "Journal": {
+            "NoJournalFound": "ジャーナルが見つかりません",
+            "ParsingJournal": "ジャーナルを解析中...",
+            "JournalEmpty": "選択したジャーナルは空です。",
+            "PageCount": "{count}ページが見つかりました",
+            "UnnamedPage": "名前のないページ"
+        },
+
+        "Images": {
+            "Generating": "生成中...",
+            "CacheExpired": "画像URLの有効期限が切れました。ローカルキャッシュを使用します",
+            "NoCache": "画像が利用できません（URLの有効期限切れでキャッシュなし）",
+            "ClickToEnlarge": "クリックして拡大",
+            "Delete": "削除",
+            "Download": "ダウンロード"
+        },
+
+        "Tooltips": {
+            "ToggleRecording": "音声録音を開始または停止",
+            "GenerateImage": "現在のコンテキストに基づいて画像を生成",
+            "ClearImages": "生成されたすべての画像をクリア",
+            "CopyText": "テキストをクリップボードにコピー",
+            "OpenSettings": "モジュール設定を開く"
+        },
+
+        "Accessibility": {
+            "RecordButton": "録音ボタン",
+            "AudioLevel": "音声レベルインジケーター",
+            "TabNavigation": "タブナビゲーション",
+            "ImageGallery": "画像ギャラリー",
+            "SuggestionsList": "提案リスト"
+        }
+    }
+}
