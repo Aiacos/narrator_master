@@ -51,6 +51,7 @@ export function registerSettings() {
         type: String,
         default: 'it',
         choices: {
+            'auto': 'Auto-detect',
             'it': 'Italiano',
             'en': 'English',
             'de': 'Deutsch',
@@ -126,7 +127,7 @@ export class SettingsManager {
 
     /**
      * Gets the transcription language
-     * @returns {string} The language code (e.g., 'it', 'en')
+     * @returns {string} The language code (e.g., 'auto', 'it', 'en')
      */
     getTranscriptionLanguage() {
         return game.settings.get(MODULE_ID, SETTINGS.TRANSCRIPTION_LANGUAGE) || 'it';
