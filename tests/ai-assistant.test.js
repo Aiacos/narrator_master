@@ -1079,6 +1079,247 @@ export async function runTests() {
         teardown();
     });
 
+    // ========================================
+    // Rules Question Detection Tests
+    // ========================================
+
+    // Test: _detectRulesQuestions detects English rules questions
+    runner.test('AIAssistant rules detection identifies English questions', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+
+        const transcription = 'How does grappling work in combat?';
+        const result = assistant._detectRulesQuestions(transcription);
+
+        assert.ok(result.hasRulesQuestions, 'Should detect rules question');
+        assert.ok(result.questions.length > 0, 'Should have detected questions');
+        assert.ok(result.questions[0].confidence > 0.5, 'Should have reasonable confidence');
+        assert.ok(result.questions[0].type, 'Should have question type');
+
+        teardown();
+    });
+
+    // Test: _detectRulesQuestions detects Italian rules questions
+    runner.test('AIAssistant rules detection identifies Italian questions', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+
+        const transcription = 'Come funziona la concentrazione per gli incantesimi?';
+        const result = assistant._detectRulesQuestions(transcription);
+
+        assert.ok(result.hasRulesQuestions, 'Should detect Italian rules question');
+        assert.ok(result.questions.length > 0, 'Should have detected questions');
+        assert.ok(result.questions[0].confidence > 0.5, 'Should have reasonable confidence');
+
+        teardown();
+    });
+
+    // Test: _detectRulesQuestions detects combat mechanics
+    runner.test('AIAssistant rules detection identifies combat mechanic questions', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+
+        const transcription = 'What happens when I make an opportunity attack?';
+        const result = assistant._detectRulesQuestions(transcription);
+
+        assert.ok(result.hasRulesQuestions, 'Should detect combat question');
+        assert.ok(result.questions[0].type === 'combat' || result.questions[0].type === 'mechanic',
+            'Should identify as combat or mechanic type');
+        assert.ok(result.questions[0].detectedTerms, 'Should have detected terms');
+
+        teardown();
+    });
+
+    // Test: _detectRulesQuestions detects spell mechanics
+    runner.test('AIAssistant rules detection identifies spell mechanic questions', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+
+        const transcription = 'Quanti slot incantesimo servono per questo?';
+        const result = assistant._detectRulesQuestions(transcription);
+
+        assert.ok(result.hasRulesQuestions, 'Should detect spell question');
+        const spellQuestion = result.questions.find(q => q.type === 'spell');
+        assert.ok(spellQuestion, 'Should identify as spell type');
+
+        teardown();
+    });
+
+    // Test: _detectRulesQuestions detects conditions
+    runner.test('AIAssistant rules detection identifies condition questions', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+
+        const transcription = 'What does it mean to be stunned?';
+        const result = assistant._detectRulesQuestions(transcription);
+
+        assert.ok(result.hasRulesQuestions, 'Should detect condition question');
+        const conditionQuestion = result.questions.find(q =>
+            q.type === 'condition' || q.detectedTerms.includes('stunned')
+        );
+        assert.ok(conditionQuestion, 'Should identify condition-related question');
+
+        teardown();
+    });
+
+    // Test: _detectRulesQuestions handles empty input
+    runner.test('AIAssistant rules detection handles empty input', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+
+        const result1 = assistant._detectRulesQuestions('');
+        assert.ok(!result1.hasRulesQuestions, 'Should return false for empty string');
+        assert.equal(result1.questions.length, 0, 'Should have no questions');
+
+        const result2 = assistant._detectRulesQuestions(null);
+        assert.ok(!result2.hasRulesQuestions, 'Should return false for null');
+
+        const result3 = assistant._detectRulesQuestions(undefined);
+        assert.ok(!result3.hasRulesQuestions, 'Should return false for undefined');
+
+        teardown();
+    });
+
+    // Test: _detectRulesQuestions handles non-rules content
+    runner.test('AIAssistant rules detection ignores non-rules conversation', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+
+        const transcription = 'I want to go to the tavern and order some ale.';
+        const result = assistant._detectRulesQuestions(transcription);
+
+        assert.ok(!result.hasRulesQuestions, 'Should not detect rules in normal conversation');
+        assert.equal(result.questions.length, 0, 'Should have no detected questions');
+
+        teardown();
+    });
+
+    // Test: _detectRulesQuestions handles multiple questions in one transcription
+    runner.test('AIAssistant rules detection handles multiple questions', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+
+        const transcription = 'How does grappling work? And what about advantage on attack rolls?';
+        const result = assistant._detectRulesQuestions(transcription);
+
+        assert.ok(result.hasRulesQuestions, 'Should detect rules questions');
+        assert.ok(result.questions.length >= 2, 'Should detect multiple questions');
+
+        teardown();
+    });
+
+    // Test: _detectRulesQuestions extracts topic from questions
+    runner.test('AIAssistant rules detection extracts question topics', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+
+        const transcription = 'How does concentration work for spells?';
+        const result = assistant._detectRulesQuestions(transcription);
+
+        assert.ok(result.hasRulesQuestions, 'Should detect rules question');
+        assert.ok(result.questions[0].extractedTopic, 'Should have extracted topic');
+        assert.ok(
+            result.questions[0].extractedTopic.includes('concentration') ||
+            result.questions[0].detectedTerms.includes('concentration'),
+            'Should extract concentration as topic'
+        );
+
+        teardown();
+    });
+
+    // Test: _hasQuestionWord detects English question words
+    runner.test('AIAssistant rules detection helper identifies English question words', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+
+        assert.ok(assistant._hasQuestionWord('how does this work'), 'Should detect "how"');
+        assert.ok(assistant._hasQuestionWord('what is the rule'), 'Should detect "what"');
+        assert.ok(assistant._hasQuestionWord('can i do this'), 'Should detect "can"');
+        assert.ok(!assistant._hasQuestionWord('i move to the door'), 'Should not detect in statement');
+
+        teardown();
+    });
+
+    // Test: _hasQuestionWord detects Italian question words
+    runner.test('AIAssistant rules detection helper identifies Italian question words', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+
+        assert.ok(assistant._hasQuestionWord('come funziona'), 'Should detect "come"');
+        assert.ok(assistant._hasQuestionWord('cosa succede'), 'Should detect "cosa"');
+        assert.ok(assistant._hasQuestionWord('posso fare questo'), 'Should detect "posso"');
+        assert.ok(!assistant._hasQuestionWord('vado alla taverna'), 'Should not detect in statement');
+
+        teardown();
+    });
+
+    // Test: analyzeContext integrates rules detection
+    runner.test('AIAssistant analyzeContext includes rules detection', async () => {
+        await setup();
+
+        const mockResponse = createMockAnalysisResponse();
+        const mockFetch = createMockFetch(mockResponse);
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = mockFetch;
+
+        try {
+            const assistant = new AIAssistant('valid-key');
+            assistant.setAdventureContext('Adventure context');
+
+            // This should internally call _detectRulesQuestions
+            const result = await assistant.analyzeContext('How does grappling work?');
+
+            assert.ok(result, 'Should return analysis result');
+            assert.ok(Array.isArray(result.suggestions), 'Should have suggestions');
+
+            // The rules detection happens internally but doesn't affect the return value yet
+            // (that will be added in subtask-3-2)
+
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        teardown();
+    });
+
+    // Test: analyzeContext respects detectRules option
+    runner.test('AIAssistant analyzeContext respects detectRules option', async () => {
+        await setup();
+
+        const mockResponse = createMockAnalysisResponse();
+        const mockFetch = createMockFetch(mockResponse);
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = mockFetch;
+
+        try {
+            const assistant = new AIAssistant('valid-key');
+
+            // Test with detectRules disabled
+            const result = await assistant.analyzeContext(
+                'How does grappling work?',
+                { detectRules: false }
+            );
+
+            assert.ok(result, 'Should return result even with rules detection disabled');
+
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        teardown();
+    });
+
     // Run all tests
     return runner.run();
 }
