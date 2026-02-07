@@ -385,9 +385,21 @@ export class NarratorPanel extends Application {
      * @param {Event} event - Click event
      * @private
      */
-    _onClearImages(event) {
+    async _onClearImages(event) {
         event.preventDefault();
-        this.clearImages();
+
+        // Show confirmation dialog
+        const confirmed = await Dialog.confirm({
+            title: game.i18n.localize('NARRATOR.Panel.ClearImages'),
+            content: `<p>${game.i18n.localize('NARRATOR.Panel.ConfirmClearImages')}</p>`,
+            yes: () => true,
+            no: () => false,
+            defaultYes: false
+        });
+
+        if (confirmed) {
+            this.clearImages();
+        }
     }
 
     /**
@@ -456,14 +468,25 @@ export class NarratorPanel extends Application {
      * @param {Event} event - Click event
      * @private
      */
-    _onDeleteImage(event) {
+    async _onDeleteImage(event) {
         event.preventDefault();
         event.stopPropagation();
 
         const index = parseInt(event.currentTarget.dataset.index);
         if (!isNaN(index) && index >= 0 && index < this.generatedImages.length) {
-            this.generatedImages.splice(index, 1);
-            this.render(false);
+            // Show confirmation dialog
+            const confirmed = await Dialog.confirm({
+                title: game.i18n.localize('NARRATOR.Images.Delete'),
+                content: `<p>${game.i18n.localize('NARRATOR.Panel.ConfirmDeleteImage')}</p>`,
+                yes: () => true,
+                no: () => false,
+                defaultYes: false
+            });
+
+            if (confirmed) {
+                this.generatedImages.splice(index, 1);
+                this.render(false);
+            }
         }
     }
 
@@ -618,9 +641,21 @@ export class NarratorPanel extends Application {
      * @param {Event} event - Click event
      * @private
      */
-    _onClearTranscript(event) {
+    async _onClearTranscript(event) {
         event.preventDefault();
-        this.clearTranscript();
+
+        // Show confirmation dialog
+        const confirmed = await Dialog.confirm({
+            title: game.i18n.localize('NARRATOR.Panel.ClearTranscript'),
+            content: `<p>${game.i18n.localize('NARRATOR.Panel.ConfirmClearTranscript')}</p>`,
+            yes: () => true,
+            no: () => false,
+            defaultYes: false
+        });
+
+        if (confirmed) {
+            this.clearTranscript();
+        }
     }
 
     /**
