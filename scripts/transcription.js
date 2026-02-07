@@ -25,6 +25,7 @@ const CHUNKING_THRESHOLD_SECONDS = 30;
  * @property {string} text - The transcribed text for this segment
  * @property {number} start - Start time in seconds
  * @property {number} end - End time in seconds
+ * @property {string} [language] - The detected language for this segment (if available)
  */
 
 /**
@@ -443,13 +444,28 @@ export class TranscriptionService {
      * @private
      */
     _parseResponse(response, language) {
+        // Determine the top-level language (fallback for segments without language field)
+        const topLevelLanguage = response.language || language;
+
         // Extract segments from diarized response
-        const segments = (response.segments || []).map(seg => ({
-            speaker: seg.speaker || 'Unknown',
-            text: seg.text || '',
-            start: seg.start || 0,
-            end: seg.end || 0
-        }));
+        // Include per-segment language if available, otherwise use top-level language
+        const segments = (response.segments || []).map(seg => {
+            const segment = {
+                speaker: seg.speaker || 'Unknown',
+                text: seg.text || '',
+                start: seg.start || 0,
+                end: seg.end || 0
+            };
+
+            // Add language field if present in segment or use top-level language
+            if (seg.language) {
+                segment.language = seg.language;
+            } else if (topLevelLanguage) {
+                segment.language = topLevelLanguage;
+            }
+
+            return segment;
+        });
 
         // Build full text from segments
         const text = segments.map(seg => seg.text).join(' ');
@@ -465,7 +481,7 @@ export class TranscriptionService {
         return {
             text,
             segments,
-            language: response.language || language,
+            language: topLevelLanguage,
             duration,
             speakers
         };
