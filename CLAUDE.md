@@ -14,11 +14,23 @@ This document provides context for AI assistants working on the Narrator Master 
 **Language**: Italian (primary), with localization support
 **External API**: OpenAI (Whisper, GPT-4o-mini, gpt-image-1)
 
+## TODO Tracking
+
+**IMPORTANT**: A `TODO.md` file tracks all known issues, bugs, and improvements organized by priority (Critical → High → Medium → Low). Before starting any work session:
+
+1. **Read `TODO.md`** to understand current known issues
+2. **Check if your changes resolve any TODO item** — if so, move it to the "Completati" section with date and commit hash
+3. **Check if your changes introduce new issues** — if so, add them to TODO.md with the appropriate priority
+4. **After completing a feature or fix**, re-verify that no TODO items have been accidentally regressed
+
+When running audits or code reviews, cross-reference findings against TODO.md to avoid duplicate entries.
+
 ## Architecture
 
 ```
 ./
 ├── module.json              # Foundry VTT manifest
+├── TODO.md                  # Known issues tracker (read before every session)
 ├── scripts/
 │   ├── main.js             # Entry point, NarratorMaster controller, Hooks
 │   ├── settings.js         # Settings registration, SettingsManager class
@@ -27,13 +39,21 @@ This document provides context for AI assistants working on the Narrator Master 
 │   ├── journal-parser.js   # JournalParser class, Foundry Journal API
 │   ├── ai-assistant.js     # AIAssistant class, OpenAI GPT chat
 │   ├── image-generator.js  # ImageGenerator class, OpenAI image generation
+│   ├── speaker-labels.js   # SpeakerLabelService, persistent speaker mappings
 │   └── ui-panel.js         # NarratorPanel Application class
 ├── styles/
 │   └── narrator-master.css # All styling, including off-track warnings (red)
 ├── templates/
-│   └── panel.hbs           # Handlebars template for DM panel
+│   └── panel.hbs           # Handlebars template for DM panel (3 tabs)
 ├── lang/
-│   └── it.json             # Italian localization strings
+│   ├── it.json             # Italian localization (primary, most complete)
+│   ├── en.json             # English localization
+│   ├── de.json             # German localization
+│   ├── es.json             # Spanish localization
+│   ├── fr.json             # French localization
+│   ├── ja.json             # Japanese localization
+│   ├── pt.json             # Portuguese localization
+│   └── template.json       # Template for translators
 └── docs/                   # User documentation (wiki)
 ```
 
@@ -51,13 +71,14 @@ All services follow consistent OOP patterns:
 
 | Class | Purpose | Key Methods |
 |-------|---------|-------------|
-| `SettingsManager` | Access module settings | `getApiKey()`, `getSelectedJournal()`, `validateConfiguration()` |
+| `SettingsManager` | Access module settings | `getApiKey()`, `validateConfiguration()` |
 | `AudioCapture` | Record browser audio | `start()`, `stop()`, `pause()`, `resume()` |
-| `TranscriptionService` | Whisper API integration | `transcribe(audioBlob)`, `setApiKey()` |
-| `JournalParser` | Extract journal content | `parseJournal(id)`, `getContentForAI()` |
+| `TranscriptionService` | Whisper API integration | `transcribe(audioBlob)`, `setMultiLanguageMode()` |
+| `JournalParser` | Extract journal content | `parseAllJournals()`, `getAllContentForAI()`, `clearAllCache()` |
 | `AIAssistant` | Generate suggestions | `analyzeContext()`, `detectOffTrack()`, `generateNarrativeBridge()` |
-| `ImageGenerator` | Create images | `generateInfographic()`, `generateSceneIllustration()` |
-| `NarratorPanel` | DM panel UI | `render()`, `updateContent()`, `setRecordingState()` |
+| `ImageGenerator` | Create images | `generateInfographic()`, `saveToGallery()`, `loadGallery()` |
+| `SpeakerLabelService` | Speaker name mappings | `applyLabelsToSegments()`, `setLabel()`, `importMappings()` |
+| `NarratorPanel` | DM panel UI | `render()`, `updateContent()`, `addTranscriptSegments()` |
 
 ### Common Service Patterns
 
@@ -186,12 +207,18 @@ game.i18n.localize('NARRATOR.Panel.Title');
 {{localize 'NARRATOR.Panel.Title'}}
 ```
 
-Keys are organized in `lang/it.json`:
+Keys are organized in `lang/*.json` (primary: `it.json`, reference: `en.json`):
 - `NARRATOR.Settings.*` - Settings labels and hints
 - `NARRATOR.Panel.*` - Panel UI elements
 - `NARRATOR.Errors.*` - Error messages
 - `NARRATOR.Notifications.*` - Toast notifications
 - `NARRATOR.OffTrack.*` - Off-track detection messages
+- `NARRATOR.SpeakerLabels.*` - Speaker label UI strings
+- `NARRATOR.Suggestions.*` - Suggestion type/confidence labels
+- `NARRATOR.Recording.*` - Recording state labels
+- `NARRATOR.Images.*` - Image gallery strings
+
+**IMPORTANT**: When adding/modifying i18n keys, update ALL language files (`it.json`, `en.json`, and ideally `de.json`, `es.json`, `fr.json`, `ja.json`, `pt.json`). Run `node verify-translations.js` to check for missing keys across languages.
 
 ## External APIs
 
@@ -260,7 +287,8 @@ https://github.com/Aiacos/narrator_master/releases/latest/download/module.json
 1. Add key to `SETTINGS` constant in `settings.js`
 2. Register in `registerSettings()` function
 3. Add getter method to `SettingsManager` class
-4. Add localization strings to `lang/it.json`
+4. Add localization strings to ALL `lang/*.json` files (at minimum `it.json` and `en.json`)
+5. Update `TODO.md` if the change resolves a known issue
 
 ### Adding a New Service
 1. Create `scripts/new-service.js` following existing patterns
@@ -273,7 +301,7 @@ https://github.com/Aiacos/narrator_master/releases/latest/download/module.json
 2. Add data to `getData()` in `ui-panel.js`
 3. Add event handlers in `activateListeners()`
 4. Add styling in `styles/narrator-master.css`
-5. Add localization keys to `lang/it.json`
+5. Add localization keys to ALL `lang/*.json` files (at minimum `it.json` and `en.json`)
 
 ### Adding Error Handling
 Use the centralized `ErrorNotificationHelper` class:
@@ -317,8 +345,14 @@ find scripts -name '*.js' -exec node --check {} \;
 
 ### JSON Validation
 ```bash
-python3 -c 'import json; json.load(open("module.json")); json.load(open("lang/it.json")); print("OK")'
+python3 -c 'import json; json.load(open("module.json")); json.load(open("lang/it.json")); json.load(open("lang/en.json")); print("OK")'
 ```
+
+### Translation Key Verification
+```bash
+node verify-translations.js
+```
+Checks that all language files have the same keys as `it.json` (the primary/most complete translation).
 
 ### Manual Testing in Foundry
 1. Symlink module: `ln -s $(pwd)/narrator-master ~/.local/share/FoundryVTT/Data/modules/`
@@ -339,11 +373,13 @@ python3 -c 'import json; json.load(open("module.json")); json.load(open("lang/it
 ## File Modification Guidelines
 
 When modifying files:
-1. Maintain existing code style and patterns
-2. Update JSDoc comments for any changed functionality
-3. Add/update localization strings in `lang/it.json`
-4. Test both with and without API key configured
-5. Verify GM-only features don't appear for players
+1. **Read `TODO.md` first** to understand known issues and avoid regressions
+2. Maintain existing code style and patterns
+3. Update JSDoc comments for any changed functionality
+4. Add/update localization strings in ALL `lang/*.json` files (minimum `it.json` + `en.json`)
+5. Test both with and without API key configured
+6. Verify GM-only features don't appear for players
+7. **Update `TODO.md`** if your changes resolve or introduce issues
 
 ## Dependencies
 
