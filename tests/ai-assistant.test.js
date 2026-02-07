@@ -717,6 +717,368 @@ export async function runTests() {
         teardown();
     });
 
+    // Test: _validateString handles excessive length
+    runner.test('_validateString truncates excessively long strings', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+        const longString = 'A'.repeat(10000);
+        const validated = assistant._validateString(longString, 100, 'test');
+
+        assert.equal(validated.length, 100, 'Should truncate to max length');
+        assert.equal(validated, 'A'.repeat(100), 'Should preserve valid portion');
+
+        teardown();
+    });
+
+    // Test: _validateString handles null and undefined
+    runner.test('_validateString handles null and undefined values', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+
+        const nullResult = assistant._validateString(null, 100, 'test');
+        assert.equal(nullResult, '', 'Should return empty string for null');
+
+        const undefinedResult = assistant._validateString(undefined, 100, 'test');
+        assert.equal(undefinedResult, '', 'Should return empty string for undefined');
+
+        teardown();
+    });
+
+    // Test: _validateString converts non-string types
+    runner.test('_validateString converts non-string types to string', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+
+        const numberResult = assistant._validateString(123, 100, 'test');
+        assert.equal(numberResult, '123', 'Should convert number to string');
+
+        const boolResult = assistant._validateString(true, 100, 'test');
+        assert.equal(boolResult, 'true', 'Should convert boolean to string');
+
+        const objectResult = assistant._validateString({ key: 'value' }, 100, 'test');
+        assert.ok(objectResult.includes('object'), 'Should convert object to string');
+
+        teardown();
+    });
+
+    // Test: _validateNumber clamps to range
+    runner.test('_validateNumber clamps values to min and max range', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+
+        const tooLow = assistant._validateNumber(-5, 0, 1, 'test');
+        assert.equal(tooLow, 0, 'Should clamp to minimum');
+
+        const tooHigh = assistant._validateNumber(10, 0, 1, 'test');
+        assert.equal(tooHigh, 1, 'Should clamp to maximum');
+
+        const inRange = assistant._validateNumber(0.5, 0, 1, 'test');
+        assert.equal(inRange, 0.5, 'Should preserve in-range value');
+
+        teardown();
+    });
+
+    // Test: _validateNumber handles null and undefined
+    runner.test('_validateNumber handles null and undefined values', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+
+        const nullResult = assistant._validateNumber(null, 0, 1, 'test');
+        assert.equal(nullResult, 0, 'Should return min for null');
+
+        const undefinedResult = assistant._validateNumber(undefined, 0, 1, 'test');
+        assert.equal(undefinedResult, 0, 'Should return min for undefined');
+
+        teardown();
+    });
+
+    // Test: _validateNumber handles NaN
+    runner.test('_validateNumber handles non-numeric values', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+
+        const nanResult = assistant._validateNumber('not a number', 0, 1, 'test');
+        assert.equal(nanResult, 0, 'Should return min for NaN');
+
+        const stringResult = assistant._validateNumber('abc', 5, 10, 'test');
+        assert.equal(stringResult, 5, 'Should return min for non-numeric string');
+
+        teardown();
+    });
+
+    // Test: _validateArray limits array size
+    runner.test('_validateArray truncates arrays exceeding max items', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+        const largeArray = Array.from({ length: 100 }, (_, i) => i);
+        const validated = assistant._validateArray(largeArray, 10, 'test');
+
+        assert.equal(validated.length, 10, 'Should truncate to max items');
+        assert.deepEqual(validated, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 'Should preserve first items');
+
+        teardown();
+    });
+
+    // Test: _validateArray handles null and undefined
+    runner.test('_validateArray handles null and undefined values', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+
+        const nullResult = assistant._validateArray(null, 10, 'test');
+        assert.deepEqual(nullResult, [], 'Should return empty array for null');
+
+        const undefinedResult = assistant._validateArray(undefined, 10, 'test');
+        assert.deepEqual(undefinedResult, [], 'Should return empty array for undefined');
+
+        teardown();
+    });
+
+    // Test: _validateArray handles non-array types
+    runner.test('_validateArray converts non-array types to empty array', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+
+        const stringResult = assistant._validateArray('not an array', 10, 'test');
+        assert.deepEqual(stringResult, [], 'Should return empty array for string');
+
+        const numberResult = assistant._validateArray(123, 10, 'test');
+        assert.deepEqual(numberResult, [], 'Should return empty array for number');
+
+        const objectResult = assistant._validateArray({ key: 'value' }, 10, 'test');
+        assert.deepEqual(objectResult, [], 'Should return empty array for object');
+
+        teardown();
+    });
+
+    // Test: _parseAnalysisResponse sanitizes malicious content
+    runner.test('_parseAnalysisResponse sanitizes excessive content lengths', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+        const maliciousResponse = {
+            choices: [{
+                message: {
+                    content: JSON.stringify({
+                        suggestions: [{
+                            type: 'narration',
+                            content: 'A'.repeat(10000), // Excessively long
+                            confidence: 0.8
+                        }],
+                        offTrackStatus: {
+                            isOffTrack: false,
+                            severity: 0.1,
+                            reason: 'B'.repeat(5000) // Excessively long
+                        },
+                        relevantPages: ['page1'],
+                        summary: 'C'.repeat(5000) // Excessively long
+                    })
+                }
+            }]
+        };
+
+        const result = assistant._parseAnalysisResponse(maliciousResponse);
+
+        assert.ok(result.suggestions[0].content.length <= 5000, 'Should truncate suggestion content');
+        assert.ok(result.offTrackStatus.reason.length <= 1000, 'Should truncate off-track reason');
+        assert.ok(result.summary.length <= 2000, 'Should truncate summary');
+
+        teardown();
+    });
+
+    // Test: _parseAnalysisResponse limits array sizes
+    runner.test('_parseAnalysisResponse limits array sizes to prevent DoS', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+        const excessiveArrays = {
+            choices: [{
+                message: {
+                    content: JSON.stringify({
+                        suggestions: Array.from({ length: 50 }, (_, i) => ({
+                            type: 'narration',
+                            content: `Suggestion ${i}`,
+                            confidence: 0.8
+                        })),
+                        offTrackStatus: {
+                            isOffTrack: false,
+                            severity: 0.1,
+                            reason: 'Test'
+                        },
+                        relevantPages: Array.from({ length: 100 }, (_, i) => `page${i}`),
+                        summary: 'Test'
+                    })
+                }
+            }]
+        };
+
+        const result = assistant._parseAnalysisResponse(excessiveArrays);
+
+        assert.ok(result.suggestions.length <= 10, 'Should limit suggestions array to 10 items');
+        assert.ok(result.relevantPages.length <= 20, 'Should limit relevantPages array to 20 items');
+
+        teardown();
+    });
+
+    // Test: _parseAnalysisResponse clamps numeric ranges
+    runner.test('_parseAnalysisResponse clamps confidence and severity to valid ranges', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+        const outOfRangeNumbers = {
+            choices: [{
+                message: {
+                    content: JSON.stringify({
+                        suggestions: [{
+                            type: 'narration',
+                            content: 'Test',
+                            confidence: 5.0 // Out of range (should be 0-1)
+                        }],
+                        offTrackStatus: {
+                            isOffTrack: false,
+                            severity: -2.0, // Out of range
+                            reason: 'Test'
+                        },
+                        relevantPages: [],
+                        summary: 'Test'
+                    })
+                }
+            }]
+        };
+
+        const result = assistant._parseAnalysisResponse(outOfRangeNumbers);
+
+        assert.ok(result.suggestions[0].confidence >= 0 && result.suggestions[0].confidence <= 1,
+            'Should clamp confidence to 0-1 range');
+        assert.ok(result.offTrackStatus.severity >= 0 && result.offTrackStatus.severity <= 1,
+            'Should clamp severity to 0-1 range');
+
+        teardown();
+    });
+
+    // Test: _parseOffTrackResponse sanitizes content
+    runner.test('_parseOffTrackResponse sanitizes excessive content lengths', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+        const maliciousResponse = {
+            choices: [{
+                message: {
+                    content: JSON.stringify({
+                        isOffTrack: true,
+                        severity: 0.7,
+                        reason: 'A'.repeat(5000), // Excessively long
+                        narrativeBridge: 'B'.repeat(5000) // Excessively long
+                    })
+                }
+            }]
+        };
+
+        const result = assistant._parseOffTrackResponse(maliciousResponse);
+
+        assert.ok(result.reason.length <= 1000, 'Should truncate reason');
+        assert.ok(result.narrativeBridge.length <= 2000, 'Should truncate narrative bridge');
+
+        teardown();
+    });
+
+    // Test: _parseSuggestionsResponse sanitizes content
+    runner.test('_parseSuggestionsResponse sanitizes excessive content lengths', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+        const maliciousResponse = {
+            choices: [{
+                message: {
+                    content: JSON.stringify({
+                        suggestions: [
+                            {
+                                type: 'narration',
+                                content: 'A'.repeat(10000), // Excessively long
+                                pageReference: 'B'.repeat(500), // Excessively long
+                                confidence: 0.9
+                            }
+                        ]
+                    })
+                }
+            }]
+        };
+
+        const result = assistant._parseSuggestionsResponse(maliciousResponse, 5);
+
+        assert.ok(result[0].content.length <= 5000, 'Should truncate content');
+        assert.ok(result[0].pageReference.length <= 200, 'Should truncate page reference');
+
+        teardown();
+    });
+
+    // Test: Validation handles special characters safely
+    runner.test('validation handles special characters without breaking', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+        const specialChars = '<script>alert("xss")</script>\n\r\t\0';
+
+        const stringResult = assistant._validateString(specialChars, 1000, 'test');
+        assert.ok(stringResult.includes('<script>'), 'Should preserve special chars (escaping is UI layer responsibility)');
+        assert.ok(stringResult.length <= 1000, 'Should still respect max length');
+
+        teardown();
+    });
+
+    // Test: End-to-end validation with complex nested structure
+    runner.test('end-to-end validation with complex malformed data', async () => {
+        await setup();
+
+        const assistant = new AIAssistant('key');
+        const malformedResponse = {
+            choices: [{
+                message: {
+                    content: JSON.stringify({
+                        suggestions: [
+                            { type: 'narration', content: 'A'.repeat(10000), confidence: 99 },
+                            { type: null, content: null, confidence: 'invalid' },
+                            { /* missing fields */ }
+                        ],
+                        offTrackStatus: {
+                            isOffTrack: 'yes', // Should be boolean
+                            severity: 'high', // Should be number
+                            reason: null,
+                            narrativeBridge: { key: 'not a string' }
+                        },
+                        relevantPages: 'not an array',
+                        summary: null
+                    })
+                }
+            }]
+        };
+
+        const result = assistant._parseAnalysisResponse(malformedResponse);
+
+        // Verify structure is intact despite malformed data
+        assert.ok(Array.isArray(result.suggestions), 'Suggestions should be array');
+        assert.ok(result.offTrackStatus, 'Should have offTrackStatus');
+        assert.ok(Array.isArray(result.relevantPages), 'relevantPages should be array');
+        assert.equal(typeof result.summary, 'string', 'Summary should be string');
+
+        // Verify sanitization applied
+        assert.ok(result.suggestions[0].content.length <= 5000, 'Should sanitize suggestion content');
+        assert.equal(typeof result.offTrackStatus.isOffTrack, 'boolean', 'isOffTrack should be boolean');
+        assert.ok(typeof result.offTrackStatus.severity === 'number', 'severity should be number');
+        assert.ok(result.offTrackStatus.severity >= 0 && result.offTrackStatus.severity <= 1,
+            'severity should be in valid range');
+
+        teardown();
+    });
+
     // Run all tests
     return runner.run();
 }
