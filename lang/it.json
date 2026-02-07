@@ -59,6 +59,8 @@
             "NoPrompt": "Nessun prompt fornito per la generazione dell'immagine.",
             "NoDescription": "Nessuna descrizione fornita per l'infografica.",
             "ContentPolicy": "Il contenuto viola le policy di OpenAI. Prova con una descrizione diversa.",
+            "ContentTooLong": "Contenuto troppo lungo. Il limite massimo e {maxLength} caratteri.",
+            "InvalidContent": "Contenuto non valido. Il contenuto contiene caratteri o formattazione non consentiti.",
             "AIAssistantFailed": "Assistente AI fallito (Errore {status}): {message}",
             "ImageGenerationFailed": "Generazione immagine fallita (Errore {status}): {message}",
             "NoContextForImage": "Nessun contesto disponibile per generare un'immagine. Registra prima dell'audio.",
