@@ -515,11 +515,74 @@ class NarratorMaster {
                 if (analysis.offTrackStatus.isOffTrack && analysis.offTrackStatus.severity > 0.5) {
                     ui.notifications.warn(game.i18n.localize('NARRATOR.Notifications.PlayersOffTrack'));
                 }
+
+                // Process rules questions if detected
+                if (analysis.rulesQuestions && analysis.rulesQuestions.length > 0) {
+                    await this._processRulesQuestions(analysis.rulesQuestions);
+                }
             }
 
         } catch (error) {
             console.error(`${MODULE_ID} | AI analysis error:`, error);
             // Don't show notification for analysis errors - not critical
+        }
+    }
+
+    /**
+     * Processes detected rules questions and searches for answers
+     * @param {Array<Object>} rulesQuestions - Detected rules questions from AI analysis
+     * @param {string} rulesQuestions[].text - The question text
+     * @param {number} rulesQuestions[].confidence - Confidence score 0-1
+     * @param {string} rulesQuestions[].type - Question type
+     * @param {string} [rulesQuestions[].topic] - Extracted topic
+     * @private
+     */
+    async _processRulesQuestions(rulesQuestions) {
+        if (!rulesQuestions || !Array.isArray(rulesQuestions) || rulesQuestions.length === 0) {
+            return;
+        }
+
+        console.log(`${MODULE_ID} | Processing ${rulesQuestions.length} rules question(s)`);
+
+        for (const question of rulesQuestions) {
+            try {
+                // Use topic if available, otherwise use full question text
+                const searchQuery = question.topic || question.text;
+
+                console.log(`${MODULE_ID} | Searching rules for: "${searchQuery}"`);
+
+                // Search compendiums for answers
+                const searchResults = await this.rulesReferenceService.searchCompendiums(searchQuery, {
+                    limit: 1 // Get best match only
+                });
+
+                // If we found a result, add it to the panel
+                if (searchResults && searchResults.length > 0) {
+                    const bestMatch = searchResults[0];
+                    const rule = bestMatch.rule;
+
+                    // Format rule answer for panel
+                    const ruleAnswer = {
+                        question: question.text,
+                        answer: rule.content || game.i18n.localize('NARRATOR.Rules.NoAnswerFound'),
+                        citation: rule.citation?.formatted || rule.source || '',
+                        source: rule.source || '',
+                        confidence: question.confidence.toFixed(2),
+                        type: question.type
+                    };
+
+                    // Add rule answer to panel
+                    this.panel.addRuleAnswer(ruleAnswer);
+
+                    console.log(`${MODULE_ID} | Added rule answer for: "${question.text}"`);
+                } else {
+                    console.log(`${MODULE_ID} | No rules found for: "${searchQuery}"`);
+                }
+
+            } catch (error) {
+                console.warn(`${MODULE_ID} | Error processing rules question "${question.text}":`, error);
+                // Continue processing other questions
+            }
         }
     }
 
