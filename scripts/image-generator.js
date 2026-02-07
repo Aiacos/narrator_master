@@ -4,7 +4,7 @@
  * @module image-generator
  */
 
-import { MODULE_ID } from './settings.js';
+import { MODULE_ID, SETTINGS } from './settings.js';
 
 /**
  * Default model for image generation (gpt-image-1 is recommended for long-term support)
@@ -742,6 +742,54 @@ export class ImageGenerator {
      */
     clearHistory() {
         this._history = [];
+    }
+
+    /**
+     * Saves an image to the persistent gallery
+     * @param {Object} imageData - The image data to save
+     * @returns {Promise<void>}
+     */
+    async saveToGallery(imageData) {
+        try {
+            const gallery = await this.loadGallery();
+            gallery.push({
+                ...imageData,
+                savedAt: new Date().toISOString()
+            });
+            await game.settings.set(MODULE_ID, SETTINGS.IMAGE_GALLERY, gallery);
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to save image to gallery:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Loads the persistent gallery
+     * @returns {Promise<Array>} The gallery array
+     */
+    async loadGallery() {
+        try {
+            const gallery = await game.settings.get(MODULE_ID, SETTINGS.IMAGE_GALLERY);
+            return gallery || [];
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to load gallery:`, error);
+            return [];
+        }
+    }
+
+    /**
+     * Syncs the gallery with settings storage
+     * @param {Array} gallery - The gallery array to sync
+     * @returns {Promise<void>}
+     * @private
+     */
+    async _syncWithSettings(gallery) {
+        try {
+            await game.settings.set(MODULE_ID, SETTINGS.IMAGE_GALLERY, gallery);
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to sync gallery with settings:`, error);
+            throw error;
+        }
     }
 
     /**
