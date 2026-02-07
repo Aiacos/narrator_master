@@ -423,7 +423,8 @@
 
 /* Tab Headers */
 .suggestions-header,
-.images-header {
+.images-header,
+.transcript-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -433,7 +434,8 @@
 }
 
 .suggestions-header h3,
-.images-header h3 {
+.images-header h3,
+.transcript-header h3 {
     margin: 0;
     font-size: 1em;
     font-weight: 600;
@@ -441,13 +443,15 @@
 }
 
 .suggestions-actions,
-.images-actions {
+.images-actions,
+.transcript-actions {
     display: flex;
     gap: var(--narrator-spacing-xs);
 }
 
 .suggestions-actions button,
-.images-actions button {
+.images-actions button,
+.transcript-actions button {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -463,7 +467,8 @@
 }
 
 .suggestions-actions button:hover,
-.images-actions button:hover {
+.images-actions button:hover,
+.transcript-actions button:hover {
     background: var(--narrator-bg-tertiary);
     border-color: var(--narrator-border-light);
     color: var(--narrator-text-primary);
@@ -552,13 +557,6 @@
     border-left: 3px solid var(--narrator-primary);
 }
 
-.transcript-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--narrator-spacing-sm);
-}
-
 .speaker-label {
     font-weight: 600;
     font-size: 0.9em;
@@ -574,6 +572,126 @@
 .transcript-text {
     color: var(--narrator-text-primary);
     line-height: 1.6;
+    font-size: 0.9em;
+}
+
+/* ============================================
+   Scene Break Display
+   ============================================ */
+.scene-break {
+    display: flex;
+    align-items: center;
+    gap: var(--narrator-spacing-md);
+    margin: var(--narrator-spacing-lg) 0;
+    padding: var(--narrator-spacing-sm) 0;
+    transition: transform var(--narrator-transition);
+}
+
+.scene-break:hover {
+    transform: translateY(-1px);
+}
+
+.scene-break-line {
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--narrator-border), transparent);
+    border-radius: 1px;
+}
+
+.scene-break-content {
+    display: flex;
+    align-items: center;
+    gap: var(--narrator-spacing-sm);
+    flex-shrink: 0;
+    padding: var(--narrator-spacing-xs) var(--narrator-spacing-sm);
+    background: var(--narrator-bg-secondary);
+    border-radius: var(--narrator-radius-md);
+}
+
+/* Scene Type Badges with Color Coding */
+.scene-type-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--narrator-spacing-xs);
+    padding: var(--narrator-spacing-xs) var(--narrator-spacing-sm);
+    border-radius: var(--narrator-radius-sm);
+    font-size: 0.85em;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: all var(--narrator-transition);
+}
+
+.scene-type-badge i {
+    font-size: 0.9em;
+}
+
+/* Exploration - Blue */
+.scene-type-exploration {
+    background: rgba(52, 152, 219, 0.2);
+    color: #3498db;
+    border: 1px solid rgba(52, 152, 219, 0.4);
+}
+
+.scene-break:hover .scene-type-exploration {
+    background: rgba(52, 152, 219, 0.3);
+    border-color: rgba(52, 152, 219, 0.6);
+}
+
+/* Combat - Red */
+.scene-type-combat {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.4);
+}
+
+.scene-break:hover .scene-type-combat {
+    background: rgba(231, 76, 60, 0.3);
+    border-color: rgba(231, 76, 60, 0.6);
+}
+
+/* Social - Green */
+.scene-type-social {
+    background: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+    border: 1px solid rgba(46, 204, 113, 0.4);
+}
+
+.scene-break:hover .scene-type-social {
+    background: rgba(46, 204, 113, 0.3);
+    border-color: rgba(46, 204, 113, 0.6);
+}
+
+/* Rest - Purple */
+.scene-type-rest {
+    background: rgba(155, 89, 182, 0.2);
+    color: #9b59b6;
+    border: 1px solid rgba(155, 89, 182, 0.4);
+}
+
+.scene-break:hover .scene-type-rest {
+    background: rgba(155, 89, 182, 0.3);
+    border-color: rgba(155, 89, 182, 0.6);
+}
+
+/* Scene Timestamp */
+.scene-timestamp {
+    font-family: monospace;
+    font-size: 0.75em;
+    color: var(--narrator-text-muted);
+    padding: 0 var(--narrator-spacing-xs);
+}
+
+/* Manual Scene Indicator */
+.scene-manual-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--narrator-spacing-xs);
+    font-size: 0.75em;
+    color: var(--narrator-primary);
+    font-style: italic;
+}
+
+.scene-manual-indicator i {
     font-size: 0.9em;
 }
 
