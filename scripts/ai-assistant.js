@@ -605,28 +605,50 @@ Scrivi una breve narrazione (2-3 frasi) che il DM può usare per riportare delic
             // Try to parse as JSON
             const parsed = JSON.parse(this._extractJson(content));
 
+            // Validate and sanitize suggestions array
+            const validatedSuggestions = this._validateArray(
+                parsed.suggestions,
+                10,
+                'suggestions'
+            ).map(s => ({
+                type: s.type || 'narration',
+                content: this._validateString(s.content || '', 5000, 'suggestion.content'),
+                pageReference: s.pageReference ? this._validateString(s.pageReference, 200, 'suggestion.pageReference') : undefined,
+                confidence: this._validateNumber(s.confidence, 0, 1, 'suggestion.confidence')
+            }));
+
+            // Validate and sanitize offTrackStatus
+            const offTrackStatus = parsed.offTrackStatus ? {
+                isOffTrack: Boolean(parsed.offTrackStatus.isOffTrack),
+                severity: this._validateNumber(parsed.offTrackStatus.severity, 0, 1, 'offTrackStatus.severity'),
+                reason: this._validateString(parsed.offTrackStatus.reason || '', 1000, 'offTrackStatus.reason'),
+                narrativeBridge: parsed.offTrackStatus.narrativeBridge ?
+                    this._validateString(parsed.offTrackStatus.narrativeBridge, 2000, 'offTrackStatus.narrativeBridge') :
+                    undefined
+            } : {
+                isOffTrack: false,
+                severity: 0,
+                reason: ''
+            };
+
             return {
-                suggestions: (parsed.suggestions || []).map(s => ({
-                    type: s.type || 'narration',
-                    content: s.content || '',
-                    pageReference: s.pageReference,
-                    confidence: parseFloat(s.confidence) || 0.5
-                })),
-                offTrackStatus: parsed.offTrackStatus || {
-                    isOffTrack: false,
-                    severity: 0,
-                    reason: ''
-                },
-                relevantPages: parsed.relevantPages || [],
-                summary: parsed.summary || ''
+                suggestions: validatedSuggestions,
+                offTrackStatus: offTrackStatus,
+                relevantPages: this._validateArray(parsed.relevantPages, 20, 'relevantPages'),
+                summary: this._validateString(parsed.summary || '', 2000, 'summary')
             };
 
         } catch (error) {
             console.warn(`${MODULE_ID} | Failed to parse analysis response as JSON, using fallback`);
+
+            // Apply validation even to fallback content
+            const sanitizedContent = this._validateString(content, 5000, 'fallback.content');
+            const sanitizedSummary = this._validateString(content, 200, 'fallback.summary');
+
             return {
                 suggestions: [{
                     type: 'narration',
-                    content: content,
+                    content: sanitizedContent,
                     confidence: 0.5
                 }],
                 offTrackStatus: {
@@ -635,7 +657,7 @@ Scrivi una breve narrazione (2-3 frasi) che il DM può usare per riportare delic
                     reason: ''
                 },
                 relevantPages: [],
-                summary: content.substring(0, 200)
+                summary: sanitizedSummary
             };
         }
     }
