@@ -151,12 +151,12 @@ export class JournalParser {
             return '';
         }
 
-        // Create a temporary DOM element to parse HTML
-        const div = document.createElement('div');
-        div.innerHTML = html;
+        // Use DOMParser to safely parse HTML without executing scripts
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
 
-        // Get text content, handling nested elements
-        let text = div.textContent || div.innerText || '';
+        // Get text content from the parsed document
+        let text = doc.body.textContent || '';
 
         // Normalize whitespace
         text = text.replace(/\s+/g, ' ').trim();
