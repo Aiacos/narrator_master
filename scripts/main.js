@@ -284,7 +284,8 @@ class NarratorMaster {
 
         this.aiAssistant = new AIAssistant(apiKey, {
             model: 'gpt-4o-mini',
-            sensitivity: this.settings.getOffTrackSensitivity()
+            sensitivity: this.settings.getOffTrackSensitivity(),
+            sceneDetector: this.sceneDetector
         });
 
         this.imageGenerator = new ImageGenerator(apiKey, {
