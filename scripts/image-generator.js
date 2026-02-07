@@ -4,7 +4,7 @@
  * @module image-generator
  */
 
-import { MODULE_ID } from './settings.js';
+import { MODULE_ID, SETTINGS } from './settings.js';
 
 /**
  * Default model for image generation (gpt-image-1 is recommended for long-term support)
@@ -56,6 +56,7 @@ const IMAGE_STYLES = {
 /**
  * Represents a cached image entry
  * @typedef {Object} CachedImage
+ * @property {string} id - Unique identifier for the image
  * @property {string} url - The image URL
  * @property {string} base64 - Base64 encoded image data (if downloaded)
  * @property {string} prompt - The prompt used to generate the image
@@ -64,11 +65,18 @@ const IMAGE_STYLES = {
  * @property {string} model - The model used for generation
  * @property {string} size - The image size
  * @property {string} [revisedPrompt] - The revised prompt from the API
+ * @property {string[]} tags - Tags for organizing the image
+ * @property {string} category - Category of the image (location, npc, scene, item, etc.)
+ * @property {boolean} isFavorite - Whether the image is marked as favorite
+ * @property {string} timestamp - ISO string timestamp when saved
+ * @property {string} session - Session identifier or name
+ * @property {string} scene - Scene name or identifier where image was generated
  */
 
 /**
  * Represents an image generation result
  * @typedef {Object} GenerationResult
+ * @property {string} id - Unique identifier for the image
  * @property {string} url - The generated image URL
  * @property {string} [base64] - Base64 encoded image data (if requested)
  * @property {string} prompt - The original prompt
@@ -76,6 +84,31 @@ const IMAGE_STYLES = {
  * @property {string} model - The model used
  * @property {string} size - The image size
  * @property {Date} createdAt - When the image was generated
+ * @property {string[]} tags - Tags for organizing the image
+ * @property {string} category - Category of the image (location, npc, scene, item, etc.)
+ * @property {boolean} isFavorite - Whether the image is marked as favorite
+ * @property {string} timestamp - ISO string timestamp when saved
+ * @property {string} session - Session identifier or name
+ * @property {string} scene - Scene name or identifier where image was generated
+ */
+
+/**
+ * Represents a gallery image entry (persistent storage)
+ * @typedef {Object} GalleryEntry
+ * @property {string} id - Unique identifier for the image
+ * @property {string} url - The image URL
+ * @property {string} base64 - Base64 encoded image data
+ * @property {string} prompt - The prompt used to generate the image
+ * @property {string} [revisedPrompt] - The revised prompt from the API
+ * @property {string} model - The model used for generation
+ * @property {string} size - The image size
+ * @property {string[]} tags - Tags for organizing the image
+ * @property {string} category - Category of the image (location, npc, scene, item, etc.)
+ * @property {boolean} isFavorite - Whether the image is marked as favorite
+ * @property {string} timestamp - ISO string timestamp when generated
+ * @property {string} session - Session identifier or name
+ * @property {string} scene - Scene name or identifier where image was generated
+ * @property {string} savedAt - ISO string timestamp when saved to gallery
  */
 
 /**
@@ -460,15 +493,23 @@ export class ImageGenerator {
      */
     _parseResponse(response, prompt, size) {
         const imageData = response.data?.[0] || {};
+        const now = new Date();
 
         return {
+            id: foundry.utils.randomID(),
             url: imageData.url || '',
             base64: imageData.b64_json || null,
             prompt: prompt,
             revisedPrompt: imageData.revised_prompt,
             model: this._model,
             size: size,
-            createdAt: new Date()
+            createdAt: now,
+            tags: [],
+            category: '',
+            isFavorite: false,
+            timestamp: now.toISOString(),
+            session: '',
+            scene: ''
         };
     }
 
@@ -567,6 +608,7 @@ export class ImageGenerator {
             // Create cache entry
             const cacheKey = this._generateCacheKey(result.prompt);
             const cacheEntry = {
+                id: result.id || foundry.utils.randomID(),
                 url: result.url,
                 base64: base64,
                 prompt: result.prompt,
@@ -574,7 +616,13 @@ export class ImageGenerator {
                 expiresAt: new Date(result.createdAt.getTime() + URL_EXPIRATION_MS),
                 model: result.model,
                 size: result.size,
-                revisedPrompt: result.revisedPrompt
+                revisedPrompt: result.revisedPrompt,
+                tags: result.tags || [],
+                category: result.category || '',
+                isFavorite: result.isFavorite || false,
+                timestamp: result.timestamp || result.createdAt.toISOString(),
+                session: result.session || '',
+                scene: result.scene || ''
             };
 
             this._imageCache.set(cacheKey, cacheEntry);
@@ -742,6 +790,330 @@ export class ImageGenerator {
      */
     clearHistory() {
         this._history = [];
+    }
+
+    /**
+     * Saves an image to the persistent gallery
+     * @param {Object} imageData - The image data to save
+     * @returns {Promise<void>}
+     */
+    async saveToGallery(imageData) {
+        try {
+            let gallery = await this.loadGallery();
+            const now = new Date();
+
+            // Ensure all required metadata fields are present
+            const galleryEntry = {
+                id: imageData.id || foundry.utils.randomID(),
+                url: imageData.url || '',
+                base64: imageData.base64 || null,
+                prompt: imageData.prompt || '',
+                revisedPrompt: imageData.revisedPrompt || null,
+                model: imageData.model || this._model,
+                size: imageData.size || this._defaultSize,
+                tags: imageData.tags || [],
+                category: imageData.category || '',
+                isFavorite: imageData.isFavorite || false,
+                timestamp: imageData.timestamp || now.toISOString(),
+                session: imageData.session || '',
+                scene: imageData.scene || '',
+                savedAt: now.toISOString()
+            };
+
+            gallery.push(galleryEntry);
+
+            // Enforce storage limit: keep only 50 most recent images
+            if (gallery.length > 50) {
+                // Sort by savedAt timestamp (oldest first)
+                gallery.sort((a, b) => new Date(a.savedAt) - new Date(b.savedAt));
+
+                // Keep only the 50 most recent images
+                const removedCount = gallery.length - 50;
+                gallery = gallery.slice(-50);
+
+                console.warn(`${MODULE_ID} | Gallery limit reached. Removed ${removedCount} oldest image(s) to maintain 50 image limit.`);
+            }
+
+            await game.settings.set(MODULE_ID, SETTINGS.IMAGE_GALLERY, gallery);
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to save image to gallery:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Loads the persistent gallery
+     * @returns {Promise<Array>} The gallery array
+     */
+    async loadGallery() {
+        try {
+            const gallery = await game.settings.get(MODULE_ID, SETTINGS.IMAGE_GALLERY);
+            return gallery || [];
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to load gallery:`, error);
+            return [];
+        }
+    }
+
+    /**
+     * Syncs the gallery with settings storage
+     * @param {Array} gallery - The gallery array to sync
+     * @returns {Promise<void>}
+     * @private
+     */
+    async _syncWithSettings(gallery) {
+        try {
+            await game.settings.set(MODULE_ID, SETTINGS.IMAGE_GALLERY, gallery);
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to sync gallery with settings:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Adds a tag to an image in the gallery
+     * @param {string} imageId - The image ID
+     * @param {string} tag - The tag to add
+     * @returns {Promise<boolean>} True if successful, false if image not found
+     */
+    async addTag(imageId, tag) {
+        if (!imageId || !tag) {
+            console.warn(`${MODULE_ID} | Invalid imageId or tag provided`);
+            return false;
+        }
+
+        try {
+            const gallery = await this.loadGallery();
+            const image = gallery.find(img => img.id === imageId);
+
+            if (!image) {
+                console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
+                return false;
+            }
+
+            // Initialize tags array if it doesn't exist
+            if (!Array.isArray(image.tags)) {
+                image.tags = [];
+            }
+
+            // Add tag if it doesn't already exist
+            const normalizedTag = tag.trim();
+            if (!image.tags.includes(normalizedTag)) {
+                image.tags.push(normalizedTag);
+                await this._syncWithSettings(gallery);
+                console.log(`${MODULE_ID} | Added tag "${normalizedTag}" to image ${imageId}`);
+                return true;
+            }
+
+            return false;
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to add tag:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Removes a tag from an image in the gallery
+     * @param {string} imageId - The image ID
+     * @param {string} tag - The tag to remove
+     * @returns {Promise<boolean>} True if successful, false if image not found
+     */
+    async removeTag(imageId, tag) {
+        if (!imageId || !tag) {
+            console.warn(`${MODULE_ID} | Invalid imageId or tag provided`);
+            return false;
+        }
+
+        try {
+            const gallery = await this.loadGallery();
+            const image = gallery.find(img => img.id === imageId);
+
+            if (!image) {
+                console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
+                return false;
+            }
+
+            if (!Array.isArray(image.tags)) {
+                return false;
+            }
+
+            const normalizedTag = tag.trim();
+            const index = image.tags.indexOf(normalizedTag);
+
+            if (index !== -1) {
+                image.tags.splice(index, 1);
+                await this._syncWithSettings(gallery);
+                console.log(`${MODULE_ID} | Removed tag "${normalizedTag}" from image ${imageId}`);
+                return true;
+            }
+
+            return false;
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to remove tag:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Toggles the favorite status of an image in the gallery
+     * @param {string} imageId - The image ID
+     * @returns {Promise<boolean>} The new favorite status, or null if image not found
+     */
+    async toggleFavorite(imageId) {
+        if (!imageId) {
+            console.warn(`${MODULE_ID} | Invalid imageId provided`);
+            return null;
+        }
+
+        try {
+            const gallery = await this.loadGallery();
+            const image = gallery.find(img => img.id === imageId);
+
+            if (!image) {
+                console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
+                return null;
+            }
+
+            image.isFavorite = !image.isFavorite;
+            await this._syncWithSettings(gallery);
+            console.log(`${MODULE_ID} | Toggled favorite for image ${imageId}: ${image.isFavorite}`);
+            return image.isFavorite;
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to toggle favorite:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Sets the category of an image in the gallery
+     * @param {string} imageId - The image ID
+     * @param {string} category - The category to set (location, npc, scene, item, etc.)
+     * @returns {Promise<boolean>} True if successful, false if image not found
+     */
+    async setCategory(imageId, category) {
+        if (!imageId) {
+            console.warn(`${MODULE_ID} | Invalid imageId provided`);
+            return false;
+        }
+
+        try {
+            const gallery = await this.loadGallery();
+            const image = gallery.find(img => img.id === imageId);
+
+            if (!image) {
+                console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
+                return false;
+            }
+
+            image.category = category || '';
+            await this._syncWithSettings(gallery);
+            console.log(`${MODULE_ID} | Set category for image ${imageId}: ${category}`);
+            return true;
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to set category:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Deletes an image from the gallery
+     * @param {string} imageId - The image ID to delete
+     * @returns {Promise<boolean>} True if successful, false if image not found
+     */
+    async deleteImage(imageId) {
+        if (!imageId) {
+            console.warn(`${MODULE_ID} | Invalid imageId provided`);
+            return false;
+        }
+
+        try {
+            const gallery = await this.loadGallery();
+            const index = gallery.findIndex(img => img.id === imageId);
+
+            if (index === -1) {
+                console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
+                return false;
+            }
+
+            gallery.splice(index, 1);
+            await this._syncWithSettings(gallery);
+            console.log(`${MODULE_ID} | Deleted image ${imageId} from gallery`);
+            return true;
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to delete image:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Gets all images from the gallery with optional filters
+     * @param {Object} [filters={}] - Filter options
+     * @param {string} [filters.category] - Filter by category
+     * @param {string} [filters.tag] - Filter by tag
+     * @param {boolean} [filters.isFavorite] - Filter by favorite status
+     * @param {string} [filters.session] - Filter by session
+     * @returns {Promise<GalleryEntry[]>} Filtered gallery entries
+     */
+    async getGalleryImages(filters = {}) {
+        try {
+            let gallery = await this.loadGallery();
+
+            if (filters.category) {
+                gallery = gallery.filter(img => img.category === filters.category);
+            }
+
+            if (filters.tag) {
+                gallery = gallery.filter(img =>
+                    Array.isArray(img.tags) && img.tags.includes(filters.tag)
+                );
+            }
+
+            if (typeof filters.isFavorite === 'boolean') {
+                gallery = gallery.filter(img => img.isFavorite === filters.isFavorite);
+            }
+
+            if (filters.session) {
+                gallery = gallery.filter(img => img.session === filters.session);
+            }
+
+            return gallery;
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to get gallery images:`, error);
+            return [];
+        }
+    }
+
+    /**
+     * Gets a single image from the gallery by ID
+     * @param {string} imageId - The image ID
+     * @returns {Promise<GalleryEntry|null>} The gallery entry or null if not found
+     */
+    async getGalleryImage(imageId) {
+        if (!imageId) {
+            return null;
+        }
+
+        try {
+            const gallery = await this.loadGallery();
+            return gallery.find(img => img.id === imageId) || null;
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to get gallery image:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Clears the entire gallery
+     * @returns {Promise<void>}
+     */
+    async clearGallery() {
+        try {
+            await this._syncWithSettings([]);
+            console.log(`${MODULE_ID} | Gallery cleared`);
+        } catch (error) {
+            console.error(`${MODULE_ID} | Failed to clear gallery:`, error);
+            throw error;
+        }
     }
 
     /**

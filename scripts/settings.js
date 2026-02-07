@@ -18,7 +18,8 @@ export const SETTINGS = {
     OPENAI_API_KEY: 'openaiApiKey',
     TRANSCRIPTION_LANGUAGE: 'transcriptionLanguage',
     PANEL_POSITION: 'panelPosition',
-    OFF_TRACK_SENSITIVITY: 'offTrackSensitivity'
+    OFF_TRACK_SENSITIVITY: 'offTrackSensitivity',
+    IMAGE_GALLERY: 'imageGallery'
 };
 
 /**
@@ -81,6 +82,14 @@ export function registerSettings() {
             'medium': 'NARRATOR.Settings.SensitivityMedium',
             'high': 'NARRATOR.Settings.SensitivityHigh'
         }
+    });
+
+    // Image gallery storage (not shown in config UI)
+    game.settings.register(MODULE_ID, SETTINGS.IMAGE_GALLERY, {
+        scope: 'world',
+        config: false,
+        type: Object,
+        default: []
     });
 }
 
@@ -147,6 +156,23 @@ export class SettingsManager {
     }
 
     /**
+     * Gets the image gallery
+     * @returns {Array} The image gallery array
+     */
+    getImageGallery() {
+        return game.settings.get(MODULE_ID, SETTINGS.IMAGE_GALLERY) || [];
+    }
+
+    /**
+     * Sets the image gallery
+     * @param {Array} gallery - The image gallery array
+     * @returns {Promise<void>}
+     */
+    async setImageGallery(gallery) {
+        await game.settings.set(MODULE_ID, SETTINGS.IMAGE_GALLERY, gallery);
+    }
+
+    /**
      * Checks if the API key is configured
      * @returns {boolean} True if API key is set
      */
@@ -181,7 +207,8 @@ export class SettingsManager {
             apiKey: this.getApiKey(),
             transcriptionLanguage: this.getTranscriptionLanguage(),
             panelPosition: this.getPanelPosition(),
-            offTrackSensitivity: this.getOffTrackSensitivity()
+            offTrackSensitivity: this.getOffTrackSensitivity(),
+            imageGallery: this.getImageGallery()
         };
     }
 }

@@ -213,6 +213,9 @@ class NarratorMaster {
             // Register journal update hooks
             this._registerJournalHooks();
 
+            // Load gallery images
+            await this._loadGallery();
+
             // Validate configuration
             const validation = this.settings.validateConfiguration();
             if (!validation.valid) {
@@ -312,6 +315,7 @@ class NarratorMaster {
         // Set up panel callbacks
         this.panel.onRecordingControl = this._handleRecordingControl.bind(this);
         this.panel.onGenerateImage = this._handleGenerateImage.bind(this);
+        this.panel.onGalleryAction = this._handleGalleryAction.bind(this);
 
         console.log(`${MODULE_ID} | UI panel initialized`);
     }
@@ -339,6 +343,25 @@ class NarratorMaster {
 
         } catch (error) {
             console.warn(`${MODULE_ID} | Failed to load journals:`, error);
+        }
+    }
+
+    /**
+     * Loads gallery images from persistent storage
+     * @private
+     */
+    async _loadGallery() {
+        try {
+            const gallery = await this.imageGenerator.loadGallery();
+
+            // Update panel with gallery images
+            if (this.panel) {
+                this.panel.generatedImages = gallery;
+                console.log(`${MODULE_ID} | Loaded ${gallery.length} images from gallery`);
+            }
+
+        } catch (error) {
+            console.warn(`${MODULE_ID} | Failed to load gallery:`, error);
         }
     }
 
@@ -610,17 +633,97 @@ class NarratorMaster {
                 mood: 'dramatic'
             });
 
-            if (this.panel && result.url) {
-                this.panel.addImage({
-                    url: result.base64 ? `data:image/png;base64,${result.base64}` : result.url,
-                    prompt: result.prompt
-                });
+            if (result.url || result.base64) {
+                // Add metadata for gallery storage
+                const currentScene = game.scenes.active?.name || '';
+                const sessionTimestamp = new Date().toISOString();
+
+                const imageData = {
+                    ...result,
+                    scene: currentScene,
+                    session: sessionTimestamp,
+                    category: '', // Default empty, user can set via UI
+                    tags: [],
+                    isFavorite: false
+                };
+
+                // Save to persistent gallery
+                await this.imageGenerator.saveToGallery(imageData);
+
+                // Reload gallery in panel
+                await this._loadGallery();
+
+                // Re-render panel to show new image
+                if (this.panel) {
+                    this.panel.render(false);
+                }
 
                 ErrorNotificationHelper.info(game.i18n.localize('NARRATOR.Notifications.ImageGenerated'));
             }
 
         } catch (error) {
             this._handleServiceError(error, 'Image Generation');
+        }
+    }
+
+    /**
+     * Handles gallery actions from the panel UI
+     * @param {string} action - The action to perform (toggleFavorite, setTags, setCategory, deleteImage, showImage)
+     * @param {Object} data - Action-specific data
+     * @private
+     */
+    async _handleGalleryAction(action, data) {
+        console.log(`${MODULE_ID} | Gallery action: ${action}`, data);
+
+        try {
+            switch (action) {
+                case 'toggleFavorite':
+                    await this.imageGenerator.toggleFavorite(data.imageId);
+                    break;
+
+                case 'setTags':
+                    // Clear existing tags first by getting the image
+                    const image = await this.imageGenerator.getGalleryImage(data.imageId);
+                    if (image && Array.isArray(image.tags)) {
+                        // Remove all existing tags
+                        for (const tag of image.tags) {
+                            await this.imageGenerator.removeTag(data.imageId, tag);
+                        }
+                    }
+                    // Add new tags
+                    if (Array.isArray(data.tags)) {
+                        for (const tag of data.tags) {
+                            if (tag && tag.trim()) {
+                                await this.imageGenerator.addTag(data.imageId, tag.trim());
+                            }
+                        }
+                    }
+                    break;
+
+                case 'setCategory':
+                    await this.imageGenerator.setCategory(data.imageId, data.category);
+                    break;
+
+                case 'deleteImage':
+                    await this.imageGenerator.deleteImage(data.imageId);
+                    break;
+
+                default:
+                    console.warn(`${MODULE_ID} | Unknown gallery action: ${action}`);
+                    return;
+            }
+
+            // Reload gallery after any action
+            await this._loadGallery();
+
+            // Re-render panel to reflect changes
+            if (this.panel) {
+                this.panel.render(false);
+            }
+
+        } catch (error) {
+            console.error(`${MODULE_ID} | Gallery action failed:`, error);
+            ErrorNotificationHelper.error(error.message || error, 'Gallery Action');
         }
     }
 

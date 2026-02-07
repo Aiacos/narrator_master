@@ -140,7 +140,38 @@
             "NoCache": "Immagine non disponibile (URL scaduto e nessuna cache)",
             "ClickToEnlarge": "Clicca per ingrandire",
             "Delete": "Elimina",
-            "Download": "Scarica"
+            "Download": "Scarica",
+            "FilterByCategory": "Filtra per Categoria",
+            "CategoryAll": "Tutte le Categorie",
+            "CategoryNPC": "Personaggi NPC",
+            "CategoryScene": "Scene",
+            "CategoryInfographic": "Infografiche",
+            "CategoryIllustration": "Illustrazioni",
+            "SearchPlaceholder": "Cerca immagini...",
+            "NoImagesFound": "Nessuna immagine trovata con i filtri selezionati.",
+            "ClearFilters": "Cancella Filtri",
+            "ImageCount": "{count} immagini",
+            "ImageCountSingle": "1 immagine"
+        },
+
+        "Gallery": {
+            "FilterLabel": "Filtro",
+            "FilterAll": "Tutte",
+            "FilterFavorites": "Preferite",
+            "FilterByCategory": "Per Categoria",
+            "SearchPlaceholder": "Cerca immagini...",
+            "ClearSearch": "Cancella Ricerca",
+            "ToggleFavorite": "Aggiungi/Rimuovi dai Preferiti",
+            "ManageTags": "Gestisci Tag",
+            "ShowToPlayers": "Mostra ai Giocatori",
+            "DeleteImage": "Elimina Immagine",
+            "FavoriteImage": "Immagine Preferita",
+            "CategoryLabel": "Categoria",
+            "DeleteConfirm": "Sei sicuro di voler eliminare questa immagine? Questa azione non può essere annullata.",
+            "ImageShown": "Immagine mostrata ai giocatori",
+            "TagsLabel": "Tag (separati da virgola)",
+            "TagsPlaceholder": "location, npc, quest, etc.",
+            "TagsHint": "Inserisci tag separati da virgola per organizzare le immagini"
         },
 
         "Tooltips": {
@@ -148,7 +179,10 @@
             "GenerateImage": "Genera un'immagine basata sul contesto attuale",
             "ClearImages": "Cancella tutte le immagini generate",
             "CopyText": "Copia il testo negli appunti",
-            "OpenSettings": "Apri le impostazioni del modulo"
+            "OpenSettings": "Apri le impostazioni del modulo",
+            "FilterCategory": "Filtra le immagini per categoria",
+            "SearchImages": "Cerca nelle descrizioni delle immagini",
+            "ClearFilters": "Rimuovi tutti i filtri applicati"
         },
 
         "Accessibility": {
