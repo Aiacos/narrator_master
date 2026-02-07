@@ -18,6 +18,19 @@ export const RECORDING_STATE = {
 };
 
 /**
+ * Escapes HTML special characters to prevent XSS
+ * @param {string} text - Text to escape
+ * @returns {string} Escaped text safe for HTML attributes
+ * @private
+ */
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
  * NarratorPanel - Main DM interface Application
  * Provides AI suggestions, off-track detection, and recording controls
  * @extends Application
@@ -606,6 +619,7 @@ export class NarratorPanel extends Application {
             // Show dialog to add/remove tags
             const currentTags = image.tags || [];
             const tagsString = currentTags.join(', ');
+            const escapedTagsString = escapeHtml(tagsString);
 
             const newTagsString = await Dialog.prompt({
                 title: game.i18n.localize('NARRATOR.Gallery.ManageTags'),
@@ -613,7 +627,7 @@ export class NarratorPanel extends Application {
                     <form>
                         <div class="form-group">
                             <label>${game.i18n.localize('NARRATOR.Gallery.TagsLabel')}</label>
-                            <input type="text" name="tags" value="${tagsString}"
+                            <input type="text" name="tags" value="${escapedTagsString}"
                                    placeholder="${game.i18n.localize('NARRATOR.Gallery.TagsPlaceholder')}" />
                             <p class="notes">${game.i18n.localize('NARRATOR.Gallery.TagsHint')}</p>
                         </div>

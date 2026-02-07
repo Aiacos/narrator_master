@@ -799,7 +799,7 @@ export class ImageGenerator {
      */
     async saveToGallery(imageData) {
         try {
-            const gallery = await this.loadGallery();
+            let gallery = await this.loadGallery();
             const now = new Date();
 
             // Ensure all required metadata fields are present
@@ -817,10 +817,23 @@ export class ImageGenerator {
                 timestamp: imageData.timestamp || now.toISOString(),
                 session: imageData.session || '',
                 scene: imageData.scene || '',
-                savedAt: new Date().toISOString()
+                savedAt: now.toISOString()
             };
 
             gallery.push(galleryEntry);
+
+            // Enforce storage limit: keep only 50 most recent images
+            if (gallery.length > 50) {
+                // Sort by savedAt timestamp (oldest first)
+                gallery.sort((a, b) => new Date(a.savedAt) - new Date(b.savedAt));
+
+                // Keep only the 50 most recent images
+                const removedCount = gallery.length - 50;
+                gallery = gallery.slice(-50);
+
+                console.warn(`${MODULE_ID} | Gallery limit reached. Removed ${removedCount} oldest image(s) to maintain 50 image limit.`);
+            }
+
             await game.settings.set(MODULE_ID, SETTINGS.IMAGE_GALLERY, gallery);
         } catch (error) {
             console.error(`${MODULE_ID} | Failed to save image to gallery:`, error);
