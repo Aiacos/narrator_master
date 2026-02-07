@@ -20,7 +20,9 @@ export const SETTINGS = {
     MULTI_LANGUAGE_MODE: 'multiLanguageMode',
     PANEL_POSITION: 'panelPosition',
     OFF_TRACK_SENSITIVITY: 'offTrackSensitivity',
-    SPEAKER_LABELS: 'speakerLabels'
+    SPEAKER_LABELS: 'speakerLabels',
+    RULES_DETECTION: 'rulesDetection',
+    RULES_SOURCE: 'rulesSource'
 };
 
 /**
@@ -105,6 +107,30 @@ export function registerSettings() {
         type: Boolean,
         default: true
     });
+
+    // Rules detection - Automatically detect and answer rules questions
+    game.settings.register(MODULE_ID, SETTINGS.RULES_DETECTION, {
+        name: 'NARRATOR.Settings.RulesDetectionName',
+        hint: 'NARRATOR.Settings.RulesDetectionHint',
+        scope: 'world',
+        config: true,
+        type: Boolean,
+        default: true
+    });
+
+    // Rules source - Which compendium to use for rules answers
+    game.settings.register(MODULE_ID, SETTINGS.RULES_SOURCE, {
+        name: 'NARRATOR.Settings.RulesSourceName',
+        hint: 'NARRATOR.Settings.RulesSourceHint',
+        scope: 'world',
+        config: true,
+        type: String,
+        default: 'auto',
+        choices: {
+            'auto': 'NARRATOR.Settings.RulesSourceAuto',
+            'dnd5e': 'NARRATOR.Settings.RulesSourceDnd5e'
+        }
+    });
 }
 
 /**
@@ -186,6 +212,22 @@ export class SettingsManager {
     }
 
     /**
+     * Gets the rules detection setting
+     * @returns {boolean} True if rules detection is enabled
+     */
+    getRulesDetection() {
+        return game.settings.get(MODULE_ID, SETTINGS.RULES_DETECTION) ?? true;
+    }
+
+    /**
+     * Gets the rules source setting
+     * @returns {string} The rules source ('auto', 'dnd5e')
+     */
+    getRulesSource() {
+        return game.settings.get(MODULE_ID, SETTINGS.RULES_SOURCE) || 'auto';
+    }
+
+    /**
      * Checks if the API key is configured
      * @returns {boolean} True if API key is set
      */
@@ -222,7 +264,9 @@ export class SettingsManager {
             multiLanguageMode: this.getMultiLanguageMode(),
             panelPosition: this.getPanelPosition(),
             offTrackSensitivity: this.getOffTrackSensitivity(),
-            speakerLabels: this.getSpeakerLabels()
+            speakerLabels: this.getSpeakerLabels(),
+            rulesDetection: this.getRulesDetection(),
+            rulesSource: this.getRulesSource()
         };
     }
 }

@@ -21,7 +21,9 @@
             "RulesDetectionName": "Rilevamento Regole",
             "RulesDetectionHint": "Abilita il rilevamento automatico delle domande sulle regole nelle conversazioni",
             "RulesSourceName": "Fonte Regole SRD",
-            "RulesSourceHint": "Seleziona quale compendio usare per le risposte alle regole"
+            "RulesSourceHint": "Seleziona quale compendio usare per le risposte alle regole",
+            "RulesSourceAuto": "Automatico - Cerca in tutti i compendi",
+            "RulesSourceDnd5e": "D&D 5e - Solo compendi D&D 5e"
         },
 
         "Panel": {
