@@ -56,6 +56,7 @@ const IMAGE_STYLES = {
 /**
  * Represents a cached image entry
  * @typedef {Object} CachedImage
+ * @property {string} id - Unique identifier for the image
  * @property {string} url - The image URL
  * @property {string} base64 - Base64 encoded image data (if downloaded)
  * @property {string} prompt - The prompt used to generate the image
@@ -64,11 +65,18 @@ const IMAGE_STYLES = {
  * @property {string} model - The model used for generation
  * @property {string} size - The image size
  * @property {string} [revisedPrompt] - The revised prompt from the API
+ * @property {string[]} tags - Tags for organizing the image
+ * @property {string} category - Category of the image (location, npc, scene, item, etc.)
+ * @property {boolean} isFavorite - Whether the image is marked as favorite
+ * @property {string} timestamp - ISO string timestamp when saved
+ * @property {string} session - Session identifier or name
+ * @property {string} scene - Scene name or identifier where image was generated
  */
 
 /**
  * Represents an image generation result
  * @typedef {Object} GenerationResult
+ * @property {string} id - Unique identifier for the image
  * @property {string} url - The generated image URL
  * @property {string} [base64] - Base64 encoded image data (if requested)
  * @property {string} prompt - The original prompt
@@ -76,6 +84,31 @@ const IMAGE_STYLES = {
  * @property {string} model - The model used
  * @property {string} size - The image size
  * @property {Date} createdAt - When the image was generated
+ * @property {string[]} tags - Tags for organizing the image
+ * @property {string} category - Category of the image (location, npc, scene, item, etc.)
+ * @property {boolean} isFavorite - Whether the image is marked as favorite
+ * @property {string} timestamp - ISO string timestamp when saved
+ * @property {string} session - Session identifier or name
+ * @property {string} scene - Scene name or identifier where image was generated
+ */
+
+/**
+ * Represents a gallery image entry (persistent storage)
+ * @typedef {Object} GalleryEntry
+ * @property {string} id - Unique identifier for the image
+ * @property {string} url - The image URL
+ * @property {string} base64 - Base64 encoded image data
+ * @property {string} prompt - The prompt used to generate the image
+ * @property {string} [revisedPrompt] - The revised prompt from the API
+ * @property {string} model - The model used for generation
+ * @property {string} size - The image size
+ * @property {string[]} tags - Tags for organizing the image
+ * @property {string} category - Category of the image (location, npc, scene, item, etc.)
+ * @property {boolean} isFavorite - Whether the image is marked as favorite
+ * @property {string} timestamp - ISO string timestamp when generated
+ * @property {string} session - Session identifier or name
+ * @property {string} scene - Scene name or identifier where image was generated
+ * @property {string} savedAt - ISO string timestamp when saved to gallery
  */
 
 /**
@@ -460,15 +493,23 @@ export class ImageGenerator {
      */
     _parseResponse(response, prompt, size) {
         const imageData = response.data?.[0] || {};
+        const now = new Date();
 
         return {
+            id: foundry.utils.randomID(),
             url: imageData.url || '',
             base64: imageData.b64_json || null,
             prompt: prompt,
             revisedPrompt: imageData.revised_prompt,
             model: this._model,
             size: size,
-            createdAt: new Date()
+            createdAt: now,
+            tags: [],
+            category: '',
+            isFavorite: false,
+            timestamp: now.toISOString(),
+            session: '',
+            scene: ''
         };
     }
 
@@ -567,6 +608,7 @@ export class ImageGenerator {
             // Create cache entry
             const cacheKey = this._generateCacheKey(result.prompt);
             const cacheEntry = {
+                id: result.id || foundry.utils.randomID(),
                 url: result.url,
                 base64: base64,
                 prompt: result.prompt,
@@ -574,7 +616,13 @@ export class ImageGenerator {
                 expiresAt: new Date(result.createdAt.getTime() + URL_EXPIRATION_MS),
                 model: result.model,
                 size: result.size,
-                revisedPrompt: result.revisedPrompt
+                revisedPrompt: result.revisedPrompt,
+                tags: result.tags || [],
+                category: result.category || '',
+                isFavorite: result.isFavorite || false,
+                timestamp: result.timestamp || result.createdAt.toISOString(),
+                session: result.session || '',
+                scene: result.scene || ''
             };
 
             this._imageCache.set(cacheKey, cacheEntry);
@@ -752,10 +800,27 @@ export class ImageGenerator {
     async saveToGallery(imageData) {
         try {
             const gallery = await this.loadGallery();
-            gallery.push({
-                ...imageData,
+            const now = new Date();
+
+            // Ensure all required metadata fields are present
+            const galleryEntry = {
+                id: imageData.id || foundry.utils.randomID(),
+                url: imageData.url || '',
+                base64: imageData.base64 || null,
+                prompt: imageData.prompt || '',
+                revisedPrompt: imageData.revisedPrompt || null,
+                model: imageData.model || this._model,
+                size: imageData.size || this._defaultSize,
+                tags: imageData.tags || [],
+                category: imageData.category || '',
+                isFavorite: imageData.isFavorite || false,
+                timestamp: imageData.timestamp || now.toISOString(),
+                session: imageData.session || '',
+                scene: imageData.scene || '',
                 savedAt: new Date().toISOString()
-            });
+            };
+
+            gallery.push(galleryEntry);
             await game.settings.set(MODULE_ID, SETTINGS.IMAGE_GALLERY, gallery);
         } catch (error) {
             console.error(`${MODULE_ID} | Failed to save image to gallery:`, error);
