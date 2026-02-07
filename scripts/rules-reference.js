@@ -480,4 +480,237 @@ export class RulesReferenceService {
 
         return normalizedTerm in mechanicTerms;
     }
+
+    // ========================================
+    // Compendium Integration
+    // ========================================
+
+    /**
+     * Searches for rules content in compendium packs
+     * @param {string} query - The search query
+     * @param {Object} [options={}] - Search options
+     * @param {string[]} [options.packNames] - Specific pack names to search (optional, searches all if not specified)
+     * @param {string[]} [options.documentTypes] - Filter by document types (e.g., 'JournalEntry', 'Item')
+     * @param {number} [options.limit] - Maximum results to return
+     * @returns {Promise<SearchResult[]>} Array of search results from compendiums
+     */
+    async searchCompendiums(query, options = {}) {
+        if (!query || typeof query !== 'string' || query.trim().length === 0) {
+            console.warn(`${MODULE_ID} | Invalid compendium search query`);
+            return [];
+        }
+
+        const normalizedQuery = query.toLowerCase().trim();
+        const limit = options.limit || this._resultLimit;
+        const results = [];
+
+        console.log(`${MODULE_ID} | Searching compendiums for: "${query}"`);
+
+        // Iterate through all compendium packs
+        for (const pack of game.packs) {
+            // Filter by pack names if specified
+            if (options.packNames && !options.packNames.includes(pack.collection)) {
+                continue;
+            }
+
+            // Filter by document types if specified
+            if (options.documentTypes && !options.documentTypes.includes(pack.documentName)) {
+                continue;
+            }
+
+            try {
+                const packResults = await this._searchCompendiumPack(pack, normalizedQuery);
+                results.push(...packResults);
+            } catch (error) {
+                console.warn(`${MODULE_ID} | Error searching pack ${pack.collection}:`, error);
+            }
+        }
+
+        // Sort by relevance score (highest first)
+        results.sort((a, b) => b.relevance - a.relevance);
+
+        // Limit results
+        const limitedResults = results.slice(0, limit);
+
+        console.log(`${MODULE_ID} | Found ${results.length} total results, returning ${limitedResults.length}`);
+
+        return limitedResults;
+    }
+
+    /**
+     * Searches a single compendium pack for matching entries
+     * @param {CompendiumCollection} pack - The compendium pack to search
+     * @param {string} normalizedQuery - The normalized search query
+     * @returns {Promise<SearchResult[]>} Array of search results from this pack
+     * @private
+     */
+    async _searchCompendiumPack(pack, normalizedQuery) {
+        const results = [];
+
+        // Get index for efficient searching
+        const index = await pack.getIndex();
+
+        // Search through index entries
+        for (const entry of index) {
+            const nameMatch = entry.name.toLowerCase().includes(normalizedQuery);
+            let relevance = 0;
+            const matchedTerms = [];
+
+            // Calculate relevance based on name match
+            if (nameMatch) {
+                // Exact match gets highest score
+                if (entry.name.toLowerCase() === normalizedQuery) {
+                    relevance = 1.0;
+                    matchedTerms.push(entry.name);
+                }
+                // Starts with query gets high score
+                else if (entry.name.toLowerCase().startsWith(normalizedQuery)) {
+                    relevance = 0.8;
+                    matchedTerms.push(entry.name);
+                }
+                // Contains query gets medium score
+                else {
+                    relevance = 0.6;
+                    matchedTerms.push(entry.name);
+                }
+
+                // Create a rule entry from the compendium entry
+                const ruleEntry = await this._extractCompendiumEntry(pack, entry);
+
+                if (ruleEntry) {
+                    results.push({
+                        rule: ruleEntry,
+                        relevance,
+                        matchedTerms
+                    });
+                }
+            }
+        }
+
+        return results;
+    }
+
+    /**
+     * Extracts a rule entry from a compendium document
+     * @param {CompendiumCollection} pack - The compendium pack
+     * @param {Object} indexEntry - The index entry from the pack
+     * @returns {Promise<RuleEntry|null>} The extracted rule entry or null
+     * @private
+     */
+    async _extractCompendiumEntry(pack, indexEntry) {
+        try {
+            // Get the full document from the pack
+            const doc = await pack.getDocument(indexEntry._id);
+            if (!doc) {
+                return null;
+            }
+
+            // Extract content based on document type
+            let content = '';
+            let category = 'general';
+
+            // Handle JournalEntry documents
+            if (pack.documentName === 'JournalEntry') {
+                // Extract text from journal pages
+                if (doc.pages) {
+                    const textPages = doc.pages.filter(page => page.type === 'text');
+                    content = textPages
+                        .map(page => {
+                            const rawContent = page.text?.content || '';
+                            return this._stripHtml(rawContent);
+                        })
+                        .join(' ');
+                }
+                category = 'rules';
+            }
+            // Handle Item documents (spells, equipment, etc.)
+            else if (pack.documentName === 'Item') {
+                content = doc.system?.description?.value || '';
+                content = this._stripHtml(content);
+                category = doc.type || 'item';
+            }
+            // Handle Actor documents
+            else if (pack.documentName === 'Actor') {
+                content = doc.system?.details?.biography?.value || '';
+                content = this._stripHtml(content);
+                category = 'creature';
+            }
+            // Generic fallback
+            else {
+                content = doc.system?.description?.value || doc.data?.description || '';
+                if (typeof content === 'string') {
+                    content = this._stripHtml(content);
+                }
+            }
+
+            // Create rule entry
+            return {
+                id: `${pack.collection}.${indexEntry._id}`,
+                title: doc.name || indexEntry.name,
+                content: content.trim(),
+                category,
+                tags: this._extractTags(doc),
+                source: pack.metadata?.label || pack.collection
+            };
+        } catch (error) {
+            console.warn(`${MODULE_ID} | Error extracting compendium entry ${indexEntry._id}:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Strips HTML tags from content while preserving text
+     * @param {string} html - The HTML content to strip
+     * @returns {string} Plain text content
+     * @private
+     */
+    _stripHtml(html) {
+        if (!html || typeof html !== 'string') {
+            return '';
+        }
+
+        // Create a temporary DOM element to parse HTML
+        const div = document.createElement('div');
+        div.innerHTML = html;
+
+        // Get text content, handling nested elements
+        let text = div.textContent || div.innerText || '';
+
+        // Normalize whitespace
+        text = text.replace(/\s+/g, ' ').trim();
+
+        return text;
+    }
+
+    /**
+     * Extracts searchable tags from a document
+     * @param {Document} doc - The Foundry document
+     * @returns {string[]} Array of tags
+     * @private
+     */
+    _extractTags(doc) {
+        const tags = [];
+
+        // Add document type as a tag
+        if (doc.type) {
+            tags.push(doc.type);
+        }
+
+        // Add system-specific tags
+        if (doc.system?.tags) {
+            tags.push(...doc.system.tags);
+        }
+
+        // Add action type for items
+        if (doc.system?.actionType) {
+            tags.push(doc.system.actionType);
+        }
+
+        // Add spell school for spells
+        if (doc.system?.school) {
+            tags.push(doc.system.school);
+        }
+
+        return tags.filter(tag => tag && typeof tag === 'string');
+    }
 }
