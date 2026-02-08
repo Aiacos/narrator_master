@@ -268,6 +268,11 @@ export class NarratorPanel extends Application {
                 stopRecording: game.i18n.localize('NARRATOR.Panel.StopRecording'),
                 pauseRecording: game.i18n.localize('NARRATOR.Panel.PauseRecording'),
                 resumeRecording: game.i18n.localize('NARRATOR.Panel.ResumeRecording'),
+                // Accessibility-specific aria-labels
+                startRecordingAriaLabel: game.i18n.localize('NARRATOR.Accessibility.StartRecordingButton'),
+                stopRecordingAriaLabel: game.i18n.localize('NARRATOR.Accessibility.StopRecordingButton'),
+                pauseRecordingAriaLabel: game.i18n.localize('NARRATOR.Accessibility.PauseRecordingButton'),
+                resumeRecordingAriaLabel: game.i18n.localize('NARRATOR.Accessibility.ResumeRecordingButton'),
                 generateImage: game.i18n.localize('NARRATOR.Panel.GenerateImage'),
                 assistantTab: game.i18n.localize('NARRATOR.Panel.AssistantTab'),
                 imagesTab: game.i18n.localize('NARRATOR.Panel.ImagesTab'),

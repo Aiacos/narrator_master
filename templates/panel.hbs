@@ -28,29 +28,30 @@
             {{#if isInactive}}
             <button type="button" class="start-recording {{#unless apiKeyConfigured}}disabled{{/unless}}"
                     {{#unless apiKeyConfigured}}disabled{{/unless}}
-                    title="{{i18n.startRecording}}">
+                    title="{{i18n.startRecording}}"
+                    aria-label="{{i18n.startRecordingAriaLabel}}">
                 <i class="fas fa-microphone"></i>
                 {{i18n.startRecording}}
             </button>
             {{/if}}
 
             {{#if isRecording}}
-            <button type="button" class="pause-recording" title="{{i18n.pauseRecording}}">
+            <button type="button" class="pause-recording" title="{{i18n.pauseRecording}}" aria-label="{{i18n.pauseRecordingAriaLabel}}">
                 <i class="fas fa-pause"></i>
                 {{i18n.pauseRecording}}
             </button>
-            <button type="button" class="stop-recording" title="{{i18n.stopRecording}}">
+            <button type="button" class="stop-recording" title="{{i18n.stopRecording}}" aria-label="{{i18n.stopRecordingAriaLabel}}">
                 <i class="fas fa-stop"></i>
                 {{i18n.stopRecording}}
             </button>
             {{/if}}
 
             {{#if isPaused}}
-            <button type="button" class="resume-recording" title="{{i18n.resumeRecording}}">
+            <button type="button" class="resume-recording" title="{{i18n.resumeRecording}}" aria-label="{{i18n.resumeRecordingAriaLabel}}">
                 <i class="fas fa-play"></i>
                 {{i18n.resumeRecording}}
             </button>
-            <button type="button" class="stop-recording" title="{{i18n.stopRecording}}">
+            <button type="button" class="stop-recording" title="{{i18n.stopRecording}}" aria-label="{{i18n.stopRecordingAriaLabel}}">
                 <i class="fas fa-stop"></i>
                 {{i18n.stopRecording}}
             </button>

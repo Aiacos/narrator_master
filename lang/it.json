@@ -193,6 +193,10 @@
 
         "Accessibility": {
             "RecordButton": "Pulsante registrazione",
+            "StartRecordingButton": "Avvia registrazione audio",
+            "StopRecordingButton": "Ferma registrazione audio",
+            "PauseRecordingButton": "Metti in pausa la registrazione",
+            "ResumeRecordingButton": "Riprendi la registrazione",
             "AudioLevel": "Indicatore livello audio",
             "TabNavigation": "Navigazione schede",
             "ImageGallery": "Galleria immagini",
