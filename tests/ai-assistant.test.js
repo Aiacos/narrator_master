@@ -41,23 +41,29 @@ function teardown() {
  */
 function createMockAnalysisResponse() {
     return {
-        choices: [{
-            message: {
-                content: JSON.stringify({
-                    suggestions: [
-                        { type: 'narration', content: 'Descrivi la taverna fumosa', confidence: 0.8 },
-                        { type: 'dialogue', content: 'Il barista si avvicina', confidence: 0.7 }
-                    ],
-                    offTrackStatus: {
-                        isOffTrack: false,
-                        severity: 0.1,
-                        reason: 'I giocatori stanno seguendo la trama'
-                    },
-                    relevantPages: ['page1', 'page2'],
-                    summary: 'I giocatori entrano nella taverna'
-                })
+        choices: [
+            {
+                message: {
+                    content: JSON.stringify({
+                        suggestions: [
+                            {
+                                type: 'narration',
+                                content: 'Descrivi la taverna fumosa',
+                                confidence: 0.8
+                            },
+                            { type: 'dialogue', content: 'Il barista si avvicina', confidence: 0.7 }
+                        ],
+                        offTrackStatus: {
+                            isOffTrack: false,
+                            severity: 0.1,
+                            reason: 'I giocatori stanno seguendo la trama'
+                        },
+                        relevantPages: ['page1', 'page2'],
+                        summary: 'I giocatori entrano nella taverna'
+                    })
+                }
             }
-        }]
+        ]
     };
 }
 
@@ -66,16 +72,18 @@ function createMockAnalysisResponse() {
  */
 function createMockOffTrackResponse() {
     return {
-        choices: [{
-            message: {
-                content: JSON.stringify({
-                    isOffTrack: true,
-                    severity: 0.7,
-                    reason: 'I giocatori stanno discutendo di politica invece della missione',
-                    narrativeBridge: 'Un messaggero arriva improvvisamente con notizie urgenti'
-                })
+        choices: [
+            {
+                message: {
+                    content: JSON.stringify({
+                        isOffTrack: true,
+                        severity: 0.7,
+                        reason: 'I giocatori stanno discutendo di politica invece della missione',
+                        narrativeBridge: 'Un messaggero arriva improvvisamente con notizie urgenti'
+                    })
+                }
             }
-        }]
+        ]
     };
 }
 
@@ -84,17 +92,32 @@ function createMockOffTrackResponse() {
  */
 function createMockSuggestionsResponse() {
     return {
-        choices: [{
-            message: {
-                content: JSON.stringify({
-                    suggestions: [
-                        { type: 'action', content: 'Chiedi un tiro percezione', confidence: 0.9 },
-                        { type: 'reference', content: 'Vedi pagina 12 del manuale', pageReference: 'page12', confidence: 0.85 },
-                        { type: 'narration', content: 'Si sente un rumore provenire dal fondo', confidence: 0.75 }
-                    ]
-                })
+        choices: [
+            {
+                message: {
+                    content: JSON.stringify({
+                        suggestions: [
+                            {
+                                type: 'action',
+                                content: 'Chiedi un tiro percezione',
+                                confidence: 0.9
+                            },
+                            {
+                                type: 'reference',
+                                content: 'Vedi pagina 12 del manuale',
+                                pageReference: 'page12',
+                                confidence: 0.85
+                            },
+                            {
+                                type: 'narration',
+                                content: 'Si sente un rumore provenire dal fondo',
+                                confidence: 0.75
+                            }
+                        ]
+                    })
+                }
             }
-        }]
+        ]
     };
 }
 
@@ -103,11 +126,14 @@ function createMockSuggestionsResponse() {
  */
 function createMockNarrativeBridgeResponse() {
     return {
-        choices: [{
-            message: {
-                content: 'Mentre discutete, un anziano si avvicina al vostro tavolo. "Scusate l\'interruzione, ma ho sentito che cercate il tempio perduto..."'
+        choices: [
+            {
+                message: {
+                    content:
+                        'Mentre discutete, un anziano si avvicina al vostro tavolo. "Scusate l\'interruzione, ma ho sentito che cercate il tempio perduto..."'
+                }
             }
-        }]
+        ]
     };
 }
 
@@ -127,7 +153,10 @@ export async function runTests() {
         assert.equal(assistant._model, 'gpt-4o-mini', 'Default model should be gpt-4o-mini');
         assert.equal(assistant._sensitivity, 'medium', 'Default sensitivity should be medium');
         assert.equal(assistant._adventureContext, '', 'Adventure context should be empty');
-        assert.ok(Array.isArray(assistant._conversationHistory), 'Conversation history should be array');
+        assert.ok(
+            Array.isArray(assistant._conversationHistory),
+            'Conversation history should be array'
+        );
 
         teardown();
     });
@@ -228,7 +257,11 @@ export async function runTests() {
         assistant.setAdventureContext(context);
 
         assert.equal(assistant._adventureContext, context, 'Context should be updated');
-        assert.equal(assistant.getAdventureContext(), context, 'getAdventureContext should return context');
+        assert.equal(
+            assistant.getAdventureContext(),
+            context,
+            'getAdventureContext should return context'
+        );
 
         teardown();
     });
@@ -388,7 +421,10 @@ export async function runTests() {
             assert.ok(suggestions.length > 0, 'Should have suggestions');
             assert.ok(suggestions[0].type, 'Suggestions should have type');
             assert.ok(suggestions[0].content, 'Suggestions should have content');
-            assert.ok(typeof suggestions[0].confidence === 'number', 'Suggestions should have confidence');
+            assert.ok(
+                typeof suggestions[0].confidence === 'number',
+                'Suggestions should have confidence'
+            );
         } finally {
             globalThis.fetch = originalFetch;
         }
@@ -473,7 +509,10 @@ export async function runTests() {
         assistant.setSensitivity('high');
         const highPrompt = assistant._buildSystemPrompt();
 
-        assert.ok(highPrompt.includes('attentamente'), 'High sensitivity should mention careful monitoring');
+        assert.ok(
+            highPrompt.includes('attentamente'),
+            'High sensitivity should mention careful monitoring'
+        );
 
         teardown();
     });
@@ -625,7 +664,7 @@ export async function runTests() {
         assert.ok(assistant._conversationHistory.length <= 3, 'Should not exceed max size');
         // Should keep most recent
         assert.ok(
-            assistant._conversationHistory.some(h => h.content === 'message 4'),
+            assistant._conversationHistory.some((h) => h.content === 'message 4'),
             'Should keep most recent messages'
         );
 
@@ -639,11 +678,13 @@ export async function runTests() {
         const assistant = new AIAssistant('key');
 
         const malformedResponse = {
-            choices: [{
-                message: {
-                    content: 'Not valid JSON at all'
+            choices: [
+                {
+                    message: {
+                        content: 'Not valid JSON at all'
+                    }
                 }
-            }]
+            ]
         };
 
         const result = assistant._parseAnalysisResponse(malformedResponse);
@@ -663,11 +704,13 @@ export async function runTests() {
         const assistant = new AIAssistant('key');
 
         const malformedResponse = {
-            choices: [{
-                message: {
-                    content: 'Invalid JSON'
+            choices: [
+                {
+                    message: {
+                        content: 'Invalid JSON'
+                    }
                 }
-            }]
+            ]
         };
 
         const result = assistant._parseOffTrackResponse(malformedResponse);
@@ -708,8 +751,15 @@ export async function runTests() {
             await assistant.analyzeContext('Test');
 
             const call = mockFetch.calls[0];
-            assert.ok(call.options.headers.Authorization.includes('Bearer test-api-key'), 'Should include API key');
-            assert.equal(call.options.headers['Content-Type'], 'application/json', 'Should set content type');
+            assert.ok(
+                call.options.headers.Authorization.includes('Bearer test-api-key'),
+                'Should include API key'
+            );
+            assert.equal(
+                call.options.headers['Content-Type'],
+                'application/json',
+                'Should set content type'
+            );
         } finally {
             globalThis.fetch = originalFetch;
         }
@@ -865,29 +915,36 @@ export async function runTests() {
 
         const assistant = new AIAssistant('key');
         const maliciousResponse = {
-            choices: [{
-                message: {
-                    content: JSON.stringify({
-                        suggestions: [{
-                            type: 'narration',
-                            content: 'A'.repeat(10000), // Excessively long
-                            confidence: 0.8
-                        }],
-                        offTrackStatus: {
-                            isOffTrack: false,
-                            severity: 0.1,
-                            reason: 'B'.repeat(5000) // Excessively long
-                        },
-                        relevantPages: ['page1'],
-                        summary: 'C'.repeat(5000) // Excessively long
-                    })
+            choices: [
+                {
+                    message: {
+                        content: JSON.stringify({
+                            suggestions: [
+                                {
+                                    type: 'narration',
+                                    content: 'A'.repeat(10000), // Excessively long
+                                    confidence: 0.8
+                                }
+                            ],
+                            offTrackStatus: {
+                                isOffTrack: false,
+                                severity: 0.1,
+                                reason: 'B'.repeat(5000) // Excessively long
+                            },
+                            relevantPages: ['page1'],
+                            summary: 'C'.repeat(5000) // Excessively long
+                        })
+                    }
                 }
-            }]
+            ]
         };
 
         const result = assistant._parseAnalysisResponse(maliciousResponse);
 
-        assert.ok(result.suggestions[0].content.length <= 5000, 'Should truncate suggestion content');
+        assert.ok(
+            result.suggestions[0].content.length <= 5000,
+            'Should truncate suggestion content'
+        );
         assert.ok(result.offTrackStatus.reason.length <= 1000, 'Should truncate off-track reason');
         assert.ok(result.summary.length <= 2000, 'Should truncate summary');
 
@@ -900,69 +957,85 @@ export async function runTests() {
 
         const assistant = new AIAssistant('key');
         const excessiveArrays = {
-            choices: [{
-                message: {
-                    content: JSON.stringify({
-                        suggestions: Array.from({ length: 50 }, (_, i) => ({
-                            type: 'narration',
-                            content: `Suggestion ${i}`,
-                            confidence: 0.8
-                        })),
-                        offTrackStatus: {
-                            isOffTrack: false,
-                            severity: 0.1,
-                            reason: 'Test'
-                        },
-                        relevantPages: Array.from({ length: 100 }, (_, i) => `page${i}`),
-                        summary: 'Test'
-                    })
+            choices: [
+                {
+                    message: {
+                        content: JSON.stringify({
+                            suggestions: Array.from({ length: 50 }, (_, i) => ({
+                                type: 'narration',
+                                content: `Suggestion ${i}`,
+                                confidence: 0.8
+                            })),
+                            offTrackStatus: {
+                                isOffTrack: false,
+                                severity: 0.1,
+                                reason: 'Test'
+                            },
+                            relevantPages: Array.from({ length: 100 }, (_, i) => `page${i}`),
+                            summary: 'Test'
+                        })
+                    }
                 }
-            }]
+            ]
         };
 
         const result = assistant._parseAnalysisResponse(excessiveArrays);
 
         assert.ok(result.suggestions.length <= 10, 'Should limit suggestions array to 10 items');
-        assert.ok(result.relevantPages.length <= 20, 'Should limit relevantPages array to 20 items');
+        assert.ok(
+            result.relevantPages.length <= 20,
+            'Should limit relevantPages array to 20 items'
+        );
 
         teardown();
     });
 
     // Test: _parseAnalysisResponse clamps numeric ranges
-    runner.test('_parseAnalysisResponse clamps confidence and severity to valid ranges', async () => {
-        await setup();
+    runner.test(
+        '_parseAnalysisResponse clamps confidence and severity to valid ranges',
+        async () => {
+            await setup();
 
-        const assistant = new AIAssistant('key');
-        const outOfRangeNumbers = {
-            choices: [{
-                message: {
-                    content: JSON.stringify({
-                        suggestions: [{
-                            type: 'narration',
-                            content: 'Test',
-                            confidence: 5.0 // Out of range (should be 0-1)
-                        }],
-                        offTrackStatus: {
-                            isOffTrack: false,
-                            severity: -2.0, // Out of range
-                            reason: 'Test'
-                        },
-                        relevantPages: [],
-                        summary: 'Test'
-                    })
-                }
-            }]
-        };
+            const assistant = new AIAssistant('key');
+            const outOfRangeNumbers = {
+                choices: [
+                    {
+                        message: {
+                            content: JSON.stringify({
+                                suggestions: [
+                                    {
+                                        type: 'narration',
+                                        content: 'Test',
+                                        confidence: 5.0 // Out of range (should be 0-1)
+                                    }
+                                ],
+                                offTrackStatus: {
+                                    isOffTrack: false,
+                                    severity: -2.0, // Out of range
+                                    reason: 'Test'
+                                },
+                                relevantPages: [],
+                                summary: 'Test'
+                            })
+                        }
+                    }
+                ]
+            };
 
-        const result = assistant._parseAnalysisResponse(outOfRangeNumbers);
+            const result = assistant._parseAnalysisResponse(outOfRangeNumbers);
 
-        assert.ok(result.suggestions[0].confidence >= 0 && result.suggestions[0].confidence <= 1,
-            'Should clamp confidence to 0-1 range');
-        assert.ok(result.offTrackStatus.severity >= 0 && result.offTrackStatus.severity <= 1,
-            'Should clamp severity to 0-1 range');
+            assert.ok(
+                result.suggestions[0].confidence >= 0 && result.suggestions[0].confidence <= 1,
+                'Should clamp confidence to 0-1 range'
+            );
+            assert.ok(
+                result.offTrackStatus.severity >= 0 && result.offTrackStatus.severity <= 1,
+                'Should clamp severity to 0-1 range'
+            );
 
-        teardown();
-    });
+            teardown();
+        }
+    );
 
     // Test: _parseOffTrackResponse sanitizes content
     runner.test('_parseOffTrackResponse sanitizes excessive content lengths', async () => {
@@ -970,16 +1043,18 @@ export async function runTests() {
 
         const assistant = new AIAssistant('key');
         const maliciousResponse = {
-            choices: [{
-                message: {
-                    content: JSON.stringify({
-                        isOffTrack: true,
-                        severity: 0.7,
-                        reason: 'A'.repeat(5000), // Excessively long
-                        narrativeBridge: 'B'.repeat(5000) // Excessively long
-                    })
+            choices: [
+                {
+                    message: {
+                        content: JSON.stringify({
+                            isOffTrack: true,
+                            severity: 0.7,
+                            reason: 'A'.repeat(5000), // Excessively long
+                            narrativeBridge: 'B'.repeat(5000) // Excessively long
+                        })
+                    }
                 }
-            }]
+            ]
         };
 
         const result = assistant._parseOffTrackResponse(maliciousResponse);
@@ -996,20 +1071,22 @@ export async function runTests() {
 
         const assistant = new AIAssistant('key');
         const maliciousResponse = {
-            choices: [{
-                message: {
-                    content: JSON.stringify({
-                        suggestions: [
-                            {
-                                type: 'narration',
-                                content: 'A'.repeat(10000), // Excessively long
-                                pageReference: 'B'.repeat(500), // Excessively long
-                                confidence: 0.9
-                            }
-                        ]
-                    })
+            choices: [
+                {
+                    message: {
+                        content: JSON.stringify({
+                            suggestions: [
+                                {
+                                    type: 'narration',
+                                    content: 'A'.repeat(10000), // Excessively long
+                                    pageReference: 'B'.repeat(500), // Excessively long
+                                    confidence: 0.9
+                                }
+                            ]
+                        })
+                    }
                 }
-            }]
+            ]
         };
 
         const result = assistant._parseSuggestionsResponse(maliciousResponse, 5);
@@ -1028,7 +1105,10 @@ export async function runTests() {
         const specialChars = '<script>alert("xss")</script>\n\r\t\0';
 
         const stringResult = assistant._validateString(specialChars, 1000, 'test');
-        assert.ok(stringResult.includes('<script>'), 'Should preserve special chars (escaping is UI layer responsibility)');
+        assert.ok(
+            stringResult.includes('<script>'),
+            'Should preserve special chars (escaping is UI layer responsibility)'
+        );
         assert.ok(stringResult.length <= 1000, 'Should still respect max length');
 
         teardown();
@@ -1040,25 +1120,29 @@ export async function runTests() {
 
         const assistant = new AIAssistant('key');
         const malformedResponse = {
-            choices: [{
-                message: {
-                    content: JSON.stringify({
-                        suggestions: [
-                            { type: 'narration', content: 'A'.repeat(10000), confidence: 99 },
-                            { type: null, content: null, confidence: 'invalid' },
-                            { /* missing fields */ }
-                        ],
-                        offTrackStatus: {
-                            isOffTrack: 'yes', // Should be boolean
-                            severity: 'high', // Should be number
-                            reason: null,
-                            narrativeBridge: { key: 'not a string' }
-                        },
-                        relevantPages: 'not an array',
-                        summary: null
-                    })
+            choices: [
+                {
+                    message: {
+                        content: JSON.stringify({
+                            suggestions: [
+                                { type: 'narration', content: 'A'.repeat(10000), confidence: 99 },
+                                { type: null, content: null, confidence: 'invalid' },
+                                {
+                                    /* missing fields */
+                                }
+                            ],
+                            offTrackStatus: {
+                                isOffTrack: 'yes', // Should be boolean
+                                severity: 'high', // Should be number
+                                reason: null,
+                                narrativeBridge: { key: 'not a string' }
+                            },
+                            relevantPages: 'not an array',
+                            summary: null
+                        })
+                    }
                 }
-            }]
+            ]
         };
 
         const result = assistant._parseAnalysisResponse(malformedResponse);
@@ -1070,11 +1154,20 @@ export async function runTests() {
         assert.equal(typeof result.summary, 'string', 'Summary should be string');
 
         // Verify sanitization applied
-        assert.ok(result.suggestions[0].content.length <= 5000, 'Should sanitize suggestion content');
-        assert.equal(typeof result.offTrackStatus.isOffTrack, 'boolean', 'isOffTrack should be boolean');
+        assert.ok(
+            result.suggestions[0].content.length <= 5000,
+            'Should sanitize suggestion content'
+        );
+        assert.equal(
+            typeof result.offTrackStatus.isOffTrack,
+            'boolean',
+            'isOffTrack should be boolean'
+        );
         assert.ok(typeof result.offTrackStatus.severity === 'number', 'severity should be number');
-        assert.ok(result.offTrackStatus.severity >= 0 && result.offTrackStatus.severity <= 1,
-            'severity should be in valid range');
+        assert.ok(
+            result.offTrackStatus.severity >= 0 && result.offTrackStatus.severity <= 1,
+            'severity should be in valid range'
+        );
 
         teardown();
     });
@@ -1126,8 +1219,10 @@ export async function runTests() {
         const result = assistant._detectRulesQuestions(transcription);
 
         assert.ok(result.hasRulesQuestions, 'Should detect combat question');
-        assert.ok(result.questions[0].type === 'combat' || result.questions[0].type === 'mechanic',
-            'Should identify as combat or mechanic type');
+        assert.ok(
+            result.questions[0].type === 'combat' || result.questions[0].type === 'mechanic',
+            'Should identify as combat or mechanic type'
+        );
         assert.ok(result.questions[0].detectedTerms, 'Should have detected terms');
 
         teardown();
@@ -1143,7 +1238,7 @@ export async function runTests() {
         const result = assistant._detectRulesQuestions(transcription);
 
         assert.ok(result.hasRulesQuestions, 'Should detect spell question');
-        const spellQuestion = result.questions.find(q => q.type === 'spell');
+        const spellQuestion = result.questions.find((q) => q.type === 'spell');
         assert.ok(spellQuestion, 'Should identify as spell type');
 
         teardown();
@@ -1159,8 +1254,8 @@ export async function runTests() {
         const result = assistant._detectRulesQuestions(transcription);
 
         assert.ok(result.hasRulesQuestions, 'Should detect condition question');
-        const conditionQuestion = result.questions.find(q =>
-            q.type === 'condition' || q.detectedTerms.includes('stunned')
+        const conditionQuestion = result.questions.find(
+            (q) => q.type === 'condition' || q.detectedTerms.includes('stunned')
         );
         assert.ok(conditionQuestion, 'Should identify condition-related question');
 
@@ -1229,7 +1324,7 @@ export async function runTests() {
         assert.ok(result.questions[0].extractedTopic, 'Should have extracted topic');
         assert.ok(
             result.questions[0].extractedTopic.includes('concentration') ||
-            result.questions[0].detectedTerms.includes('concentration'),
+                result.questions[0].detectedTerms.includes('concentration'),
             'Should extract concentration as topic'
         );
 
@@ -1237,32 +1332,44 @@ export async function runTests() {
     });
 
     // Test: _hasQuestionWord detects English question words
-    runner.test('AIAssistant rules detection helper identifies English question words', async () => {
-        await setup();
+    runner.test(
+        'AIAssistant rules detection helper identifies English question words',
+        async () => {
+            await setup();
 
-        const assistant = new AIAssistant('key');
+            const assistant = new AIAssistant('key');
 
-        assert.ok(assistant._hasQuestionWord('how does this work'), 'Should detect "how"');
-        assert.ok(assistant._hasQuestionWord('what is the rule'), 'Should detect "what"');
-        assert.ok(assistant._hasQuestionWord('can i do this'), 'Should detect "can"');
-        assert.ok(!assistant._hasQuestionWord('i move to the door'), 'Should not detect in statement');
+            assert.ok(assistant._hasQuestionWord('how does this work'), 'Should detect "how"');
+            assert.ok(assistant._hasQuestionWord('what is the rule'), 'Should detect "what"');
+            assert.ok(assistant._hasQuestionWord('can i do this'), 'Should detect "can"');
+            assert.ok(
+                !assistant._hasQuestionWord('i move to the door'),
+                'Should not detect in statement'
+            );
 
-        teardown();
-    });
+            teardown();
+        }
+    );
 
     // Test: _hasQuestionWord detects Italian question words
-    runner.test('AIAssistant rules detection helper identifies Italian question words', async () => {
-        await setup();
+    runner.test(
+        'AIAssistant rules detection helper identifies Italian question words',
+        async () => {
+            await setup();
 
-        const assistant = new AIAssistant('key');
+            const assistant = new AIAssistant('key');
 
-        assert.ok(assistant._hasQuestionWord('come funziona'), 'Should detect "come"');
-        assert.ok(assistant._hasQuestionWord('cosa succede'), 'Should detect "cosa"');
-        assert.ok(assistant._hasQuestionWord('posso fare questo'), 'Should detect "posso"');
-        assert.ok(!assistant._hasQuestionWord('vado alla taverna'), 'Should not detect in statement');
+            assert.ok(assistant._hasQuestionWord('come funziona'), 'Should detect "come"');
+            assert.ok(assistant._hasQuestionWord('cosa succede'), 'Should detect "cosa"');
+            assert.ok(assistant._hasQuestionWord('posso fare questo'), 'Should detect "posso"');
+            assert.ok(
+                !assistant._hasQuestionWord('vado alla taverna'),
+                'Should not detect in statement'
+            );
 
-        teardown();
-    });
+            teardown();
+        }
+    );
 
     // Test: analyzeContext integrates rules detection
     runner.test('AIAssistant analyzeContext includes rules detection', async () => {
@@ -1285,7 +1392,6 @@ export async function runTests() {
 
             // The rules detection happens internally but doesn't affect the return value yet
             // (that will be added in subtask-3-2)
-
         } finally {
             globalThis.fetch = originalFetch;
         }
@@ -1306,13 +1412,11 @@ export async function runTests() {
             const assistant = new AIAssistant('valid-key');
 
             // Test with detectRules disabled
-            const result = await assistant.analyzeContext(
-                'How does grappling work?',
-                { detectRules: false }
-            );
+            const result = await assistant.analyzeContext('How does grappling work?', {
+                detectRules: false
+            });
 
             assert.ok(result, 'Should return result even with rules detection disabled');
-
         } finally {
             globalThis.fetch = originalFetch;
         }
@@ -1325,8 +1429,12 @@ export async function runTests() {
 }
 
 // Export for direct execution
-if (typeof process !== 'undefined' && process.argv && process.argv[1]?.includes('ai-assistant.test')) {
-    runTests().then(results => {
+if (
+    typeof process !== 'undefined' &&
+    process.argv &&
+    process.argv[1]?.includes('ai-assistant.test')
+) {
+    runTests().then((results) => {
         process.exit(results.failed > 0 ? 1 : 0);
     });
 }

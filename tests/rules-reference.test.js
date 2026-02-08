@@ -4,13 +4,7 @@
  * @module tests/rules-reference
  */
 
-import {
-    setupMockGame,
-    setupMockUI,
-    cleanupMocks,
-    assert,
-    TestRunner
-} from './test-helper.js';
+import { setupMockGame, setupMockUI, cleanupMocks, assert, TestRunner } from './test-helper.js';
 
 // Note: We need to set up mocks before importing the module
 let RulesReferenceService;
@@ -76,7 +70,11 @@ export async function runTests() {
 
         assert.ok(result.isRulesQuestion, 'Should detect rules question');
         assert.ok(result.confidence >= 0.9, 'Should have high confidence');
-        assert.equal(result.questionType, 'combat', 'Should detect as combat (grappling is a combat mechanic)');
+        assert.equal(
+            result.questionType,
+            'combat',
+            'Should detect as combat (grappling is a combat mechanic)'
+        );
         assert.ok(result.detectedTerms.includes('how_does_work'), 'Should include pattern name');
 
         teardown();
@@ -120,7 +118,10 @@ export async function runTests() {
 
         assert.ok(result.isRulesQuestion, 'Should detect rules question');
         assert.ok(result.confidence > 0.7, 'Should have high confidence');
-        assert.ok(result.detectedTerms.includes('attacco di opportunità'), 'Should detect mechanic term');
+        assert.ok(
+            result.detectedTerms.includes('attacco di opportunità'),
+            'Should detect mechanic term'
+        );
 
         teardown();
     });
@@ -133,7 +134,10 @@ export async function runTests() {
         const result = service.detectRulesQuestion('What happens with concentration?');
 
         assert.ok(result.isRulesQuestion, 'Should detect rules question');
-        assert.ok(result.detectedTerms.includes('concentration'), 'Should detect concentration term');
+        assert.ok(
+            result.detectedTerms.includes('concentration'),
+            'Should detect concentration term'
+        );
         assert.equal(result.questionType, 'spell', 'Should categorize as spell mechanic');
 
         teardown();
@@ -148,7 +152,10 @@ export async function runTests() {
 
         assert.ok(result.isRulesQuestion, 'Should detect rules question');
         assert.ok(result.confidence >= 0.8, 'Should have high confidence');
-        assert.ok(result.detectedTerms.includes('slot incantesimo'), 'Should detect spell slot term');
+        assert.ok(
+            result.detectedTerms.includes('slot incantesimo'),
+            'Should detect spell slot term'
+        );
 
         teardown();
     });
@@ -219,7 +226,10 @@ export async function runTests() {
         const result = service.detectRulesQuestion('How does opportunity attack work?');
 
         assert.ok(result.extractedTopic, 'Should extract topic');
-        assert.ok(result.extractedTopic.includes('opportunity attack'), 'Should include the mechanic name');
+        assert.ok(
+            result.extractedTopic.includes('opportunity attack'),
+            'Should include the mechanic name'
+        );
 
         teardown();
     });
@@ -257,7 +267,10 @@ export async function runTests() {
         assert.ok(service.isKnownMechanic('grappling'), 'Should recognize grappling');
         assert.ok(service.isKnownMechanic('concentration'), 'Should recognize concentration');
         assert.ok(service.isKnownMechanic('lotta'), 'Should recognize lotta (Italian)');
-        assert.ok(service.isKnownMechanic('vantaggio'), 'Should recognize vantaggio (Italian advantage)');
+        assert.ok(
+            service.isKnownMechanic('vantaggio'),
+            'Should recognize vantaggio (Italian advantage)'
+        );
 
         teardown();
     });
@@ -297,7 +310,10 @@ export async function runTests() {
         assert.ok(result.isRulesQuestion, 'Should detect rules question');
         assert.ok(result.detectedTerms.length >= 2, 'Should detect multiple terms');
         assert.ok(result.detectedTerms.includes('advantage'), 'Should detect advantage');
-        assert.ok(result.detectedTerms.includes('opportunity attack'), 'Should detect opportunity attack');
+        assert.ok(
+            result.detectedTerms.includes('opportunity attack'),
+            'Should detect opportunity attack'
+        );
 
         teardown();
     });

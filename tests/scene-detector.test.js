@@ -4,13 +4,7 @@
  * @module tests/scene-detector
  */
 
-import {
-    setupMockGame,
-    setupMockUI,
-    cleanupMocks,
-    assert,
-    TestRunner
-} from './test-helper.js';
+import { setupMockGame, setupMockUI, cleanupMocks, assert, TestRunner } from './test-helper.js';
 
 // Note: We need to set up mocks before importing the module
 let SceneDetector, SCENE_TYPES;
@@ -49,10 +43,26 @@ export async function runTests() {
 
         assert.equal(detector._sensitivity, 'medium', 'Default sensitivity should be medium');
         assert.equal(detector._minimumConfidence, 0.6, 'Default minimum confidence should be 0.6');
-        assert.equal(detector._enableCombatDetection, true, 'Combat detection should be enabled by default');
-        assert.equal(detector._enableTimeDetection, true, 'Time detection should be enabled by default');
-        assert.equal(detector._enableLocationDetection, true, 'Location detection should be enabled by default');
-        assert.equal(detector._currentSceneType, SCENE_TYPES.UNKNOWN, 'Current scene type should be unknown');
+        assert.equal(
+            detector._enableCombatDetection,
+            true,
+            'Combat detection should be enabled by default'
+        );
+        assert.equal(
+            detector._enableTimeDetection,
+            true,
+            'Time detection should be enabled by default'
+        );
+        assert.equal(
+            detector._enableLocationDetection,
+            true,
+            'Location detection should be enabled by default'
+        );
+        assert.equal(
+            detector._currentSceneType,
+            SCENE_TYPES.UNKNOWN,
+            'Current scene type should be unknown'
+        );
         assert.ok(Array.isArray(detector._sceneHistory), 'Scene history should be an array');
         assert.equal(detector._sceneHistory.length, 0, 'Scene history should be empty initially');
 
@@ -75,7 +85,11 @@ export async function runTests() {
         assert.equal(detector._minimumConfidence, 0.4, 'Custom minimum confidence should be set');
         assert.equal(detector._enableCombatDetection, false, 'Combat detection should be disabled');
         assert.equal(detector._enableTimeDetection, false, 'Time detection should be disabled');
-        assert.equal(detector._enableLocationDetection, false, 'Location detection should be disabled');
+        assert.equal(
+            detector._enableLocationDetection,
+            false,
+            'Location detection should be disabled'
+        );
 
         teardown();
     });
@@ -98,15 +112,27 @@ export async function runTests() {
 
         detector.setSensitivity('low');
         assert.equal(detector._sensitivity, 'low', 'Should update to low');
-        assert.equal(detector._minimumConfidence, 0.8, 'Low sensitivity should set confidence to 0.8');
+        assert.equal(
+            detector._minimumConfidence,
+            0.8,
+            'Low sensitivity should set confidence to 0.8'
+        );
 
         detector.setSensitivity('medium');
         assert.equal(detector._sensitivity, 'medium', 'Should update to medium');
-        assert.equal(detector._minimumConfidence, 0.6, 'Medium sensitivity should set confidence to 0.6');
+        assert.equal(
+            detector._minimumConfidence,
+            0.6,
+            'Medium sensitivity should set confidence to 0.6'
+        );
 
         detector.setSensitivity('high');
         assert.equal(detector._sensitivity, 'high', 'Should update to high');
-        assert.equal(detector._minimumConfidence, 0.4, 'High sensitivity should set confidence to 0.4');
+        assert.equal(
+            detector._minimumConfidence,
+            0.4,
+            'High sensitivity should set confidence to 0.4'
+        );
 
         teardown();
     });
@@ -119,7 +145,11 @@ export async function runTests() {
         const originalSensitivity = detector._sensitivity;
 
         detector.setSensitivity('invalid');
-        assert.equal(detector._sensitivity, originalSensitivity, 'Should not change sensitivity for invalid value');
+        assert.equal(
+            detector._sensitivity,
+            originalSensitivity,
+            'Should not change sensitivity for invalid value'
+        );
 
         teardown();
     });
@@ -177,7 +207,10 @@ export async function runTests() {
         assert.equal(result.type, 'location', 'Should identify as location transition');
         assert.ok(result.confidence > 0.6, 'Confidence should be above threshold');
         assert.ok(result.trigger.length > 0, 'Should have trigger text');
-        assert.ok([SCENE_TYPES.EXPLORATION, SCENE_TYPES.SOCIAL].includes(result.sceneType), 'Scene type should be valid');
+        assert.ok(
+            [SCENE_TYPES.EXPLORATION, SCENE_TYPES.SOCIAL].includes(result.sceneType),
+            'Scene type should be valid'
+        );
 
         teardown();
     });
@@ -187,7 +220,7 @@ export async function runTests() {
         await setup();
 
         const detector = new SceneDetector();
-        const text = 'Tirate l\'iniziativa!';
+        const text = "Tirate l'iniziativa!";
         const result = detector.detectSceneTransition(text);
 
         assert.equal(result.detected, true, 'Should detect transition');
@@ -205,14 +238,18 @@ export async function runTests() {
         const detector = new SceneDetector();
 
         // First, enter combat
-        detector.detectSceneTransition('Tirate l\'iniziativa!');
+        detector.detectSceneTransition("Tirate l'iniziativa!");
         assert.equal(detector._currentSceneType, SCENE_TYPES.COMBAT, 'Should be in combat');
 
         // Then detect combat end
         const result = detector.detectSceneTransition('Fine del combattimento');
         assert.equal(result.detected, true, 'Should detect transition');
         assert.equal(result.type, 'combat_end', 'Should identify as combat end');
-        assert.equal(result.sceneType, SCENE_TYPES.EXPLORATION, 'Scene type should be exploration after combat');
+        assert.equal(
+            result.sceneType,
+            SCENE_TYPES.EXPLORATION,
+            'Scene type should be exploration after combat'
+        );
 
         teardown();
     });
@@ -250,7 +287,7 @@ export async function runTests() {
         await setup();
 
         const detector = new SceneDetector();
-        const text = 'Tirate l\'iniziativa mentre entrate nella taverna'; // Both combat and location
+        const text = "Tirate l'iniziativa mentre entrate nella taverna"; // Both combat and location
         const result = detector.detectSceneTransition(text);
 
         assert.equal(result.detected, true, 'Should detect transition');
@@ -283,7 +320,7 @@ export async function runTests() {
         await setup();
 
         const detector = new SceneDetector({ enableCombatDetection: false });
-        const text = 'Tirate l\'iniziativa!';
+        const text = "Tirate l'iniziativa!";
         const result = detector.detectSceneTransition(text);
 
         assert.equal(result.detected, false, 'Should not detect combat when disabled');
@@ -411,7 +448,7 @@ export async function runTests() {
         await setup();
 
         const detector = new SceneDetector();
-        const text = 'Durante l\'esplorazione, trovate una spada e scoprite una caverna';
+        const text = "Durante l'esplorazione, trovate una spada e scoprite una caverna";
         const sceneType = detector.identifySceneType(text);
 
         assert.equal(sceneType, SCENE_TYPES.EXPLORATION, 'Should identify dominant scene type');
@@ -424,9 +461,13 @@ export async function runTests() {
         await setup();
 
         const detector = new SceneDetector();
-        assert.equal(detector.getCurrentSceneType(), SCENE_TYPES.UNKNOWN, 'Should start as unknown');
+        assert.equal(
+            detector.getCurrentSceneType(),
+            SCENE_TYPES.UNKNOWN,
+            'Should start as unknown'
+        );
 
-        detector.detectSceneTransition('Tirate l\'iniziativa!');
+        detector.detectSceneTransition("Tirate l'iniziativa!");
         assert.equal(detector.getCurrentSceneType(), SCENE_TYPES.COMBAT, 'Should update to combat');
 
         teardown();
@@ -453,7 +494,11 @@ export async function runTests() {
         const originalType = detector._currentSceneType;
 
         detector.setCurrentSceneType('invalid_type');
-        assert.equal(detector._currentSceneType, originalType, 'Should not change for invalid type');
+        assert.equal(
+            detector._currentSceneType,
+            originalType,
+            'Should not change for invalid type'
+        );
 
         teardown();
     });
@@ -559,7 +604,11 @@ export async function runTests() {
         detector.setFeatures({ combat: 'invalid' });
 
         const newFeatures = detector.getFeatures();
-        assert.equal(newFeatures.combat, originalFeatures.combat, 'Should not change for non-boolean');
+        assert.equal(
+            newFeatures.combat,
+            originalFeatures.combat,
+            'Should not change for non-boolean'
+        );
 
         teardown();
     });
@@ -623,10 +672,12 @@ export async function runTests() {
 
         // Location detection prioritizes movement patterns over specific locations
         const location = detector.detectSceneTransition('Entrate nella taverna');
-        assert.ok([SCENE_TYPES.EXPLORATION, SCENE_TYPES.SOCIAL].includes(location.sceneType),
-            'Should detect location change');
+        assert.ok(
+            [SCENE_TYPES.EXPLORATION, SCENE_TYPES.SOCIAL].includes(location.sceneType),
+            'Should detect location change'
+        );
 
-        const combat = detector.detectSceneTransition('Tirate l\'iniziativa!');
+        const combat = detector.detectSceneTransition("Tirate l'iniziativa!");
         assert.equal(combat.sceneType, SCENE_TYPES.COMBAT, 'Should detect combat start');
 
         const combatEnd = detector.detectSceneTransition('Fine del combattimento');

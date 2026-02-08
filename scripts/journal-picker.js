@@ -75,7 +75,7 @@ export class JournalPicker extends FormApplication {
         const rootJournals = this._getRootJournals();
 
         // Count totals
-        const totalFolders = game.folders.filter(f => f.type === 'JournalEntry').length;
+        const totalFolders = game.folders.filter((f) => f.type === 'JournalEntry').length;
         const totalJournals = game.journal.size;
 
         return {
@@ -103,13 +103,13 @@ export class JournalPicker extends FormApplication {
      * @private
      */
     _buildFolderTree() {
-        const journalFolders = game.folders.filter(f => f.type === 'JournalEntry');
+        const journalFolders = game.folders.filter((f) => f.type === 'JournalEntry');
 
         // Get root-level folders (no parent)
-        const rootFolders = journalFolders.filter(f => !f.folder);
+        const rootFolders = journalFolders.filter((f) => !f.folder);
 
         // Recursively build tree
-        return rootFolders.map(folder => this._buildFolderNode(folder));
+        return rootFolders.map((folder) => this._buildFolderNode(folder));
     }
 
     /**
@@ -120,12 +120,12 @@ export class JournalPicker extends FormApplication {
      */
     _buildFolderNode(folder) {
         // Get child folders
-        const childFolders = game.folders.filter(f =>
-            f.type === 'JournalEntry' && f.folder?.id === folder.id
+        const childFolders = game.folders.filter(
+            (f) => f.type === 'JournalEntry' && f.folder?.id === folder.id
         );
 
         // Get journals in this folder
-        const journals = game.journal.filter(j => j.folder?.id === folder.id);
+        const journals = game.journal.filter((j) => j.folder?.id === folder.id);
 
         // Build node
         return {
@@ -136,8 +136,8 @@ export class JournalPicker extends FormApplication {
             expanded: this.expandedFolders.has(folder.id),
 
             // Children
-            folders: childFolders.map(f => this._buildFolderNode(f)),
-            journals: journals.map(j => ({
+            folders: childFolders.map((f) => this._buildFolderNode(f)),
+            journals: journals.map((j) => ({
                 id: j.id,
                 name: j.name,
                 type: 'journal',
@@ -158,8 +158,8 @@ export class JournalPicker extends FormApplication {
      */
     _getRootJournals() {
         return game.journal
-            .filter(j => !j.folder)
-            .map(j => ({
+            .filter((j) => !j.folder)
+            .map((j) => ({
                 id: j.id,
                 name: j.name,
                 type: 'journal',
@@ -229,14 +229,14 @@ export class JournalPicker extends FormApplication {
      */
     _selectFolderContents(folderId) {
         // Select journals in this folder
-        const journals = game.journal.filter(j => j.folder?.id === folderId);
-        journals.forEach(j => this.selectedIds.add(j.id));
+        const journals = game.journal.filter((j) => j.folder?.id === folderId);
+        journals.forEach((j) => this.selectedIds.add(j.id));
 
         // Recursively select child folders and their contents
-        const childFolders = game.folders.filter(f =>
-            f.type === 'JournalEntry' && f.folder?.id === folderId
+        const childFolders = game.folders.filter(
+            (f) => f.type === 'JournalEntry' && f.folder?.id === folderId
         );
-        childFolders.forEach(f => {
+        childFolders.forEach((f) => {
             this.selectedIds.add(f.id);
             this._selectFolderContents(f.id);
         });
@@ -249,14 +249,14 @@ export class JournalPicker extends FormApplication {
      */
     _deselectFolderContents(folderId) {
         // Deselect journals in this folder
-        const journals = game.journal.filter(j => j.folder?.id === folderId);
-        journals.forEach(j => this.selectedIds.delete(j.id));
+        const journals = game.journal.filter((j) => j.folder?.id === folderId);
+        journals.forEach((j) => this.selectedIds.delete(j.id));
 
         // Recursively deselect child folders and their contents
-        const childFolders = game.folders.filter(f =>
-            f.type === 'JournalEntry' && f.folder?.id === folderId
+        const childFolders = game.folders.filter(
+            (f) => f.type === 'JournalEntry' && f.folder?.id === folderId
         );
-        childFolders.forEach(f => {
+        childFolders.forEach((f) => {
             this.selectedIds.delete(f.id);
             this._deselectFolderContents(f.id);
         });
@@ -291,11 +291,11 @@ export class JournalPicker extends FormApplication {
 
         // Select all folders
         game.folders
-            .filter(f => f.type === 'JournalEntry')
-            .forEach(f => this.selectedIds.add(f.id));
+            .filter((f) => f.type === 'JournalEntry')
+            .forEach((f) => this.selectedIds.add(f.id));
 
         // Select all journals
-        game.journal.forEach(j => this.selectedIds.add(j.id));
+        game.journal.forEach((j) => this.selectedIds.add(j.id));
 
         // Re-render to update UI
         this.render(false);
@@ -329,9 +329,7 @@ export class JournalPicker extends FormApplication {
         await this.settingsManager.setSelectedJournals(selectedArray);
 
         // Notify success
-        ui.notifications.info(
-            game.i18n.localize('NARRATOR.Notifications.SettingsSaved')
-        );
+        ui.notifications.info(game.i18n.localize('NARRATOR.Notifications.SettingsSaved'));
 
         // Trigger callback if provided
         if (this.onSave && typeof this.onSave === 'function') {

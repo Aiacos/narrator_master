@@ -286,7 +286,6 @@ export class AudioCapture {
             this._emit(AudioCaptureEvent.PERMISSION_GRANTED);
             this._emit(AudioCaptureEvent.STREAM_STARTED, this._stream);
             return this._stream;
-
         } catch (error) {
             const captureError = this._handlePermissionError(error);
             this._emit(AudioCaptureEvent.PERMISSION_DENIED, captureError);
@@ -433,7 +432,6 @@ export class AudioCapture {
                     this.stop();
                 }, this._maxDuration);
             }
-
         } catch (error) {
             const captureError = {
                 message: game.i18n.format('NARRATOR.Errors.RecorderInitFailed', {
@@ -538,7 +536,9 @@ export class AudioCapture {
         const blob = new Blob(this._chunks, { type: this._mimeType });
 
         // Log chunk boundary reset
-        console.log(`${MODULE_ID} | Chunk boundary reset - size: ${blob.size} bytes, chunks: ${this._chunks.length}`);
+        console.log(
+            `${MODULE_ID} | Chunk boundary reset - size: ${blob.size} bytes, chunks: ${this._chunks.length}`
+        );
 
         // Clear chunks and reset size counter
         this._chunks = [];
@@ -552,7 +552,7 @@ export class AudioCapture {
      */
     releaseStream() {
         if (this._stream) {
-            this._stream.getTracks().forEach(track => {
+            this._stream.getTracks().forEach((track) => {
                 track.stop();
             });
             this._stream = null;
@@ -607,7 +607,6 @@ export class AudioCapture {
             source.connect(this._analyser);
 
             return this._analyser;
-
         } catch (error) {
             console.error(`${MODULE_ID} | Failed to initialize analyser:`, error);
             return null;
@@ -689,7 +688,7 @@ export class AudioCapture {
 
         try {
             const devices = await navigator.mediaDevices.enumerateDevices();
-            return devices.filter(device => device.kind === 'audioinput');
+            return devices.filter((device) => device.kind === 'audioinput');
         } catch (error) {
             console.error(`${MODULE_ID} | Failed to enumerate devices:`, error);
             return [];

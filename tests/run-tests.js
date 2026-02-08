@@ -55,11 +55,15 @@ async function runAllTests() {
     for (const result of results) {
         const status = result.failed === 0 ? '✓' : '✗';
         const padding = 40 - result.suite.length;
-        console.log(`║  ${status} ${result.suite}${' '.repeat(padding)} ${result.passed}/${result.total} ║`);
+        console.log(
+            `║  ${status} ${result.suite}${' '.repeat(padding)} ${result.passed}/${result.total} ║`
+        );
     }
 
     console.log('╠════════════════════════════════════════════════════════════╣');
-    console.log(`║  Total: ${totalPassed} passed, ${totalFailed} failed, ${totalTests} total${' '.repeat(20)}║`);
+    console.log(
+        `║  Total: ${totalPassed} passed, ${totalFailed} failed, ${totalTests} total${' '.repeat(20)}║`
+    );
     console.log(`║  Duration: ${duration}s${' '.repeat(45 - duration.length)}║`);
     console.log('╚════════════════════════════════════════════════════════════╝');
 
@@ -97,7 +101,7 @@ export { runAllTests };
 
 // Run if executed directly
 if (typeof process !== 'undefined' && process.argv && process.argv[1]?.includes('run-tests')) {
-    runAllTests().then(summary => {
+    runAllTests().then((summary) => {
         process.exit(summary.success ? 0 : 1);
     });
 }

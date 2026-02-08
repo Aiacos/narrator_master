@@ -176,7 +176,7 @@ export class JournalParser {
             const words = page.text
                 .toLowerCase()
                 .split(/\s+/)
-                .filter(word => word.length >= 3);
+                .filter((word) => word.length >= 3);
 
             for (const word of words) {
                 const key = `${journalId}:${word}`;
@@ -216,7 +216,7 @@ export class JournalParser {
             }
         }
 
-        return cached.pages.filter(page => matchingPageIds.has(page.id));
+        return cached.pages.filter((page) => matchingPageIds.has(page.id));
     }
 
     /**
@@ -232,9 +232,7 @@ export class JournalParser {
             return '';
         }
 
-        return cached.pages
-            .map(page => `## ${page.name}\n${page.text}`)
-            .join('\n\n');
+        return cached.pages.map((page) => `## ${page.name}\n${page.text}`).join('\n\n');
     }
 
     /**
@@ -249,7 +247,7 @@ export class JournalParser {
             return null;
         }
 
-        return cached.pages.find(page => page.id === pageId) || null;
+        return cached.pages.find((page) => page.id === pageId) || null;
     }
 
     /**
@@ -269,7 +267,7 @@ export class JournalParser {
             pageCount: cached.pages.length,
             totalCharacters: cached.totalCharacters,
             parsedAt: cached.parsedAt,
-            pageNames: cached.pages.map(p => p.name)
+            pageNames: cached.pages.map((p) => p.name)
         };
     }
 
@@ -283,7 +281,7 @@ export class JournalParser {
             return [];
         }
 
-        return game.journal.map(journal => ({
+        return game.journal.map((journal) => ({
             id: journal.id,
             name: journal.name
         }));
@@ -457,21 +455,97 @@ export class JournalParser {
         // Common words to exclude (Italian and English)
         const commonWords = new Set([
             // Italian articles, prepositions, conjunctions
-            'il', 'lo', 'la', 'i', 'gli', 'le', 'un', 'uno', 'una',
-            'di', 'a', 'da', 'in', 'con', 'su', 'per', 'tra', 'fra',
-            'e', 'o', 'ma', 'però', 'quindi', 'allora', 'quando', 'se',
-            'che', 'chi', 'cui', 'quale', 'quanto',
+            'il',
+            'lo',
+            'la',
+            'i',
+            'gli',
+            'le',
+            'un',
+            'uno',
+            'una',
+            'di',
+            'a',
+            'da',
+            'in',
+            'con',
+            'su',
+            'per',
+            'tra',
+            'fra',
+            'e',
+            'o',
+            'ma',
+            'però',
+            'quindi',
+            'allora',
+            'quando',
+            'se',
+            'che',
+            'chi',
+            'cui',
+            'quale',
+            'quanto',
             // Italian common words
-            'non', 'si', 'anche', 'come', 'dove', 'dopo', 'prima',
-            'molto', 'tutto', 'ogni', 'altro', 'stesso', 'sempre',
+            'non',
+            'si',
+            'anche',
+            'come',
+            'dove',
+            'dopo',
+            'prima',
+            'molto',
+            'tutto',
+            'ogni',
+            'altro',
+            'stesso',
+            'sempre',
             // English articles, prepositions, conjunctions
-            'the', 'a', 'an', 'of', 'to', 'in', 'for', 'on', 'with',
-            'at', 'by', 'from', 'up', 'about', 'into', 'through',
-            'and', 'or', 'but', 'if', 'then', 'when', 'where',
-            'that', 'this', 'these', 'those', 'which', 'who', 'what',
+            'the',
+            'a',
+            'an',
+            'of',
+            'to',
+            'in',
+            'for',
+            'on',
+            'with',
+            'at',
+            'by',
+            'from',
+            'up',
+            'about',
+            'into',
+            'through',
+            'and',
+            'or',
+            'but',
+            'if',
+            'then',
+            'when',
+            'where',
+            'that',
+            'this',
+            'these',
+            'those',
+            'which',
+            'who',
+            'what',
             // English common words
-            'not', 'all', 'can', 'will', 'just', 'should', 'now',
-            'there', 'their', 'they', 'have', 'has', 'had', 'been'
+            'not',
+            'all',
+            'can',
+            'will',
+            'just',
+            'should',
+            'now',
+            'there',
+            'their',
+            'they',
+            'have',
+            'has',
+            'had',
+            'been'
         ]);
 
         const properNouns = new Map(); // Use Map to track frequency
@@ -510,7 +584,9 @@ export class JournalParser {
             .sort((a, b) => b[1] - a[1])
             .map(([word]) => word);
 
-        console.log(`${MODULE_ID} | Extracted ${result.length} proper nouns from journal: ${cached.name}`);
+        console.log(
+            `${MODULE_ID} | Extracted ${result.length} proper nouns from journal: ${cached.name}`
+        );
 
         return result;
     }
@@ -534,13 +610,36 @@ export class JournalParser {
         // Keywords that indicate NPC descriptions (Italian and English)
         const npcIndicators = [
             // Italian
-            'personaggio', 'png', 'npc', 'alleato', 'nemico', 'mercante',
-            'locandiere', 'fabbro', 'mago', 'guerriero', 'chierico',
-            'personalità', 'carattere', 'temperamento', 'atteggiamento',
+            'personaggio',
+            'png',
+            'npc',
+            'alleato',
+            'nemico',
+            'mercante',
+            'locandiere',
+            'fabbro',
+            'mago',
+            'guerriero',
+            'chierico',
+            'personalità',
+            'carattere',
+            'temperamento',
+            'atteggiamento',
             // English
-            'character', 'npc', 'ally', 'enemy', 'merchant', 'innkeeper',
-            'blacksmith', 'wizard', 'warrior', 'cleric',
-            'personality', 'character', 'temperament', 'attitude'
+            'character',
+            'npc',
+            'ally',
+            'enemy',
+            'merchant',
+            'innkeeper',
+            'blacksmith',
+            'wizard',
+            'warrior',
+            'cleric',
+            'personality',
+            'character',
+            'temperament',
+            'attitude'
         ];
 
         const npcProfiles = [];
@@ -577,7 +676,7 @@ export class JournalParser {
                         const trimmedSentence = sentence.trim();
 
                         // Check if sentence contains NPC indicators
-                        const hasIndicator = npcIndicators.some(indicator =>
+                        const hasIndicator = npcIndicators.some((indicator) =>
                             sentence.toLowerCase().includes(indicator)
                         );
 
@@ -594,13 +693,29 @@ export class JournalParser {
 
                         // Extract personality traits (sentences with personality/temperament keywords)
                         const personalityKeywords = [
-                            'personalità', 'carattere', 'temperamento', 'atteggiamento',
-                            'personality', 'character', 'temperament', 'attitude',
-                            'gentile', 'brusco', 'amichevole', 'ostile', 'timido', 'coraggioso',
-                            'kind', 'gruff', 'friendly', 'hostile', 'shy', 'brave'
+                            'personalità',
+                            'carattere',
+                            'temperamento',
+                            'atteggiamento',
+                            'personality',
+                            'character',
+                            'temperament',
+                            'attitude',
+                            'gentile',
+                            'brusco',
+                            'amichevole',
+                            'ostile',
+                            'timido',
+                            'coraggioso',
+                            'kind',
+                            'gruff',
+                            'friendly',
+                            'hostile',
+                            'shy',
+                            'brave'
                         ];
 
-                        const hasPersonalityKeyword = personalityKeywords.some(keyword =>
+                        const hasPersonalityKeyword = personalityKeywords.some((keyword) =>
                             sentence.toLowerCase().includes(keyword)
                         );
 
@@ -629,7 +744,9 @@ export class JournalParser {
             }
         }
 
-        console.log(`${MODULE_ID} | Extracted ${npcProfiles.length} NPC profiles from journal: ${cached.name}`);
+        console.log(
+            `${MODULE_ID} | Extracted ${npcProfiles.length} NPC profiles from journal: ${cached.name}`
+        );
 
         return npcProfiles;
     }
@@ -706,7 +823,9 @@ export class JournalParser {
 
         const formattedContext = contextParts.join('\n');
 
-        console.log(`${MODULE_ID} | Retrieved context for NPC "${npcName}" (${formattedContext.length} characters)`);
+        console.log(
+            `${MODULE_ID} | Retrieved context for NPC "${npcName}" (${formattedContext.length} characters)`
+        );
 
         return formattedContext;
     }

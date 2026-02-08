@@ -180,11 +180,13 @@ export class NarratorPanel extends Application {
             minimizable: true,
             popOut: true,
             dragDrop: [],
-            tabs: [{
-                navSelector: '.tabs',
-                contentSelector: '.tab-content',
-                initial: 'assistant'
-            }]
+            tabs: [
+                {
+                    navSelector: '.tabs',
+                    contentSelector: '.tab-content',
+                    initial: 'assistant'
+                }
+            ]
         });
     }
 
@@ -196,7 +198,9 @@ export class NarratorPanel extends Application {
         // Build journal status text
         let journalStatusText;
         if (this.journalCount > 0) {
-            journalStatusText = game.i18n.format('NARRATOR.Panel.JournalStatus', { count: this.journalCount });
+            journalStatusText = game.i18n.format('NARRATOR.Panel.JournalStatus', {
+                count: this.journalCount
+            });
         } else {
             journalStatusText = game.i18n.localize('NARRATOR.Panel.JournalStatusEmpty');
         }
@@ -235,7 +239,7 @@ export class NarratorPanel extends Application {
             transcriptWithScenes: this._mergeTranscriptWithScenes(),
 
             // NPC dialogue
-            npcDialogueList: Object.keys(this.npcDialogue).map(npcName => ({
+            npcDialogueList: Object.keys(this.npcDialogue).map((npcName) => ({
                 name: npcName,
                 dialogues: this.npcDialogue[npcName]
             })),
@@ -269,10 +273,18 @@ export class NarratorPanel extends Application {
                 pauseRecording: game.i18n.localize('NARRATOR.Panel.PauseRecording'),
                 resumeRecording: game.i18n.localize('NARRATOR.Panel.ResumeRecording'),
                 // Accessibility-specific aria-labels
-                startRecordingAriaLabel: game.i18n.localize('NARRATOR.Accessibility.StartRecordingButton'),
-                stopRecordingAriaLabel: game.i18n.localize('NARRATOR.Accessibility.StopRecordingButton'),
-                pauseRecordingAriaLabel: game.i18n.localize('NARRATOR.Accessibility.PauseRecordingButton'),
-                resumeRecordingAriaLabel: game.i18n.localize('NARRATOR.Accessibility.ResumeRecordingButton'),
+                startRecordingAriaLabel: game.i18n.localize(
+                    'NARRATOR.Accessibility.StartRecordingButton'
+                ),
+                stopRecordingAriaLabel: game.i18n.localize(
+                    'NARRATOR.Accessibility.StopRecordingButton'
+                ),
+                pauseRecordingAriaLabel: game.i18n.localize(
+                    'NARRATOR.Accessibility.PauseRecordingButton'
+                ),
+                resumeRecordingAriaLabel: game.i18n.localize(
+                    'NARRATOR.Accessibility.ResumeRecordingButton'
+                ),
                 generateImage: game.i18n.localize('NARRATOR.Panel.GenerateImage'),
                 assistantTab: game.i18n.localize('NARRATOR.Panel.AssistantTab'),
                 imagesTab: game.i18n.localize('NARRATOR.Panel.ImagesTab'),
@@ -1133,7 +1145,7 @@ export class NarratorPanel extends Application {
         }
 
         // Add expanded flag and timestamp to each rule if not present
-        this.rulesAnswers = rulesAnswers.map(rule => ({
+        this.rulesAnswers = rulesAnswers.map((rule) => ({
             ...rule,
             expanded: rule.expanded !== undefined ? rule.expanded : false,
             timestamp: rule.timestamp || Date.now()
@@ -1246,7 +1258,9 @@ export class NarratorPanel extends Application {
                     sceneTypeLabel: game.i18n.localize(`NARRATOR.Scenes.SceneType${sceneTypeKey}`),
                     timestamp: this._formatTimestamp(scene.timestamp),
                     isManual: scene.isManual,
-                    manualLabel: scene.isManual ? game.i18n.localize('NARRATOR.Scenes.ManualBreak') : game.i18n.localize('NARRATOR.Scenes.AutomaticBreak')
+                    manualLabel: scene.isManual
+                        ? game.i18n.localize('NARRATOR.Scenes.ManualBreak')
+                        : game.i18n.localize('NARRATOR.Scenes.AutomaticBreak')
                 });
             }
 
@@ -1282,11 +1296,17 @@ export class NarratorPanel extends Application {
             // Check if there's a scene break at this index
             if (scenesByIndex.has(i)) {
                 const scene = scenesByIndex.get(i);
-                const sceneTypeName = game.i18n.localize(`NARRATOR.Scenes.SceneType${scene.type.charAt(0).toUpperCase() + scene.type.slice(1)}`);
-                const manualMarker = scene.isManual ? ` [${game.i18n.localize('NARRATOR.Scenes.ManualSceneBreak')}]` : '';
+                const sceneTypeName = game.i18n.localize(
+                    `NARRATOR.Scenes.SceneType${scene.type.charAt(0).toUpperCase() + scene.type.slice(1)}`
+                );
+                const manualMarker = scene.isManual
+                    ? ` [${game.i18n.localize('NARRATOR.Scenes.ManualSceneBreak')}]`
+                    : '';
                 lines.push('');
                 lines.push('═'.repeat(50));
-                lines.push(`${game.i18n.localize('NARRATOR.Scenes.SceneBreak')}: ${sceneTypeName}${manualMarker}`);
+                lines.push(
+                    `${game.i18n.localize('NARRATOR.Scenes.SceneBreak')}: ${sceneTypeName}${manualMarker}`
+                );
                 lines.push('═'.repeat(50));
                 lines.push('');
             }

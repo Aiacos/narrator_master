@@ -4,13 +4,7 @@
  * @module tests/session-analytics
  */
 
-import {
-    setupMockGame,
-    setupMockUI,
-    cleanupMocks,
-    assert,
-    TestRunner
-} from './test-helper.js';
+import { setupMockGame, setupMockUI, cleanupMocks, assert, TestRunner } from './test-helper.js';
 
 // Note: We need to set up mocks before importing the module
 let SessionAnalytics;
@@ -87,7 +81,10 @@ export async function runTests() {
         assert.equal(analytics._bucketSize, 60, 'Default bucket size should be 60 seconds');
         assert.equal(analytics._maxHistorySize, 100, 'Default max history size should be 100');
         assert.equal(analytics._currentSession, null, 'Current session should be null');
-        assert.ok(typeof analytics._speakerMetrics === 'object', 'Speaker metrics should be an object');
+        assert.ok(
+            typeof analytics._speakerMetrics === 'object',
+            'Speaker metrics should be an object'
+        );
         assert.ok(Array.isArray(analytics._segments), 'Segments should be an array');
         assert.ok(Array.isArray(analytics._sessionHistory), 'Session history should be an array');
 
@@ -107,7 +104,11 @@ export async function runTests() {
 
         assert.equal(analytics._bucketSize, 30, 'Custom bucket size should be set');
         assert.equal(analytics._maxHistorySize, 50, 'Custom max history size should be set');
-        assert.equal(analytics._settingsManager, mockSettingsManager, 'Settings manager should be set');
+        assert.equal(
+            analytics._settingsManager,
+            mockSettingsManager,
+            'Settings manager should be set'
+        );
 
         teardown();
     });
@@ -137,7 +138,11 @@ export async function runTests() {
         const sessionId = analytics.startSession(customId);
 
         assert.equal(sessionId, customId, 'Should return custom session ID');
-        assert.equal(analytics._currentSession.sessionId, customId, 'Session should have custom ID');
+        assert.equal(
+            analytics._currentSession.sessionId,
+            customId,
+            'Session should have custom ID'
+        );
 
         teardown();
     });
@@ -152,9 +157,17 @@ export async function runTests() {
 
         const secondId = analytics.startSession('session-2');
 
-        assert.equal(analytics._currentSession.sessionId, 'session-2', 'Current session should be new one');
+        assert.equal(
+            analytics._currentSession.sessionId,
+            'session-2',
+            'Current session should be new one'
+        );
         assert.equal(analytics._sessionHistory.length, 1, 'Previous session should be in history');
-        assert.equal(analytics._sessionHistory[0].metadata.sessionId, 'session-1', 'History should contain first session');
+        assert.equal(
+            analytics._sessionHistory[0].metadata.sessionId,
+            'session-1',
+            'History should contain first session'
+        );
 
         teardown();
     });
@@ -228,8 +241,16 @@ export async function runTests() {
 
         assert.equal(analytics._segments.length, 1, 'Should have one segment');
         assert.ok(analytics._speakerMetrics['Player1'], 'Should initialize metrics for Player1');
-        assert.equal(analytics._speakerMetrics['Player1'].segmentCount, 1, 'Segment count should be 1');
-        assert.equal(analytics._speakerMetrics['Player1'].speakingTime, 2, 'Speaking time should be 2 seconds');
+        assert.equal(
+            analytics._speakerMetrics['Player1'].segmentCount,
+            1,
+            'Segment count should be 1'
+        );
+        assert.equal(
+            analytics._speakerMetrics['Player1'].speakingTime,
+            2,
+            'Speaking time should be 2 seconds'
+        );
 
         teardown();
     });
@@ -347,7 +368,11 @@ export async function runTests() {
         assert.equal(stats.length, 3, 'Should have 3 speakers');
         assert.equal(stats[0].speakerId, 'Player2', 'First should be Player2 (most speaking time)');
         assert.equal(stats[1].speakerId, 'Player3', 'Second should be Player3');
-        assert.equal(stats[2].speakerId, 'Player1', 'Third should be Player1 (least speaking time)');
+        assert.equal(
+            stats[2].speakerId,
+            'Player1',
+            'Third should be Player1 (least speaking time)'
+        );
 
         teardown();
     });
@@ -366,7 +391,10 @@ export async function runTests() {
 
         // Verify it's a shallow copy (outer object is copied)
         metrics['Player2'] = { speakerId: 'Player2', speakingTime: 10 };
-        assert.ok(!analytics._speakerMetrics['Player2'], 'Adding to returned object should not affect original');
+        assert.ok(
+            !analytics._speakerMetrics['Player2'],
+            'Adding to returned object should not affect original'
+        );
 
         // Note: nested objects are still references (shallow copy behavior)
         assert.ok(metrics['Player1'], 'Player1 metrics should exist');
@@ -410,7 +438,10 @@ export async function runTests() {
 
         assert.equal(timeline.length, 2, 'Should span 2 buckets');
         assert.ok(timeline[0].speakers['Player1'] > 0, 'First bucket should have Player1 activity');
-        assert.ok(timeline[1].speakers['Player1'] > 0, 'Second bucket should have Player1 activity');
+        assert.ok(
+            timeline[1].speakers['Player1'] > 0,
+            'Second bucket should have Player1 activity'
+        );
 
         teardown();
     });
@@ -427,7 +458,10 @@ export async function runTests() {
         const timeline30 = analytics.getTimeline(30);
         const timeline60 = analytics.getTimeline(60);
 
-        assert.ok(timeline30.length >= timeline60.length, 'Smaller bucket size should create more buckets');
+        assert.ok(
+            timeline30.length >= timeline60.length,
+            'Smaller bucket size should create more buckets'
+        );
 
         teardown();
     });
@@ -540,8 +574,16 @@ export async function runTests() {
             analytics.endSession();
         }
 
-        assert.equal(analytics._sessionHistory.length, 3, 'History should be trimmed to max size of 3');
-        assert.equal(analytics._sessionHistory[0].metadata.sessionId, 'session-5', 'Should keep most recent sessions');
+        assert.equal(
+            analytics._sessionHistory.length,
+            3,
+            'History should be trimmed to max size of 3'
+        );
+        assert.equal(
+            analytics._sessionHistory[0].metadata.sessionId,
+            'session-5',
+            'Should keep most recent sessions'
+        );
 
         teardown();
     });
@@ -557,7 +599,11 @@ export async function runTests() {
         analytics.clearCurrentSession();
 
         assert.equal(analytics._currentSession, null, 'Current session should be null');
-        assert.equal(Object.keys(analytics._speakerMetrics).length, 0, 'Speaker metrics should be empty');
+        assert.equal(
+            Object.keys(analytics._speakerMetrics).length,
+            0,
+            'Speaker metrics should be empty'
+        );
         assert.equal(analytics._segments.length, 0, 'Segments should be empty');
 
         teardown();
@@ -638,7 +684,11 @@ export async function runTests() {
         const saved = mockSettingsManager._storage.sessionData;
         assert.ok(saved, 'Session data should be saved');
         assert.ok(saved.currentSession, 'Should save current session');
-        assert.equal(saved.currentSession.metadata.sessionId, 'test-session', 'Should save correct session ID');
+        assert.equal(
+            saved.currentSession.metadata.sessionId,
+            'test-session',
+            'Should save correct session ID'
+        );
 
         teardown();
     });
@@ -674,7 +724,11 @@ export async function runTests() {
         const analytics2 = new SessionAnalytics({ settingsManager: mockSettingsManager });
         await analytics2.loadSessions();
 
-        assert.equal(analytics2.getCurrentSessionId(), 'original-session', 'Should restore session ID');
+        assert.equal(
+            analytics2.getCurrentSessionId(),
+            'original-session',
+            'Should restore session ID'
+        );
         assert.ok(analytics2._speakerMetrics['Player1'], 'Should restore speaker metrics');
         assert.equal(analytics2._segments.length, 1, 'Should restore segments');
 

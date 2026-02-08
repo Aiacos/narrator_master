@@ -111,20 +111,60 @@ export class SceneDetector {
          */
         this._locationPatterns = [
             // Entering locations
-            { pattern: /\b(entrat[eio]|entrano|entri)\s+(nel|nella|in|al|alla)\s+\w+/i, sceneType: SCENE_TYPES.EXPLORATION, weight: 0.9 },
-            { pattern: /\b(arriv(at[eio]|ano|i))\s+(a|al|alla|nel|nella)\s+\w+/i, sceneType: SCENE_TYPES.EXPLORATION, weight: 0.9 },
-            { pattern: /\b(raggiung(ete|ono|i))\s+(il|la|l')\s*\w+/i, sceneType: SCENE_TYPES.EXPLORATION, weight: 0.8 },
-            { pattern: /\b(vi trovate|ti trovi|ci troviamo)\s+(in|a|nel|nella)\s+\w+/i, sceneType: SCENE_TYPES.EXPLORATION, weight: 0.8 },
-            { pattern: /\b(attraversat[eio]|attraversano|attraversi)\s+\w+/i, sceneType: SCENE_TYPES.EXPLORATION, weight: 0.7 },
+            {
+                pattern: /\b(entrat[eio]|entrano|entri)\s+(nel|nella|in|al|alla)\s+\w+/i,
+                sceneType: SCENE_TYPES.EXPLORATION,
+                weight: 0.9
+            },
+            {
+                pattern: /\b(arriv(at[eio]|ano|i))\s+(a|al|alla|nel|nella)\s+\w+/i,
+                sceneType: SCENE_TYPES.EXPLORATION,
+                weight: 0.9
+            },
+            {
+                pattern: /\b(raggiung(ete|ono|i))\s+(il|la|l')\s*\w+/i,
+                sceneType: SCENE_TYPES.EXPLORATION,
+                weight: 0.8
+            },
+            {
+                pattern: /\b(vi trovate|ti trovi|ci troviamo)\s+(in|a|nel|nella)\s+\w+/i,
+                sceneType: SCENE_TYPES.EXPLORATION,
+                weight: 0.8
+            },
+            {
+                pattern: /\b(attraversat[eio]|attraversano|attraversi)\s+\w+/i,
+                sceneType: SCENE_TYPES.EXPLORATION,
+                weight: 0.7
+            },
 
             // Social locations
-            { pattern: /\b(taverna|locanda|inn|osteria|bar)/i, sceneType: SCENE_TYPES.SOCIAL, weight: 0.8 },
-            { pattern: /\b(incontr(ate|ano|i)|incontro)\s+(un|una|il|la|dei|delle)\s+\w+/i, sceneType: SCENE_TYPES.SOCIAL, weight: 0.7 },
-            { pattern: /\b(parl(ate|ano|i)|parla|conversazione|dialogo)\s+con\s+\w+/i, sceneType: SCENE_TYPES.SOCIAL, weight: 0.7 },
+            {
+                pattern: /\b(taverna|locanda|inn|osteria|bar)/i,
+                sceneType: SCENE_TYPES.SOCIAL,
+                weight: 0.8
+            },
+            {
+                pattern: /\b(incontr(ate|ano|i)|incontro)\s+(un|una|il|la|dei|delle)\s+\w+/i,
+                sceneType: SCENE_TYPES.SOCIAL,
+                weight: 0.7
+            },
+            {
+                pattern: /\b(parl(ate|ano|i)|parla|conversazione|dialogo)\s+con\s+\w+/i,
+                sceneType: SCENE_TYPES.SOCIAL,
+                weight: 0.7
+            },
 
             // Rest locations
-            { pattern: /\b(campo|accampamento|riposo|dormire|sonno)/i, sceneType: SCENE_TYPES.REST, weight: 0.8 },
-            { pattern: /\b(vi riposat[eio]|ti riposi|ci riposiamo)/i, sceneType: SCENE_TYPES.REST, weight: 0.9 },
+            {
+                pattern: /\b(campo|accampamento|riposo|dormire|sonno)/i,
+                sceneType: SCENE_TYPES.REST,
+                weight: 0.8
+            },
+            {
+                pattern: /\b(vi riposat[eio]|ti riposi|ci riposiamo)/i,
+                sceneType: SCENE_TYPES.REST,
+                weight: 0.9
+            }
         ];
 
         /**
@@ -133,12 +173,36 @@ export class SceneDetector {
          * @private
          */
         this._timePatterns = [
-            { pattern: /\b(il giorno dopo|l'indomani|il mattino seguente|la mattina dopo)/i, sceneType: SCENE_TYPES.REST, weight: 0.9 },
-            { pattern: /\b(dopo\s+(ore|giorni|settimane|mesi))/i, sceneType: SCENE_TYPES.UNKNOWN, weight: 0.8 },
-            { pattern: /\b(ore dopo|ore più tardi|più tardi)/i, sceneType: SCENE_TYPES.UNKNOWN, weight: 0.7 },
-            { pattern: /\b(la mattina|il pomeriggio|la sera|la notte|l'alba|il tramonto)/i, sceneType: SCENE_TYPES.UNKNOWN, weight: 0.6 },
-            { pattern: /\b(passa(no|te)?\s+(il|la|i|le)\s+(tempo|ore|giorni))/i, sceneType: SCENE_TYPES.UNKNOWN, weight: 0.7 },
-            { pattern: /\b(dopo un riposo|dopo aver riposato|al risveglio)/i, sceneType: SCENE_TYPES.EXPLORATION, weight: 0.8 },
+            {
+                pattern: /\b(il giorno dopo|l'indomani|il mattino seguente|la mattina dopo)/i,
+                sceneType: SCENE_TYPES.REST,
+                weight: 0.9
+            },
+            {
+                pattern: /\b(dopo\s+(ore|giorni|settimane|mesi))/i,
+                sceneType: SCENE_TYPES.UNKNOWN,
+                weight: 0.8
+            },
+            {
+                pattern: /\b(ore dopo|ore più tardi|più tardi)/i,
+                sceneType: SCENE_TYPES.UNKNOWN,
+                weight: 0.7
+            },
+            {
+                pattern: /\b(la mattina|il pomeriggio|la sera|la notte|l'alba|il tramonto)/i,
+                sceneType: SCENE_TYPES.UNKNOWN,
+                weight: 0.6
+            },
+            {
+                pattern: /\b(passa(no|te)?\s+(il|la|i|le)\s+(tempo|ore|giorni))/i,
+                sceneType: SCENE_TYPES.UNKNOWN,
+                weight: 0.7
+            },
+            {
+                pattern: /\b(dopo un riposo|dopo aver riposato|al risveglio)/i,
+                sceneType: SCENE_TYPES.EXPLORATION,
+                weight: 0.8
+            }
         ];
 
         /**
@@ -147,11 +211,32 @@ export class SceneDetector {
          * @private
          */
         this._combatPatterns = [
-            { pattern: /\b(tira(te)? l'iniziativa|roll initiative|iniziativa)/i, sceneType: SCENE_TYPES.COMBAT, weight: 1.0 },
-            { pattern: /\b(entra(te|no|no)? in combattimento|inizia il combattimento)/i, sceneType: SCENE_TYPES.COMBAT, weight: 1.0 },
-            { pattern: /\b(attacc(ate|ano|a)|attacco)/i, sceneType: SCENE_TYPES.COMBAT, weight: 0.9 },
-            { pattern: /\b(combat(te|ti|tiamo)|battaglia|scontro)/i, sceneType: SCENE_TYPES.COMBAT, weight: 0.8 },
-            { pattern: /\b(il nemico|i nemici|il mostro|i mostri)\s+(attacc(a|ano)|si avvicin(a|ano))/i, sceneType: SCENE_TYPES.COMBAT, weight: 0.9 },
+            {
+                pattern: /\b(tira(te)? l'iniziativa|roll initiative|iniziativa)/i,
+                sceneType: SCENE_TYPES.COMBAT,
+                weight: 1.0
+            },
+            {
+                pattern: /\b(entra(te|no|no)? in combattimento|inizia il combattimento)/i,
+                sceneType: SCENE_TYPES.COMBAT,
+                weight: 1.0
+            },
+            {
+                pattern: /\b(attacc(ate|ano|a)|attacco)/i,
+                sceneType: SCENE_TYPES.COMBAT,
+                weight: 0.9
+            },
+            {
+                pattern: /\b(combat(te|ti|tiamo)|battaglia|scontro)/i,
+                sceneType: SCENE_TYPES.COMBAT,
+                weight: 0.8
+            },
+            {
+                pattern:
+                    /\b(il nemico|i nemici|il mostro|i mostri)\s+(attacc(a|ano)|si avvicin(a|ano))/i,
+                sceneType: SCENE_TYPES.COMBAT,
+                weight: 0.9
+            }
         ];
 
         /**
@@ -160,9 +245,21 @@ export class SceneDetector {
          * @private
          */
         this._combatEndPatterns = [
-            { pattern: /\b(fine del combattimento|combattimento terminato|battaglia finita)/i, sceneType: SCENE_TYPES.EXPLORATION, weight: 1.0 },
-            { pattern: /\b(vince(te)?|vincono|vittoria|sconfitt[oi])/i, sceneType: SCENE_TYPES.EXPLORATION, weight: 0.8 },
-            { pattern: /\b(il nemico è morto|i nemici sono morti|tutti i nemici sono)/i, sceneType: SCENE_TYPES.EXPLORATION, weight: 0.9 },
+            {
+                pattern: /\b(fine del combattimento|combattimento terminato|battaglia finita)/i,
+                sceneType: SCENE_TYPES.EXPLORATION,
+                weight: 1.0
+            },
+            {
+                pattern: /\b(vince(te)?|vincono|vittoria|sconfitt[oi])/i,
+                sceneType: SCENE_TYPES.EXPLORATION,
+                weight: 0.8
+            },
+            {
+                pattern: /\b(il nemico è morto|i nemici sono morti|tutti i nemici sono)/i,
+                sceneType: SCENE_TYPES.EXPLORATION,
+                weight: 0.9
+            }
         ];
 
         /**
@@ -174,23 +271,26 @@ export class SceneDetector {
             [SCENE_TYPES.EXPLORATION]: [
                 { pattern: /\b(esplor(are|ate|ano|a)|scoprire|cercare|investigare)/i, weight: 0.7 },
                 { pattern: /\b(dungeon|caverna|foresta|montagna|sentiero|strada)/i, weight: 0.6 },
-                { pattern: /\b(trova(te|no|re)|scopr(ite|ono|ire))/i, weight: 0.6 },
+                { pattern: /\b(trova(te|no|re)|scopr(ite|ono|ire))/i, weight: 0.6 }
             ],
             [SCENE_TYPES.COMBAT]: [
                 { pattern: /\b(danno|danni|colp(ire|isce|ito)|tiro per colpire)/i, weight: 0.8 },
                 { pattern: /\b(arm(atura|i|a)|scudo|spada|arco|magia)/i, weight: 0.5 },
-                { pattern: /\b(punt[oi] ferita|hp|salute)/i, weight: 0.7 },
+                { pattern: /\b(punt[oi] ferita|hp|salute)/i, weight: 0.7 }
             ],
             [SCENE_TYPES.SOCIAL]: [
-                { pattern: /\b(conversazione|dialogo|negoziare|persuadere|ingannare)/i, weight: 0.8 },
+                {
+                    pattern: /\b(conversazione|dialogo|negoziare|persuadere|ingannare)/i,
+                    weight: 0.8
+                },
                 { pattern: /\b(mercante|venditore|PNG|personaggio|villico)/i, weight: 0.6 },
-                { pattern: /\b(compra(re|te)|vende(re|te)|commercio|scambio)/i, weight: 0.7 },
+                { pattern: /\b(compra(re|te)|vende(re|te)|commercio|scambio)/i, weight: 0.7 }
             ],
             [SCENE_TYPES.REST]: [
                 { pattern: /\b(riposo|dormire|sonno|ripristinare|guarire)/i, weight: 0.9 },
                 { pattern: /\b(lungo riposo|riposo breve|short rest|long rest)/i, weight: 1.0 },
-                { pattern: /\b(recuperare|recupero|rigenerare)/i, weight: 0.7 },
-            ],
+                { pattern: /\b(recuperare|recupero|rigenerare)/i, weight: 0.7 }
+            ]
         };
     }
 
@@ -260,7 +360,11 @@ export class SceneDetector {
 
         // Check location changes
         if (this._enableLocationDetection) {
-            const locationTransition = this._checkPatterns(text, this._locationPatterns, 'location');
+            const locationTransition = this._checkPatterns(
+                text,
+                this._locationPatterns,
+                'location'
+            );
             if (locationTransition.detected) {
                 transitions.push(locationTransition);
             }
@@ -283,7 +387,11 @@ export class SceneDetector {
 
             // Check combat end (only if currently in combat)
             if (this._currentSceneType === SCENE_TYPES.COMBAT) {
-                const combatEndTransition = this._checkPatterns(text, this._combatEndPatterns, 'combat_end');
+                const combatEndTransition = this._checkPatterns(
+                    text,
+                    this._combatEndPatterns,
+                    'combat_end'
+                );
                 if (combatEndTransition.detected) {
                     transitions.push(combatEndTransition);
                 }
