@@ -12,8 +12,6 @@ import { ImageGenerator } from './image-generator.js';
 import { JournalParser } from './journal-parser.js';
 import { NarratorPanel, RECORDING_STATE } from './ui-panel.js';
 import { SpeakerLabelService } from './speaker-labels.js';
-import { SceneDetector } from './scene-detector.js';
-import { RulesReferenceService } from './rules-reference.js';
 
 /**
  * Error notification types for different severity levels
@@ -172,18 +170,6 @@ class NarratorMaster {
         this.speakerLabelService = null;
 
         /**
-         * Scene detector service
-         * @type {SceneDetector|null}
-         */
-        this.sceneDetector = null;
-
-        /**
-         * Rules reference service
-         * @type {RulesReferenceService|null}
-         */
-        this.rulesReferenceService = null;
-
-        /**
          * Audio level update interval ID
          * @type {number|null}
          * @private
@@ -268,17 +254,6 @@ class NarratorMaster {
         // Initialize Speaker Label Service (no API key needed)
         this.speakerLabelService = new SpeakerLabelService();
 
-        // Initialize Scene Detector (no API key needed)
-        this.sceneDetector = new SceneDetector({
-            sensitivity: this.settings.getOffTrackSensitivity()
-        });
-
-        // Initialize Rules Reference Service (no API key needed)
-        this.rulesReferenceService = new RulesReferenceService({
-            language: this.settings.getTranscriptionLanguage(),
-            resultLimit: 5
-        });
-
         // Initialize Audio Capture
         this.audioCapture = new AudioCapture({
             timeslice: 5000, // 5 second chunks for better processing
@@ -297,8 +272,7 @@ class NarratorMaster {
 
         this.aiAssistant = new AIAssistant(apiKey, {
             model: 'gpt-4o-mini',
-            sensitivity: this.settings.getOffTrackSensitivity(),
-            sceneDetector: this.sceneDetector
+            sensitivity: this.settings.getOffTrackSensitivity()
         });
 
         this.imageGenerator = new ImageGenerator(apiKey, {
@@ -493,16 +467,7 @@ class NarratorMaster {
             const labeledText = this._formatTranscriptionWithLabels(transcription);
 
             // Analyze transcription with AI (results shown to user)
-            const analysis = await this._analyzeTranscription(labeledText);
-
-            // Handle scene transitions
-            if (analysis && analysis.sceneInfo && analysis.sceneInfo.isTransition && this.panel) {
-                this.panel.addSceneBreak(
-                    analysis.sceneInfo.type,
-                    analysis.sceneInfo.timestamp,
-                    false // false for automatic detection
-                );
-            }
+            await this._analyzeTranscription(labeledText);
 
         } catch (error) {
             this._handleServiceError(error, 'Transcription');
@@ -512,13 +477,12 @@ class NarratorMaster {
     /**
      * Analyzes transcription with AI assistant
      * @param {string} text - Transcribed text to analyze
-     * @returns {Promise<Object|null>} The analysis result including sceneInfo, or null if failed
      * @private
      */
     async _analyzeTranscription(text) {
         if (!this.aiAssistant.isConfigured()) {
             console.warn(`${MODULE_ID} | AI assistant not configured`);
-            return null;
+            return;
         }
 
         try {
@@ -538,194 +502,11 @@ class NarratorMaster {
                 if (analysis.offTrackStatus.isOffTrack && analysis.offTrackStatus.severity > 0.5) {
                     ui.notifications.warn(game.i18n.localize('NARRATOR.Notifications.PlayersOffTrack'));
                 }
-
-                // Process rules questions if detected
-                if (analysis.rulesQuestions && analysis.rulesQuestions.length > 0) {
-                    await this._processRulesQuestions(analysis.rulesQuestions);
-                }
             }
-
-            // Generate NPC dialogue suggestions
-            await this._generateNPCDialogue(text);
-
-            return analysis;
 
         } catch (error) {
             console.error(`${MODULE_ID} | AI analysis error:`, error);
             // Don't show notification for analysis errors - not critical
-            return null;
-        }
-    }
-
-    /**
-     * Generates NPC dialogue suggestions based on transcription
-     * @param {string} transcription - Transcribed text to analyze for NPC mentions
-     * @private
-     */
-    async _generateNPCDialogue(transcription) {
-        if (!this.journalParser || !this.aiAssistant.isConfigured()) {
-            return;
-        }
-
-        try {
-            // Extract NPC profiles from all cached journals
-            const allNPCs = this._extractAllNPCProfiles();
-
-            if (allNPCs.length === 0) {
-                console.log(`${MODULE_ID} | No NPCs found in journals`);
-                return;
-            }
-
-            // Detect which NPCs are mentioned in the transcription
-            const mentionedNPCs = this.aiAssistant.detectNPCMentions(transcription, allNPCs);
-
-            if (mentionedNPCs.length === 0) {
-                console.log(`${MODULE_ID} | No NPCs mentioned in transcription`);
-                // Clear any existing NPC dialogue
-                if (this.panel) {
-                    this.panel.updateNPCDialogue({ npcDialogue: {} });
-                }
-                return;
-            }
-
-            console.log(`${MODULE_ID} | Generating dialogue for ${mentionedNPCs.length} mentioned NPC(s)`);
-
-            // Generate dialogue for each mentioned NPC
-            const npcDialogue = {};
-
-            for (const npcName of mentionedNPCs) {
-                // Find the NPC object to get journal context
-                const npc = allNPCs.find(n => n.name === npcName);
-                if (!npc || !npc.pages || npc.pages.length === 0) {
-                    continue;
-                }
-
-                // Get NPC context from first journal that mentions them
-                const journalId = npc.pages[0].journalId;
-                const npcContext = this.journalParser.getNPCContext(journalId, npcName);
-
-                if (!npcContext || npcContext.trim().length === 0) {
-                    console.warn(`${MODULE_ID} | No context found for NPC: ${npcName}`);
-                    continue;
-                }
-
-                // Generate dialogue options
-                try {
-                    const dialogueOptions = await this.aiAssistant.generateNPCDialogue(
-                        npcName,
-                        npcContext,
-                        transcription,
-                        { maxOptions: 3 }
-                    );
-
-                    if (dialogueOptions && dialogueOptions.length > 0) {
-                        npcDialogue[npcName] = dialogueOptions;
-                        console.log(`${MODULE_ID} | Generated ${dialogueOptions.length} dialogue options for ${npcName}`);
-                    }
-                } catch (dialogueError) {
-                    console.error(`${MODULE_ID} | Failed to generate dialogue for ${npcName}:`, dialogueError);
-                    // Continue with other NPCs even if one fails
-                }
-            }
-
-            // Update panel with NPC dialogue
-            if (this.panel && Object.keys(npcDialogue).length > 0) {
-                this.panel.updateNPCDialogue({ npcDialogue });
-            }
-
-        } catch (error) {
-            console.error(`${MODULE_ID} | NPC dialogue generation error:`, error);
-            // Don't show notification - not critical
-        }
-    }
-
-    /**
-     * Extracts NPC profiles from all cached journals
-     * @returns {Array} Array of NPC profile objects
-     * @private
-     */
-    _extractAllNPCProfiles() {
-        const allNPCs = [];
-        const npcNames = new Set();
-
-        // Iterate through all cached journals
-        for (const [journalId, cached] of this.journalParser._cachedContent) {
-            const npcProfiles = this.journalParser.extractNPCProfiles(journalId);
-
-            // Deduplicate NPCs by name (in case same NPC appears in multiple journals)
-            for (const npc of npcProfiles) {
-                if (!npcNames.has(npc.name)) {
-                    npcNames.add(npc.name);
-                    allNPCs.push(npc);
-                } else {
-                    // If NPC already exists, merge page references
-                    const existingNPC = allNPCs.find(n => n.name === npc.name);
-                    if (existingNPC && npc.pages) {
-                        existingNPC.pages = [...existingNPC.pages, ...npc.pages];
-                    }
-                }
-            }
-        }
-
-        console.log(`${MODULE_ID} | Extracted ${allNPCs.length} unique NPC profiles from journals`);
-        return allNPCs;
-    }
-
-    /**
-     * Processes detected rules questions and searches for answers
-     * @param {Array<Object>} rulesQuestions - Detected rules questions from AI analysis
-     * @param {string} rulesQuestions[].text - The question text
-     * @param {number} rulesQuestions[].confidence - Confidence score 0-1
-     * @param {string} rulesQuestions[].type - Question type
-     * @param {string} [rulesQuestions[].topic] - Extracted topic
-     * @private
-     */
-    async _processRulesQuestions(rulesQuestions) {
-        if (!rulesQuestions || !Array.isArray(rulesQuestions) || rulesQuestions.length === 0) {
-            return;
-        }
-
-        console.log(`${MODULE_ID} | Processing ${rulesQuestions.length} rules question(s)`);
-
-        for (const question of rulesQuestions) {
-            try {
-                // Use topic if available, otherwise use full question text
-                const searchQuery = question.topic || question.text;
-
-                console.log(`${MODULE_ID} | Searching rules for: "${searchQuery}"`);
-
-                // Search compendiums for answers
-                const searchResults = await this.rulesReferenceService.searchCompendiums(searchQuery, {
-                    limit: 1 // Get best match only
-                });
-
-                // If we found a result, add it to the panel
-                if (searchResults && searchResults.length > 0) {
-                    const bestMatch = searchResults[0];
-                    const rule = bestMatch.rule;
-
-                    // Format rule answer for panel
-                    const ruleAnswer = {
-                        question: question.text,
-                        answer: rule.content || game.i18n.localize('NARRATOR.Rules.NoAnswerFound'),
-                        citation: rule.citation?.formatted || rule.source || '',
-                        source: rule.source || '',
-                        confidence: question.confidence.toFixed(2),
-                        type: question.type
-                    };
-
-                    // Add rule answer to panel
-                    this.panel.addRuleAnswer(ruleAnswer);
-
-                    console.log(`${MODULE_ID} | Added rule answer for: "${question.text}"`);
-                } else {
-                    console.log(`${MODULE_ID} | No rules found for: "${searchQuery}"`);
-                }
-
-            } catch (error) {
-                console.warn(`${MODULE_ID} | Error processing rules question "${question.text}":`, error);
-                // Continue processing other questions
-            }
         }
     }
 
@@ -837,16 +618,7 @@ class NarratorMaster {
                 const labeledText = this._formatTranscriptionWithLabels(transcription);
 
                 // Final AI analysis
-                const analysis = await this._analyzeTranscription(labeledText);
-
-                // Handle scene transitions
-                if (analysis && analysis.sceneInfo && analysis.sceneInfo.isTransition && this.panel) {
-                    this.panel.addSceneBreak(
-                        analysis.sceneInfo.type,
-                        analysis.sceneInfo.timestamp,
-                        false // false for automatic detection
-                    );
-                }
+                await this._analyzeTranscription(labeledText);
             }
 
         } catch (error) {
@@ -898,21 +670,15 @@ class NarratorMaster {
         }
 
         try {
-            // Get current scene type for scene-aware image generation
-            const currentScene = this.panel?.getCurrentScene();
-            const sceneType = currentScene?.type || null;
-
             const result = await this.imageGenerator.generateInfographic(context, {
                 style: 'fantasy',
-                mood: 'dramatic',
-                sceneType: sceneType
+                mood: 'dramatic'
             });
 
             if (this.panel && result.url) {
                 this.panel.addImage({
                     url: result.base64 ? `data:image/png;base64,${result.base64}` : result.url,
-                    prompt: result.prompt,
-                    sceneType: sceneType
+                    prompt: result.prompt
                 });
 
                 ErrorNotificationHelper.info(game.i18n.localize('NARRATOR.Notifications.ImageGenerated'));
@@ -975,6 +741,55 @@ class NarratorMaster {
      */
     _handleServiceError(error, operation) {
         ErrorNotificationHelper.handleApiError(error, operation);
+    }
+
+    /**
+     * Handles keyboard shortcuts for recording controls
+     * @param {KeyboardEvent} event - The keyboard event
+     * @private
+     */
+    _handleKeyboardShortcuts(event) {
+        // Only handle shortcuts for GM users
+        if (!game.user.isGM) return;
+
+        // Only handle shortcuts if module is initialized
+        if (!this._initialized) return;
+
+        // Check for Ctrl+Shift modifier combination
+        if (!event.ctrlKey || !event.shiftKey) return;
+
+        // Handle specific key combinations
+        let action = null;
+
+        switch (event.key.toUpperCase()) {
+            case 'R':
+                // Ctrl+Shift+R - Start recording
+                action = 'start';
+                break;
+
+            case 'S':
+                // Ctrl+Shift+S - Stop recording
+                action = 'stop';
+                break;
+
+            case 'P':
+                // Ctrl+Shift+P - Pause/Resume recording (toggle based on current state)
+                if (this.audioCapture?.state === RecordingState.RECORDING) {
+                    action = 'pause';
+                } else if (this.audioCapture?.state === RecordingState.PAUSED) {
+                    action = 'resume';
+                }
+                break;
+
+            default:
+                return; // Not a narrator shortcut, ignore
+        }
+
+        // If we have a valid action, handle it
+        if (action) {
+            event.preventDefault();
+            this._handleRecordingControl(action);
+        }
     }
 
     /**
@@ -1095,6 +910,10 @@ Hooks.once('ready', async function() {
         // Create and store global instance for debugging and external access
         window.narratorMaster = new NarratorMaster();
         await window.narratorMaster.initialize();
+
+        // Register keyboard shortcuts for recording controls
+        document.addEventListener('keydown', window.narratorMaster._handleKeyboardShortcuts.bind(window.narratorMaster));
+        console.log(`${MODULE_ID} | Keyboard shortcuts registered (Ctrl+Shift+R/S/P)`);
     } else {
         console.log(`${MODULE_ID} | User is not GM, skipping initialization`);
     }
