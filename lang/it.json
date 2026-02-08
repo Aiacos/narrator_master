@@ -52,7 +52,12 @@
             "ExportTranscript": "Esporta Trascrizione",
             "ConfirmClearTranscript": "Sei sicuro di voler cancellare la trascrizione?",
             "ConfirmClearImages": "Sei sicuro di voler cancellare tutte le immagini?",
-            "ConfirmDeleteImage": "Sei sicuro di voler eliminare questa immagine?"
+            "ConfirmDeleteImage": "Sei sicuro di voler eliminare questa immagine?",
+            "NPCDialogue": "Dialoghi NPC",
+            "NPCDialogueTitle": "Suggerimenti Dialogo NPC",
+            "NoNPCDialogue": "Nessun suggerimento di dialogo NPC disponibile. I dialoghi saranno generati quando vengono menzionati NPC nelle conversazioni.",
+            "CopyDialogue": "Copia Dialogo",
+            "DialogueFor": "Dialogo per {npc}"
         },
 
         "Errors": {
@@ -95,7 +100,9 @@
             "InvalidSpeaker": "ID parlante non valido",
             "InvalidLabel": "Etichetta parlante non valida",
             "EmptyLabel": "L'etichetta non può essere vuota",
-            "SaveMappingsFailed": "Impossibile salvare le mappature dei parlanti"
+            "SaveMappingsFailed": "Impossibile salvare le mappature dei parlanti",
+            "NPCNotFound": "NPC non trovato: {name}",
+            "NoNPCContext": "Nessun contesto disponibile per il NPC {name}"
         },
 
         "Warnings": {

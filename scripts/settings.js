@@ -20,7 +20,8 @@ export const SETTINGS = {
     MULTI_LANGUAGE_MODE: 'multiLanguageMode',
     PANEL_POSITION: 'panelPosition',
     OFF_TRACK_SENSITIVITY: 'offTrackSensitivity',
-    SPEAKER_LABELS: 'speakerLabels'
+    SPEAKER_LABELS: 'speakerLabels',
+    SELECTED_JOURNALS: 'selectedJournals'
 };
 
 /**
@@ -105,6 +106,16 @@ export function registerSettings() {
         type: Boolean,
         default: true
     });
+
+    // Selected journals/folders for AI context (stored as array of IDs)
+    game.settings.register(MODULE_ID, SETTINGS.SELECTED_JOURNALS, {
+        name: 'NARRATOR.Settings.SelectedJournalsName',
+        hint: 'NARRATOR.Settings.SelectedJournalsHint',
+        scope: 'world',
+        config: false,
+        type: Object,
+        default: []
+    });
 }
 
 /**
@@ -186,6 +197,23 @@ export class SettingsManager {
     }
 
     /**
+     * Gets the selected journals/folders
+     * @returns {Array<string>} Array of journal/folder IDs
+     */
+    getSelectedJournals() {
+        return game.settings.get(MODULE_ID, SETTINGS.SELECTED_JOURNALS) || [];
+    }
+
+    /**
+     * Sets the selected journals/folders
+     * @param {Array<string>} journalIds - Array of journal/folder IDs
+     * @returns {Promise<void>}
+     */
+    async setSelectedJournals(journalIds) {
+        await game.settings.set(MODULE_ID, SETTINGS.SELECTED_JOURNALS, journalIds);
+    }
+
+    /**
      * Checks if the API key is configured
      * @returns {boolean} True if API key is set
      */
@@ -222,7 +250,8 @@ export class SettingsManager {
             multiLanguageMode: this.getMultiLanguageMode(),
             panelPosition: this.getPanelPosition(),
             offTrackSensitivity: this.getOffTrackSensitivity(),
-            speakerLabels: this.getSpeakerLabels()
+            speakerLabels: this.getSpeakerLabels(),
+            selectedJournals: this.getSelectedJournals()
         };
     }
 }

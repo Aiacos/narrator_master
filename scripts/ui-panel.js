@@ -134,6 +134,12 @@ export class NarratorPanel extends Application {
         this.transcriptSegments = [];
 
         /**
+         * NPC dialogue suggestions
+         * @type {Object}
+         */
+        this.npcDialogue = {};
+
+        /**
          * Speaker label service instance
          * @type {SpeakerLabelService|null}
          */
@@ -222,6 +228,13 @@ export class NarratorPanel extends Application {
             // Merged transcript with scene breaks
             transcriptWithScenes: this._mergeTranscriptWithScenes(),
 
+            // NPC dialogue
+            npcDialogueList: Object.keys(this.npcDialogue).map(npcName => ({
+                name: npcName,
+                dialogues: this.npcDialogue[npcName]
+            })),
+            hasNPCDialogue: Object.keys(this.npcDialogue).length > 0,
+
             // Recording state
             recordingState: this.recordingState,
             isRecording: this.recordingState === RECORDING_STATE.RECORDING,
@@ -262,7 +275,9 @@ export class NarratorPanel extends Application {
                 noTranscript: game.i18n.localize('NARRATOR.Panel.NoTranscript'),
                 clearTranscript: game.i18n.localize('NARRATOR.Panel.ClearTranscript'),
                 exportTranscript: game.i18n.localize('NARRATOR.Panel.ExportTranscript'),
-                markSceneBreak: game.i18n.localize('NARRATOR.Scenes.MarkSceneBreak')
+                markSceneBreak: game.i18n.localize('NARRATOR.Scenes.MarkSceneBreak'),
+                npcDialogueTitle: game.i18n.localize('NARRATOR.Panel.NPCDialogueTitle'),
+                copyDialogue: game.i18n.localize('NARRATOR.Panel.CopyDialogue')
             }
         };
     }
@@ -324,6 +339,9 @@ export class NarratorPanel extends Application {
 
         // Narrative bridge copy
         html.find('.copy-bridge').click(this._onCopyNarrativeBridge.bind(this));
+
+        // NPC dialogue copy
+        html.find('.copy-npc-dialogue').click(this._onCopyNPCDialogue.bind(this));
 
         // Transcript controls
         html.find('.speaker-label').click(this._onSpeakerLabelClick.bind(this));
@@ -458,6 +476,18 @@ export class NarratorPanel extends Application {
     async _onCopyNarrativeBridge(event) {
         event.preventDefault();
         await this._copyToClipboard(this.narrativeBridge);
+    }
+
+    /**
+     * Handles copy NPC dialogue button click
+     * @param {Event} event - Click event
+     * @private
+     */
+    async _onCopyNPCDialogue(event) {
+        event.preventDefault();
+        const button = event.currentTarget;
+        const dialogue = button.dataset.dialogue;
+        await this._copyToClipboard(dialogue);
     }
 
     /**
@@ -774,6 +804,19 @@ export class NarratorPanel extends Application {
         }
         if (data.journalCount !== undefined) {
             this.journalCount = data.journalCount;
+        }
+
+        this.render(false);
+    }
+
+    /**
+     * Updates NPC dialogue suggestions
+     * @param {Object} data - NPC dialogue data to update
+     * @param {Object} [data.npcDialogue] - NPC dialogue suggestions object (key: NPC name, value: array of dialogue options)
+     */
+    updateNPCDialogue(data) {
+        if (data.npcDialogue !== undefined) {
+            this.npcDialogue = data.npcDialogue;
         }
 
         this.render(false);

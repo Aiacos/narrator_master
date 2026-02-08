@@ -170,6 +170,39 @@
                 </div>
                 {{/if}}
             </div>
+
+            {{!-- NPC Dialogue Section --}}
+            {{#if hasNPCDialogue}}
+            <div class="npc-dialogue-section">
+                <div class="npc-dialogue-header">
+                    <h4>{{i18n.npcDialogueTitle}}</h4>
+                </div>
+
+                <div class="npc-dialogue-content">
+                    {{#each npcDialogueList}}
+                    <div class="npc-dialogue-group">
+                        <div class="npc-name">
+                            <i class="fas fa-user"></i>
+                            <span>{{this.name}}</span>
+                        </div>
+                        <ul class="dialogue-options-list">
+                            {{#each this.dialogues}}
+                            <li class="dialogue-option-item">
+                                <div class="dialogue-text">
+                                    <i class="fas fa-quote-left"></i>
+                                    <span>{{this}}</span>
+                                </div>
+                                <button type="button" class="copy-npc-dialogue" data-npc="{{../name}}" data-dialogue="{{this}}" title="{{../../i18n.copyDialogue}}">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </li>
+                            {{/each}}
+                        </ul>
+                    </div>
+                    {{/each}}
+                </div>
+            </div>
+            {{/if}}
         </div>
 
         {{!-- Images Tab --}}

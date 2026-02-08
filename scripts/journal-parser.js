@@ -514,4 +514,200 @@ export class JournalParser {
 
         return result;
     }
+
+    /**
+     * Extracts NPC profiles (names, descriptions, personalities) from a journal
+     * Useful for generating contextual NPC dialogue
+     * @param {string} journalId - The journal ID to extract NPC profiles from
+     * @returns {Array<{name: string, description: string, personality: string, pages: string[]}>} Array of NPC profile objects
+     */
+    extractNPCProfiles(journalId) {
+        const cached = this._cachedContent.get(journalId);
+        if (!cached) {
+            console.warn(`${MODULE_ID} | Journal not cached: ${journalId}`);
+            return [];
+        }
+
+        // Get potential NPC names using existing extractProperNouns method
+        const properNouns = this.extractProperNouns(journalId);
+
+        // Keywords that indicate NPC descriptions (Italian and English)
+        const npcIndicators = [
+            // Italian
+            'personaggio', 'png', 'npc', 'alleato', 'nemico', 'mercante',
+            'locandiere', 'fabbro', 'mago', 'guerriero', 'chierico',
+            'personalità', 'carattere', 'temperamento', 'atteggiamento',
+            // English
+            'character', 'npc', 'ally', 'enemy', 'merchant', 'innkeeper',
+            'blacksmith', 'wizard', 'warrior', 'cleric',
+            'personality', 'character', 'temperament', 'attitude'
+        ];
+
+        const npcProfiles = [];
+
+        // Process each potential NPC name
+        for (const npcName of properNouns) {
+            const profile = {
+                name: npcName,
+                description: '',
+                personality: '',
+                pages: []
+            };
+
+            let contextFound = false;
+
+            // Search for context around this name in all pages
+            for (const page of cached.pages) {
+                const text = page.text;
+                const lowerText = text.toLowerCase();
+                const nameLower = npcName.toLowerCase();
+
+                // Check if this page mentions the NPC
+                if (!lowerText.includes(nameLower)) {
+                    continue;
+                }
+
+                // Track that this page mentions the NPC
+                profile.pages.push(page.id);
+
+                // Extract context around the NPC name (sentences containing the name)
+                const sentences = text.split(/[.!?]+/);
+                for (const sentence of sentences) {
+                    if (sentence.toLowerCase().includes(nameLower)) {
+                        const trimmedSentence = sentence.trim();
+
+                        // Check if sentence contains NPC indicators
+                        const hasIndicator = npcIndicators.some(indicator =>
+                            sentence.toLowerCase().includes(indicator)
+                        );
+
+                        if (hasIndicator) {
+                            contextFound = true;
+
+                            // Extract description (sentences with character/merchant/etc. keywords)
+                            if (!profile.description) {
+                                profile.description = trimmedSentence;
+                            } else {
+                                profile.description += ' ' + trimmedSentence;
+                            }
+                        }
+
+                        // Extract personality traits (sentences with personality/temperament keywords)
+                        const personalityKeywords = [
+                            'personalità', 'carattere', 'temperamento', 'atteggiamento',
+                            'personality', 'character', 'temperament', 'attitude',
+                            'gentile', 'brusco', 'amichevole', 'ostile', 'timido', 'coraggioso',
+                            'kind', 'gruff', 'friendly', 'hostile', 'shy', 'brave'
+                        ];
+
+                        const hasPersonalityKeyword = personalityKeywords.some(keyword =>
+                            sentence.toLowerCase().includes(keyword)
+                        );
+
+                        if (hasPersonalityKeyword) {
+                            if (!profile.personality) {
+                                profile.personality = trimmedSentence;
+                            } else {
+                                profile.personality += ' ' + trimmedSentence;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Only include NPCs that have some context found
+            if (contextFound && profile.pages.length > 0) {
+                // Limit description and personality length
+                if (profile.description.length > 500) {
+                    profile.description = profile.description.substring(0, 500) + '...';
+                }
+                if (profile.personality.length > 300) {
+                    profile.personality = profile.personality.substring(0, 300) + '...';
+                }
+
+                npcProfiles.push(profile);
+            }
+        }
+
+        console.log(`${MODULE_ID} | Extracted ${npcProfiles.length} NPC profiles from journal: ${cached.name}`);
+
+        return npcProfiles;
+    }
+
+    /**
+     * Gets contextual information about a specific NPC from the journal
+     * Returns formatted text suitable for AI dialogue generation
+     * @param {string} journalId - The journal ID to search in
+     * @param {string} npcName - The name of the NPC to get context for
+     * @returns {string} Formatted context string with NPC description, personality, and backstory
+     */
+    getNPCContext(journalId, npcName) {
+        const cached = this._cachedContent.get(journalId);
+        if (!cached) {
+            console.warn(`${MODULE_ID} | Journal not cached: ${journalId}`);
+            return '';
+        }
+
+        if (!npcName || typeof npcName !== 'string') {
+            console.warn(`${MODULE_ID} | Invalid NPC name provided`);
+            return '';
+        }
+
+        const nameLower = npcName.toLowerCase().trim();
+        const contextParts = [];
+        const relevantPages = [];
+
+        // Search all pages for mentions of this NPC
+        for (const page of cached.pages) {
+            const text = page.text;
+            const lowerText = text.toLowerCase();
+
+            // Check if this page mentions the NPC
+            if (!lowerText.includes(nameLower)) {
+                continue;
+            }
+
+            // Extract sentences containing the NPC name
+            const sentences = text.split(/[.!?]+/);
+            const relevantSentences = [];
+
+            for (const sentence of sentences) {
+                if (sentence.toLowerCase().includes(nameLower)) {
+                    const trimmed = sentence.trim();
+                    if (trimmed) {
+                        relevantSentences.push(trimmed);
+                    }
+                }
+            }
+
+            if (relevantSentences.length > 0) {
+                relevantPages.push({
+                    name: page.name,
+                    content: relevantSentences.join('. ')
+                });
+            }
+        }
+
+        // If no context found, return empty string
+        if (relevantPages.length === 0) {
+            console.warn(`${MODULE_ID} | No context found for NPC: ${npcName}`);
+            return '';
+        }
+
+        // Format the context for AI consumption
+        contextParts.push(`# ${npcName}`);
+        contextParts.push('');
+
+        for (const page of relevantPages) {
+            contextParts.push(`## ${page.name}`);
+            contextParts.push(page.content);
+            contextParts.push('');
+        }
+
+        const formattedContext = contextParts.join('\n');
+
+        console.log(`${MODULE_ID} | Retrieved context for NPC "${npcName}" (${formattedContext.length} characters)`);
+
+        return formattedContext;
+    }
 }

@@ -412,6 +412,95 @@ export class AIAssistant {
     }
 
     /**
+     * Generates dialogue options for a specific NPC
+     * @param {string} npcName - The name of the NPC
+     * @param {string} npcContext - NPC personality and backstory from journal
+     * @param {string} transcription - Current conversation context
+     * @param {Object} [options={}] - Generation options
+     * @param {number} [options.maxOptions=3] - Maximum dialogue options to generate
+     * @returns {Promise<string[]>} Array of dialogue strings
+     */
+    async generateNPCDialogue(npcName, npcContext, transcription, options = {}) {
+        if (!this.isConfigured()) {
+            throw new Error(game.i18n.localize('NARRATOR.Errors.NoApiKey'));
+        }
+
+        if (!npcName || typeof npcName !== 'string') {
+            throw new Error(game.i18n.localize('NARRATOR.Errors.NPCNotFound'));
+        }
+
+        const maxOptions = options.maxOptions || 3;
+
+        console.log(`${MODULE_ID} | Generating NPC dialogue for ${npcName}`);
+
+        // Detect languages in transcription
+        const detectedLanguages = this._detectLanguagesInTranscription(transcription);
+
+        try {
+            const messages = this._buildNPCDialogueMessages(npcName, npcContext, transcription, maxOptions, detectedLanguages);
+            const response = await this._makeApiRequest(messages);
+            const dialogueOptions = this._parseNPCDialogueResponse(response, maxOptions);
+
+            return dialogueOptions;
+
+        } catch (error) {
+            if (error.status) {
+                throw this._handleApiError(error);
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Detects which NPCs from a known list are mentioned in the transcription
+     * @param {string} transcription - The transcription text to analyze
+     * @param {Array<{name: string}>} npcList - Array of NPC objects with at least a name property
+     * @returns {string[]} Array of NPC names mentioned in the transcription
+     */
+    detectNPCMentions(transcription, npcList) {
+        if (!transcription || typeof transcription !== 'string') {
+            console.warn(`${MODULE_ID} | Invalid transcription provided to detectNPCMentions`);
+            return [];
+        }
+
+        if (!Array.isArray(npcList) || npcList.length === 0) {
+            console.warn(`${MODULE_ID} | No NPCs provided to detectNPCMentions`);
+            return [];
+        }
+
+        console.log(`${MODULE_ID} | Detecting NPC mentions in transcription (${npcList.length} NPCs to check)`);
+
+        // Normalize transcription for case-insensitive matching
+        const normalizedTranscription = transcription.toLowerCase();
+
+        // Find NPCs mentioned in the transcription
+        const mentionedNPCs = [];
+
+        for (const npc of npcList) {
+            if (!npc || !npc.name) {
+                continue;
+            }
+
+            const npcName = npc.name.trim();
+            if (!npcName) {
+                continue;
+            }
+
+            // Check for exact name match (case-insensitive)
+            // Use word boundaries to avoid partial matches (e.g., "Smith" shouldn't match "Blacksmith")
+            const pattern = new RegExp(`\\b${this._escapeRegex(npcName)}\\b`, 'i');
+
+            if (pattern.test(transcription)) {
+                mentionedNPCs.push(npcName);
+            }
+        }
+
+        console.log(`${MODULE_ID} | Found ${mentionedNPCs.length} NPC mentions: ${mentionedNPCs.join(', ')}`);
+
+        return mentionedNPCs;
+    }
+
+    /**
      * Builds the system prompt for the AI assistant
      * @returns {string} The system prompt
      * @private
@@ -679,6 +768,58 @@ Scrivi una breve narrazione (2-3 frasi) che il DM può usare per riportare delic
     }
 
     /**
+     * Builds messages for NPC dialogue generation
+     * @param {string} npcName - The name of the NPC
+     * @param {string} npcContext - NPC personality and backstory
+     * @param {string} transcription - Current conversation context
+     * @param {number} maxOptions - Maximum dialogue options to generate
+     * @param {string[]} [detectedLanguages=[]] - Detected languages in transcription
+     * @returns {Array<{role: string, content: string}>} The messages array
+     * @private
+     */
+    _buildNPCDialogueMessages(npcName, npcContext, transcription, maxOptions, detectedLanguages = []) {
+        const messages = [
+            { role: 'system', content: this._buildSystemPrompt() }
+        ];
+
+        // Add NPC context as system message
+        if (npcContext) {
+            messages.push({
+                role: 'system',
+                content: `PROFILO NPC - ${npcName}:\n${this._truncateContext(npcContext)}`
+            });
+        }
+
+        let requestContent = `Genera ${maxOptions} opzioni di dialogo per il personaggio "${npcName}" basandoti sul contesto della conversazione:
+
+"${transcription}"
+
+`;
+
+        // Add multi-language context if detected
+        if (detectedLanguages.length > 1) {
+            requestContent += `NOTA: Questa trascrizione contiene più lingue (${detectedLanguages.join(', ')}). Le etichette di lingua sono indicate tra parentesi.\n\n`;
+        } else if (detectedLanguages.length === 1) {
+            // Update primary language based on detected language
+            this._primaryLanguage = detectedLanguages[0];
+        }
+
+        requestContent += `Il personaggio deve rispondere in modo coerente con la sua personalità e il contesto.
+Rispondi in formato JSON:
+{
+  "dialogueOptions": [
+    "opzione dialogo 1",
+    "opzione dialogo 2",
+    "opzione dialogo 3"
+  ]
+}`;
+
+        messages.push({ role: 'user', content: requestContent });
+
+        return messages;
+    }
+
+    /**
      * Makes an API request to OpenAI Chat Completions
      * @param {Array<{role: string, content: string}>} messages - The messages to send
      * @returns {Promise<Object>} The API response
@@ -890,6 +1031,45 @@ Scrivi una breve narrazione (2-3 frasi) che il DM può usare per riportare delic
     }
 
     /**
+     * Parses the NPC dialogue response from the API
+     * @param {Object} response - The API response
+     * @param {number} maxOptions - Maximum dialogue options to return
+     * @returns {string[]} Array of dialogue strings
+     * @private
+     */
+    _parseNPCDialogueResponse(response, maxOptions) {
+        const content = response.choices?.[0]?.message?.content || '{}';
+
+        try {
+            const parsed = JSON.parse(this._extractJson(content));
+
+            // Validate and sanitize dialogue options array (max 5 items)
+            const validatedOptions = this._validateArray(
+                parsed.dialogueOptions,
+                5,
+                'dialogueOptions'
+            ).slice(0, maxOptions)
+                .map(option => this._validateString(option || '', 2000, 'dialogueOption'))
+                .filter(option => option.length > 0); // Remove empty options
+
+            return validatedOptions;
+
+        } catch (error) {
+            console.warn(`${MODULE_ID} | Failed to parse NPC dialogue response`);
+
+            // Apply validation even to fallback content
+            const sanitizedContent = this._validateString(content, 2000, 'fallback.dialogueOption');
+
+            // Return as single option if we got some content
+            if (sanitizedContent.length > 0) {
+                return [sanitizedContent];
+            }
+
+            return [];
+        }
+    }
+
+    /**
      * Extracts JSON from a string that might contain markdown code blocks
      * @param {string} content - The content to extract JSON from
      * @returns {string} The extracted JSON string
@@ -909,6 +1089,16 @@ Scrivi una breve narrazione (2-3 frasi) che il DM può usare per riportare delic
         }
 
         return content;
+    }
+
+    /**
+     * Escapes special regex characters in a string for safe use in RegExp
+     * @param {string} str - The string to escape
+     * @returns {string} The escaped string
+     * @private
+     */
+    _escapeRegex(str) {
+        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
     /**

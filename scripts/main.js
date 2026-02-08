@@ -527,6 +527,9 @@ class NarratorMaster {
                 }
             }
 
+            // Generate NPC dialogue suggestions
+            await this._generateNPCDialogue(text);
+
             return analysis;
 
         } catch (error) {
@@ -534,6 +537,120 @@ class NarratorMaster {
             // Don't show notification for analysis errors - not critical
             return null;
         }
+    }
+
+    /**
+     * Generates NPC dialogue suggestions based on transcription
+     * @param {string} transcription - Transcribed text to analyze for NPC mentions
+     * @private
+     */
+    async _generateNPCDialogue(transcription) {
+        if (!this.journalParser || !this.aiAssistant.isConfigured()) {
+            return;
+        }
+
+        try {
+            // Extract NPC profiles from all cached journals
+            const allNPCs = this._extractAllNPCProfiles();
+
+            if (allNPCs.length === 0) {
+                console.log(`${MODULE_ID} | No NPCs found in journals`);
+                return;
+            }
+
+            // Detect which NPCs are mentioned in the transcription
+            const mentionedNPCs = this.aiAssistant.detectNPCMentions(transcription, allNPCs);
+
+            if (mentionedNPCs.length === 0) {
+                console.log(`${MODULE_ID} | No NPCs mentioned in transcription`);
+                // Clear any existing NPC dialogue
+                if (this.panel) {
+                    this.panel.updateNPCDialogue({ npcDialogue: {} });
+                }
+                return;
+            }
+
+            console.log(`${MODULE_ID} | Generating dialogue for ${mentionedNPCs.length} mentioned NPC(s)`);
+
+            // Generate dialogue for each mentioned NPC
+            const npcDialogue = {};
+
+            for (const npcName of mentionedNPCs) {
+                // Find the NPC object to get journal context
+                const npc = allNPCs.find(n => n.name === npcName);
+                if (!npc || !npc.pages || npc.pages.length === 0) {
+                    continue;
+                }
+
+                // Get NPC context from first journal that mentions them
+                const journalId = npc.pages[0].journalId;
+                const npcContext = this.journalParser.getNPCContext(journalId, npcName);
+
+                if (!npcContext || npcContext.trim().length === 0) {
+                    console.warn(`${MODULE_ID} | No context found for NPC: ${npcName}`);
+                    continue;
+                }
+
+                // Generate dialogue options
+                try {
+                    const dialogueOptions = await this.aiAssistant.generateNPCDialogue(
+                        npcName,
+                        npcContext,
+                        transcription,
+                        { maxOptions: 3 }
+                    );
+
+                    if (dialogueOptions && dialogueOptions.length > 0) {
+                        npcDialogue[npcName] = dialogueOptions;
+                        console.log(`${MODULE_ID} | Generated ${dialogueOptions.length} dialogue options for ${npcName}`);
+                    }
+                } catch (dialogueError) {
+                    console.error(`${MODULE_ID} | Failed to generate dialogue for ${npcName}:`, dialogueError);
+                    // Continue with other NPCs even if one fails
+                }
+            }
+
+            // Update panel with NPC dialogue
+            if (this.panel && Object.keys(npcDialogue).length > 0) {
+                this.panel.updateNPCDialogue({ npcDialogue });
+            }
+
+        } catch (error) {
+            console.error(`${MODULE_ID} | NPC dialogue generation error:`, error);
+            // Don't show notification - not critical
+        }
+    }
+
+    /**
+     * Extracts NPC profiles from all cached journals
+     * @returns {Array} Array of NPC profile objects
+     * @private
+     */
+    _extractAllNPCProfiles() {
+        const allNPCs = [];
+        const npcNames = new Set();
+
+        // Iterate through all cached journals
+        for (const [journalId, cached] of this.journalParser._cachedContent) {
+            const npcProfiles = this.journalParser.extractNPCProfiles(journalId);
+
+            // Deduplicate NPCs by name (in case same NPC appears in multiple journals)
+            for (const npc of npcProfiles) {
+                if (!npcNames.has(npc.name)) {
+                    npcNames.add(npc.name);
+                    allNPCs.push(npc);
+                } else {
+                    // If NPC already exists, merge page references
+                    const existingNPC = allNPCs.find(n => n.name === npc.name);
+                    if (existingNPC && npc.pages) {
+                        existingNPC.pages = [...existingNPC.pages, ...npc.pages];
+                    }
+                }
+            }
+        }
+
+        console.log(`${MODULE_ID} | Extracted ${allNPCs.length} unique NPC profiles from journals`);
+        return allNPCs;
     }
 
     /**
