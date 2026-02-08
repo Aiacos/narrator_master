@@ -12,7 +12,100 @@ import { ImageGenerator } from './image-generator.js';
 import { JournalParser } from './journal-parser.js';
 import { NarratorPanel, RECORDING_STATE } from './ui-panel.js';
 import { SpeakerLabelService } from './speaker-labels.js';
-import { ErrorNotificationHelper } from './error-notification-helper.js';
+import { Logger } from './logger.js';
+
+/**
+ * Error notification types for different severity levels
+ * @constant {Object}
+ */
+const NOTIFICATION_TYPE = {
+    ERROR: 'error',
+    WARNING: 'warn',
+    INFO: 'info'
+};
+
+/**
+ * Centralized error notification helper
+ * Handles different error types and shows appropriate user notifications
+ */
+class ErrorNotificationHelper {
+    /**
+     * Shows an error notification to the user
+     * @param {Error|string} error - The error or message to display
+     * @param {Object} [options={}] - Notification options
+     * @param {string} [options.type='error'] - Notification type (error, warn, info)
+     * @param {boolean} [options.permanent=false] - Whether notification should be permanent
+     * @param {string} [options.context] - Additional context about where the error occurred
+     */
+    static notify(error, options = {}) {
+        const type = options.type || NOTIFICATION_TYPE.ERROR;
+        const message = error instanceof Error ? error.message : String(error);
+        const context = options.context ? `[${options.context}] ` : '';
+
+        // Log to console for debugging
+        if (type === NOTIFICATION_TYPE.ERROR) {
+            console.error(`${MODULE_ID} | ${context}${message}`, error);
+        } else if (type === NOTIFICATION_TYPE.WARNING) {
+            console.warn(`${MODULE_ID} | ${context}${message}`);
+        }
+
+        // Show user notification
+        if (typeof ui !== 'undefined' && ui.notifications) {
+            const notifyMethod = ui.notifications[type];
+            if (typeof notifyMethod === 'function') {
+                notifyMethod.call(ui.notifications, message, { permanent: options.permanent });
+            }
+        }
+    }
+
+    /**
+     * Shows an error notification
+     * @param {Error|string} error - The error to display
+     * @param {string} [context] - Additional context
+     */
+    static error(error, context) {
+        this.notify(error, { type: NOTIFICATION_TYPE.ERROR, context });
+    }
+
+    /**
+     * Shows a warning notification
+     * @param {string} message - The warning message
+     * @param {string} [context] - Additional context
+     */
+    static warn(message, context) {
+        this.notify(message, { type: NOTIFICATION_TYPE.WARNING, context });
+    }
+
+    /**
+     * Shows an info notification
+     * @param {string} message - The info message
+     */
+    static info(message) {
+        this.notify(message, { type: NOTIFICATION_TYPE.INFO });
+    }
+
+    /**
+     * Handles API-related errors with specific messaging
+     * @param {Error} error - The API error
+     * @param {string} operation - What operation failed (e.g., 'transcription', 'image generation')
+     */
+    static handleApiError(error, operation) {
+        // Check if it's a network error
+        if (error.isNetworkError) {
+            this.error(error.message, operation);
+            return;
+        }
+
+        // Check for rate limiting
+        if (error.message?.includes('rate') || error.message?.includes('limite')) {
+            this.warn(error.message, operation);
+            return;
+        }
+
+        // Default error handling
+        this.error(error, operation);
+    }
+}
 
 /**
  * NarratorMaster - Main controller class that orchestrates all module components
@@ -106,11 +199,15 @@ class NarratorMaster {
      */
     async initialize() {
         if (this._initialized) {
-            console.warn(`${MODULE_ID} | Module already initialized`);
+            Logger.warn('Module already initialized', 'NarratorMaster');
             return;
         }
 
-        console.log(`${MODULE_ID} | Initializing NarratorMaster controller`);
+        Logger.info('Initializing NarratorMaster controller', 'NarratorMaster');
+
+        // Initialize Logger debug mode from settings
+        const debugMode = this.settings.getDebugMode();
+        Logger.setDebugMode(debugMode);
 
         try {
             // Get API key from settings
@@ -134,15 +231,16 @@ class NarratorMaster {
             // Validate configuration
             const validation = this.settings.validateConfiguration();
             if (!validation.valid) {
-                console.warn(`${MODULE_ID} | Configuration incomplete:`, validation.errors);
+                Logger.warn('Configuration incomplete', 'NarratorMaster', validation.errors);
                 this._showConfigurationWarning(validation.errors);
             }
 
             // Mark as initialized
             this._initialized = true;
-            console.log(`${MODULE_ID} | NarratorMaster initialized successfully`);
+            Logger.info('NarratorMaster initialized successfully', 'NarratorMaster');
+
         } catch (error) {
-            console.error(`${MODULE_ID} | Failed to initialize NarratorMaster:`, error);
+            Logger.error(error, 'NarratorMaster.initialize');
             this._showErrorNotification(error.message);
         }
     }
@@ -153,7 +251,7 @@ class NarratorMaster {
      * @private
      */
     _initializeServices(apiKey) {
-        console.log(`${MODULE_ID} | Initializing services`);
+        Logger.info('Initializing services', 'NarratorMaster');
 
         // Initialize Journal Parser (no API key needed)
         this.journalParser = new JournalParser();
@@ -188,7 +286,7 @@ class NarratorMaster {
             autoCacheImages: true
         });
 
-        console.log(`${MODULE_ID} | Services initialized`);
+        Logger.info('Services initialized', 'NarratorMaster');
     }
 
     /**
@@ -226,7 +324,7 @@ class NarratorMaster {
      * @private
      */
     _initializePanel() {
-        console.log(`${MODULE_ID} | Initializing UI panel`);
+        Logger.info('Initializing UI panel', 'NarratorMaster');
 
         this.panel = new NarratorPanel();
 
@@ -239,7 +337,7 @@ class NarratorMaster {
             this.panel.setSpeakerLabelService(this.speakerLabelService);
         }
 
-        console.log(`${MODULE_ID} | UI panel initialized`);
+        Logger.info('UI panel initialized', 'NarratorMaster');
     }
 
     /**
@@ -261,11 +359,10 @@ class NarratorMaster {
                 });
             }
 
-            console.log(
-                `${MODULE_ID} | Loaded ${parsedJournals.length} journals, ${context.length} chars context`
-            );
+            Logger.info(`Loaded ${parsedJournals.length} journals, ${context.length} chars context`, 'JournalLoader');
+
         } catch (error) {
-            console.warn(`${MODULE_ID} | Failed to load journals:`, error);
+            Logger.warn('Failed to load journals', 'JournalLoader', error);
         }
     }
 
@@ -287,7 +384,7 @@ class NarratorMaster {
      * @private
      */
     _onAudioStateChange(state) {
-        console.log(`${MODULE_ID} | Audio state changed: ${state}`);
+        Logger.debug(`Audio state changed: ${state}`, 'AudioCapture');
 
         if (!this.panel) return;
 
@@ -346,7 +443,7 @@ class NarratorMaster {
 
         // Skip if too small (likely silence)
         if (audioBlob.size < 1000) {
-            console.log(`${MODULE_ID} | Audio chunk too small, skipping`);
+            Logger.debug('Audio chunk too small, skipping', 'AudioProcessor');
             return;
         }
 
@@ -356,7 +453,7 @@ class NarratorMaster {
 
             // Skip if no text was transcribed
             if (!transcription.text || transcription.text.trim().length === 0) {
-                console.log(`${MODULE_ID} | No text transcribed`);
+                Logger.debug('No text transcribed', 'TranscriptionProcessor');
                 return;
             }
 
@@ -376,6 +473,7 @@ class NarratorMaster {
 
             // Analyze transcription with AI (results shown to user)
             await this._analyzeTranscription(labeledText);
+
         } catch (error) {
             this._handleServiceError(error, 'Transcription');
         }
@@ -388,7 +486,7 @@ class NarratorMaster {
      */
     async _analyzeTranscription(text) {
         if (!this.aiAssistant.isConfigured()) {
-            console.warn(`${MODULE_ID} | AI assistant not configured`);
+            Logger.warn('AI assistant not configured', 'AIAnalysis');
             return;
         }
 
@@ -397,7 +495,7 @@ class NarratorMaster {
 
             if (this.panel) {
                 // Update suggestions
-                const suggestionTexts = analysis.suggestions.map((s) => s.content);
+                const suggestionTexts = analysis.suggestions.map(s => s.content);
                 this.panel.updateContent({
                     suggestions: suggestionTexts,
                     offTrack: analysis.offTrackStatus.isOffTrack,
@@ -407,13 +505,12 @@ class NarratorMaster {
 
                 // Show notification if off-track
                 if (analysis.offTrackStatus.isOffTrack && analysis.offTrackStatus.severity > 0.5) {
-                    ui.notifications.warn(
-                        game.i18n.localize('NARRATOR.Notifications.PlayersOffTrack')
-                    );
+                    ui.notifications.warn(game.i18n.localize('NARRATOR.Notifications.PlayersOffTrack'));
                 }
             }
+
         } catch (error) {
-            console.error(`${MODULE_ID} | AI analysis error:`, error);
+            Logger.error(error, 'AIAnalysis');
             // Don't show notification for analysis errors - not critical
         }
     }
@@ -469,7 +566,7 @@ class NarratorMaster {
      * @private
      */
     async _handleRecordingControl(action) {
-        console.log(`${MODULE_ID} | Recording control: ${action}`);
+        Logger.debug(`Recording control: ${action}`, 'RecordingControl');
 
         try {
             switch (action) {
@@ -528,6 +625,7 @@ class NarratorMaster {
                 // Final AI analysis
                 await this._analyzeTranscription(labeledText);
             }
+
         } catch (error) {
             this._handleServiceError(error, 'Final Audio Processing');
         } finally {
@@ -543,22 +641,16 @@ class NarratorMaster {
      */
     _formatTranscriptionWithLabels(transcription) {
         // If no segments available, fall back to plain text
-        if (
-            !transcription.segments ||
-            !Array.isArray(transcription.segments) ||
-            transcription.segments.length === 0
-        ) {
+        if (!transcription.segments || !Array.isArray(transcription.segments) || transcription.segments.length === 0) {
             return transcription.text;
         }
 
         // Apply custom speaker labels to segments
-        const labeledSegments = this.speakerLabelService.applyLabelsToSegments(
-            transcription.segments
-        );
+        const labeledSegments = this.speakerLabelService.applyLabelsToSegments(transcription.segments);
 
         // Format segments into speaker-aware text
         const formattedText = labeledSegments
-            .map((segment) => {
+            .map(segment => {
                 const speaker = segment.speaker || 'Unknown';
                 const text = segment.text || '';
                 return `${speaker}: ${text}`;
@@ -575,7 +667,7 @@ class NarratorMaster {
      * @private
      */
     async _handleGenerateImage(context) {
-        console.log(`${MODULE_ID} | Generating image from context`);
+        Logger.debug('Generating image from context', 'ImageGeneration');
 
         if (!this.imageGenerator.isConfigured()) {
             ui.notifications.error(game.i18n.localize('NARRATOR.Errors.NoApiKey'));
@@ -594,10 +686,9 @@ class NarratorMaster {
                     prompt: result.prompt
                 });
 
-                ErrorNotificationHelper.info(
-                    game.i18n.localize('NARRATOR.Notifications.ImageGenerated')
-                );
+                ErrorNotificationHelper.info(game.i18n.localize('NARRATOR.Notifications.ImageGenerated'));
             }
+
         } catch (error) {
             this._handleServiceError(error, 'Image Generation');
         }
@@ -609,7 +700,7 @@ class NarratorMaster {
      * @param {string} newApiKey - The new API key
      */
     updateApiKey(newApiKey) {
-        console.log(`${MODULE_ID} | API key updated`);
+        Logger.info('API key updated', 'NarratorMaster');
 
         if (newApiKey && newApiKey.trim().length > 0) {
             // Update all API-dependent services
@@ -617,12 +708,10 @@ class NarratorMaster {
             this.aiAssistant?.setApiKey(newApiKey);
             this.imageGenerator?.setApiKey(newApiKey);
 
-            console.log(`${MODULE_ID} | Services updated with new API key`);
-            ErrorNotificationHelper.info(
-                game.i18n.localize('NARRATOR.Notifications.ApiKeyUpdated')
-            );
+            Logger.info('Services updated with new API key', 'NarratorMaster');
+            ErrorNotificationHelper.info(game.i18n.localize('NARRATOR.Notifications.ApiKeyUpdated'));
         } else {
-            console.warn(`${MODULE_ID} | API key cleared`);
+            Logger.warn('API key cleared', 'NarratorMaster');
         }
 
         // Update panel to reflect configuration status
@@ -715,7 +804,7 @@ class NarratorMaster {
         if (this.panel) {
             this.panel.render(true);
         } else {
-            console.warn(`${MODULE_ID} | Panel not yet initialized`);
+            Logger.warn('Panel not yet initialized', 'NarratorMaster');
         }
     }
 
@@ -772,7 +861,7 @@ class NarratorMaster {
      * Cleans up resources when module is disabled
      */
     destroy() {
-        console.log(`${MODULE_ID} | Cleaning up NarratorMaster`);
+        Logger.info('Cleaning up NarratorMaster', 'NarratorMaster');
 
         // Stop audio capture
         if (this.audioCapture) {
@@ -797,16 +886,18 @@ class NarratorMaster {
  * Called early in the Foundry VTT loading process
  * Used for registering settings and loading templates
  */
-Hooks.once('init', async function () {
-    console.log(`${MODULE_ID} | Initializing module`);
+Hooks.once('init', async function() {
+    Logger.info('Initializing module', 'Hooks.init');
 
     // Register module settings
     registerSettings();
 
     // Load Handlebars templates
-    await loadTemplates([`modules/${MODULE_ID}/templates/panel.hbs`]);
+    await loadTemplates([
+        `modules/${MODULE_ID}/templates/panel.hbs`
+    ]);
 
-    console.log(`${MODULE_ID} | Module initialized`);
+    Logger.info('Module initialized', 'Hooks.init');
 });
 
 /**
@@ -814,25 +905,22 @@ Hooks.once('init', async function () {
  * Called when the game is fully ready
  * Used for creating module instances and GM-only features
  */
-Hooks.once('ready', async function () {
-    console.log(`${MODULE_ID} | Module ready`);
+Hooks.once('ready', async function() {
+    Logger.info('Module ready', 'Hooks.ready');
 
     // Only initialize for GM users - this is a DM-only tool
     if (game.user.isGM) {
-        console.log(`${MODULE_ID} | User is GM, initializing NarratorMaster`);
+        Logger.info('User is GM, initializing NarratorMaster', 'Hooks.ready');
 
         // Create and store global instance for debugging and external access
         window.narratorMaster = new NarratorMaster();
         await window.narratorMaster.initialize();
 
         // Register keyboard shortcuts for recording controls
-        document.addEventListener(
-            'keydown',
-            window.narratorMaster._handleKeyboardShortcuts.bind(window.narratorMaster)
-        );
-        console.log(`${MODULE_ID} | Keyboard shortcuts registered (Ctrl+Shift+R/S/P)`);
+        document.addEventListener('keydown', window.narratorMaster._handleKeyboardShortcuts.bind(window.narratorMaster));
+        Logger.info('Keyboard shortcuts registered (Ctrl+Shift+R/S/P)', 'Hooks.ready');
     } else {
-        console.log(`${MODULE_ID} | User is not GM, skipping initialization`);
+        Logger.info('User is not GM, skipping initialization', 'Hooks.ready');
     }
 });
 
@@ -865,7 +953,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
                     }
                 }
             },
-            settings: {
+            'settings': {
                 name: 'settings',
                 title: game.i18n.localize('NARRATOR.Panel.OpenSettings'),
                 icon: 'fas fa-cog',
@@ -884,7 +972,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
         }
     };
 
-    console.log(`${MODULE_ID} | Scene control buttons registered`);
+    Logger.debug('Scene control buttons registered', 'Hooks.getSceneControlButtons');
 });
 
 // Export for external use and testing

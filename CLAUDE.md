@@ -368,7 +368,57 @@ Checks that all language files have the same keys as `it.json` (the primary/most
 - **Constants**: UPPER_SNAKE_CASE
 - **Classes**: PascalCase
 - **Functions/methods**: camelCase
-- **No console.log in production**: Use `console.warn`/`console.error` for important messages only
+
+### Logging Guidelines
+
+**IMPORTANT**: Use the centralized `Logger` utility instead of direct `console.*` calls:
+
+```javascript
+import { Logger } from './logger.js';
+
+// Debug messages (only shown when debug mode is enabled)
+Logger.debug('Detailed diagnostic info', 'AudioCapture', audioData);
+Logger.debug('Processing segment', 'TranscriptionService');
+
+// Info messages (important runtime information)
+Logger.info('Recording started', 'AudioCapture');
+Logger.info('Module initialized', 'NarratorMaster');
+
+// Warning messages (potentially problematic situations)
+Logger.warn('API rate limit approaching', 'TranscriptionService');
+Logger.warn('Using fallback configuration', 'SettingsManager');
+
+// Error messages (failures requiring attention)
+Logger.error(new Error('Connection failed'), 'AIAssistant');
+Logger.error('Invalid API key format', 'TranscriptionService');
+```
+
+**When to use each log level**:
+- `Logger.debug()` - Detailed diagnostic information, internal state, variable values (only shown in debug mode)
+- `Logger.info()` - Important runtime events, initialization, completion notifications (always visible)
+- `Logger.warn()` - Deprecated usage, rate limiting, fallback behavior, recoverable errors (always visible)
+- `Logger.error()` - Exceptions, failures requiring attention, unrecoverable errors (always visible)
+
+**Debug mode**:
+```javascript
+// Enable debug mode for detailed diagnostic output
+Logger.enableDebugMode();
+
+// Check debug state
+if (Logger.isDebugMode()) {
+    // Conditionally execute debug-only logic
+}
+
+// Disable debug mode
+Logger.disableDebugMode();
+```
+
+**Best practices**:
+- Always provide a context parameter (class name, operation name) for easier log filtering
+- Use the optional `data` parameter for complex objects/arrays
+- Never use direct `console.log()` - ESLint will flag it
+- Debug messages are automatically suppressed in production unless explicitly enabled
+- Logger uses `console.warn` for debug/info/warn and `console.error` for errors to comply with ESLint rules
 
 ## File Modification Guidelines
 

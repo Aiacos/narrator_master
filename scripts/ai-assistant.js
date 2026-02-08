@@ -6,6 +6,7 @@
 
 import { MODULE_ID, SETTINGS } from './settings.js';
 import { SceneDetector } from './scene-detector.js';
+import { OpenAIServiceBase } from './openai-service-base.js';
 
 /**
  * Default model for cost-effective suggestions
@@ -65,7 +66,7 @@ const MAX_CONTEXT_TOKENS = 8000;
  * AIAssistant - Handles AI-powered suggestions and off-track detection for the DM
  * Uses OpenAI GPT-4o-mini for cost-effective real-time assistance
  */
-export class AIAssistant {
+export class AIAssistant extends OpenAIServiceBase {
     /**
      * Creates a new AIAssistant instance
      * @param {string} apiKey - The OpenAI API key
@@ -74,19 +75,8 @@ export class AIAssistant {
      * @param {string} [options.sensitivity='medium'] - Off-track detection sensitivity
      */
     constructor(apiKey, options = {}) {
-        /**
-         * OpenAI API key
-         * @type {string}
-         * @private
-         */
-        this._apiKey = apiKey || '';
-
-        /**
-         * Base URL for OpenAI API
-         * @type {string}
-         * @private
-         */
-        this._baseUrl = 'https://api.openai.com/v1';
+        // Call parent constructor
+        super(apiKey, options);
 
         /**
          * Model to use for chat completions
@@ -154,22 +144,6 @@ export class AIAssistant {
          * @private
          */
         this._previousTranscription = '';
-    }
-
-    /**
-     * Updates the API key
-     * @param {string} apiKey - The new API key
-     */
-    setApiKey(apiKey) {
-        this._apiKey = apiKey || '';
-    }
-
-    /**
-     * Checks if the API key is configured
-     * @returns {boolean} True if API key is set
-     */
-    isConfigured() {
-        return this._apiKey && this._apiKey.trim().length > 0;
     }
 
     /**
@@ -276,9 +250,7 @@ export class AIAssistant {
         const checkOffTrack = options.checkOffTrack !== false;
         const detectRules = options.detectRules !== false;
 
-        console.log(
-            `${MODULE_ID} | Analyzing context, transcription length: ${transcription.length}`
-        );
+        console.log(`${MODULE_ID} | Analyzing context, transcription length: ${transcription.length}`);
 
         // Detect languages in transcription
         const detectedLanguages = this._detectLanguagesInTranscription(transcription);
@@ -288,20 +260,13 @@ export class AIAssistant {
         if (detectRules) {
             rulesDetection = this._detectRulesQuestions(transcription);
             if (rulesDetection.hasRulesQuestions) {
-                console.log(
-                    `${MODULE_ID} | Detected ${rulesDetection.questions.length} rules question(s)`
-                );
+                console.log(`${MODULE_ID} | Detected ${rulesDetection.questions.length} rules question(s)`);
             }
         }
 
         try {
             // Build the analysis prompt
-            const messages = this._buildAnalysisMessages(
-                transcription,
-                includeSuggestions,
-                checkOffTrack,
-                detectedLanguages
-            );
+            const messages = this._buildAnalysisMessages(transcription, includeSuggestions, checkOffTrack, detectedLanguages);
 
             // Make API request
             const response = await this._makeApiRequest(messages);
@@ -321,9 +286,7 @@ export class AIAssistant {
 
             this._sessionState.suggestionsCount++;
 
-            console.log(
-                `${MODULE_ID} | Analysis complete, ${analysis.suggestions.length} suggestions`
-            );
+            console.log(`${MODULE_ID} | Analysis complete, ${analysis.suggestions.length} suggestions`);
 
             // Store current transcription for next comparison
             this._previousTranscription = transcription;
@@ -333,9 +296,10 @@ export class AIAssistant {
                 ...analysis,
                 sceneInfo
             };
+
         } catch (error) {
             if (error.status) {
-                throw this._handleApiError(error);
+                throw this._handleApiError(error, 'AI Assistant');
             }
             throw error;
         }
@@ -373,9 +337,10 @@ export class AIAssistant {
             this._sessionState.lastOffTrackCheck = new Date();
 
             return result;
+
         } catch (error) {
             if (error.status) {
-                throw this._handleApiError(error);
+                throw this._handleApiError(error, 'AI Assistant');
             }
             throw error;
         }
@@ -402,18 +367,15 @@ export class AIAssistant {
         const detectedLanguages = this._detectLanguagesInTranscription(transcription);
 
         try {
-            const messages = this._buildSuggestionMessages(
-                transcription,
-                maxSuggestions,
-                detectedLanguages
-            );
+            const messages = this._buildSuggestionMessages(transcription, maxSuggestions, detectedLanguages);
             const response = await this._makeApiRequest(messages);
             const suggestions = this._parseSuggestionsResponse(response, maxSuggestions);
 
             return suggestions;
+
         } catch (error) {
             if (error.status) {
-                throw this._handleApiError(error);
+                throw this._handleApiError(error, 'AI Assistant');
             }
             throw error;
         }
@@ -439,9 +401,10 @@ export class AIAssistant {
             // Extract the narrative from response
             const content = response.choices?.[0]?.message?.content || '';
             return content.trim();
+
         } catch (error) {
             if (error.status) {
-                throw this._handleApiError(error);
+                throw this._handleApiError(error, 'AI Assistant');
             }
             throw error;
         }
@@ -473,20 +436,15 @@ export class AIAssistant {
         const detectedLanguages = this._detectLanguagesInTranscription(transcription);
 
         try {
-            const messages = this._buildNPCDialogueMessages(
-                npcName,
-                npcContext,
-                transcription,
-                maxOptions,
-                detectedLanguages
-            );
+            const messages = this._buildNPCDialogueMessages(npcName, npcContext, transcription, maxOptions, detectedLanguages);
             const response = await this._makeApiRequest(messages);
             const dialogueOptions = this._parseNPCDialogueResponse(response, maxOptions);
 
             return dialogueOptions;
+
         } catch (error) {
             if (error.status) {
-                throw this._handleApiError(error);
+                throw this._handleApiError(error, 'AI Assistant');
             }
             throw error;
         }
@@ -509,9 +467,7 @@ export class AIAssistant {
             return [];
         }
 
-        console.log(
-            `${MODULE_ID} | Detecting NPC mentions in transcription (${npcList.length} NPCs to check)`
-        );
+        console.log(`${MODULE_ID} | Detecting NPC mentions in transcription (${npcList.length} NPCs to check)`);
 
         // Normalize transcription for case-insensitive matching
         const normalizedTranscription = transcription.toLowerCase();
@@ -538,9 +494,7 @@ export class AIAssistant {
             }
         }
 
-        console.log(
-            `${MODULE_ID} | Found ${mentionedNPCs.length} NPC mentions: ${mentionedNPCs.join(', ')}`
-        );
+        console.log(`${MODULE_ID} | Found ${mentionedNPCs.length} NPC mentions: ${mentionedNPCs.join(', ')}`);
 
         return mentionedNPCs;
     }
@@ -567,68 +521,36 @@ export class AIAssistant {
         // Question patterns (both English and Italian)
         const questionPatterns = [
             // English patterns
-            {
-                regex: /(?:how does|how do|what is the rule for|what are the rules for)\s+([a-z\s]+?)(?:\s+work|\?|$)/gi,
-                confidence: 0.9,
-                type: 'mechanic'
-            },
-            {
-                regex: /(?:can i|can you|am i able to|is it possible to)\s+([a-z\s]+?)(?:\?|$)/gi,
-                confidence: 0.7,
-                type: 'action'
-            },
-            {
-                regex: /(?:what happens when|what happens if)\s+([a-z\s]+?)(?:\?|$)/gi,
-                confidence: 0.8,
-                type: 'mechanic'
-            },
+            { regex: /(?:how does|how do|what is the rule for|what are the rules for)\s+([a-z\s]+?)(?:\s+work|\?|$)/gi, confidence: 0.9, type: 'mechanic' },
+            { regex: /(?:can i|can you|am i able to|is it possible to)\s+([a-z\s]+?)(?:\?|$)/gi, confidence: 0.7, type: 'action' },
+            { regex: /(?:what happens when|what happens if)\s+([a-z\s]+?)(?:\?|$)/gi, confidence: 0.8, type: 'mechanic' },
 
             // Italian patterns
-            {
-                regex: /(?:come funziona|come funzionano|qual è la regola per|quali sono le regole per)\s+([a-z\s]+?)(?:\?|$)/gi,
-                confidence: 0.9,
-                type: 'mechanic'
-            },
-            {
-                regex: /(?:posso|possiamo|è possibile|si può)\s+([a-z\s]+?)(?:\?|$)/gi,
-                confidence: 0.7,
-                type: 'action'
-            },
-            {
-                regex: /(?:cosa succede quando|cosa succede se|che succede se)\s+([a-z\s]+?)(?:\?|$)/gi,
-                confidence: 0.8,
-                type: 'mechanic'
-            },
-            {
-                regex: /(?:quanto costa|quanti slot|quante azioni)\s+([a-z\s]+?)(?:\?|$)/gi,
-                confidence: 0.8,
-                type: 'spell'
-            },
-            {
-                regex: /\b(?:regola|regole|meccanica|meccaniche|rule|rules|mechanic|mechanics)\b/gi,
-                confidence: 0.6,
-                type: 'general'
-            }
+            { regex: /(?:come funziona|come funzionano|qual è la regola per|quali sono le regole per)\s+([a-z\s]+?)(?:\?|$)/gi, confidence: 0.9, type: 'mechanic' },
+            { regex: /(?:posso|possiamo|è possibile|si può)\s+([a-z\s]+?)(?:\?|$)/gi, confidence: 0.7, type: 'action' },
+            { regex: /(?:cosa succede quando|cosa succede se|che succede se)\s+([a-z\s]+?)(?:\?|$)/gi, confidence: 0.8, type: 'mechanic' },
+            { regex: /(?:quanto costa|quanti slot|quante azioni)\s+([a-z\s]+?)(?:\?|$)/gi, confidence: 0.8, type: 'spell' },
+            { regex: /\b(?:regola|regole|meccanica|meccaniche|rule|rules|mechanic|mechanics)\b/gi, confidence: 0.6, type: 'general' }
         ];
 
         // Known D&D mechanic terms
         const mechanicTerms = {
-            grappling: 'combat',
-            lotta: 'combat',
+            'grappling': 'combat',
+            'lotta': 'combat',
             'opportunity attack': 'combat',
             'attacco di opportunità': 'combat',
-            advantage: 'combat',
-            vantaggio: 'combat',
-            disadvantage: 'combat',
-            svantaggio: 'combat',
-            concentration: 'spell',
-            concentrazione: 'spell',
+            'advantage': 'combat',
+            'vantaggio': 'combat',
+            'disadvantage': 'combat',
+            'svantaggio': 'combat',
+            'concentration': 'spell',
+            'concentrazione': 'spell',
             'spell slot': 'spell',
             'slot incantesimo': 'spell',
-            prone: 'condition',
-            prono: 'condition',
-            stunned: 'condition',
-            stordito: 'condition',
+            'prone': 'condition',
+            'prono': 'condition',
+            'stunned': 'condition',
+            'stordito': 'condition',
             'saving throw': 'ability',
             'tiro salvezza': 'ability',
             'short rest': 'rest',
@@ -659,7 +581,7 @@ export class AIAssistant {
                 if (pattern.confidence > 0.5 || detectedTerms.length > 0) {
                     questions.push({
                         text: match[0],
-                        confidence: Math.min(pattern.confidence + detectedTerms.length * 0.1, 1.0),
+                        confidence: Math.min(pattern.confidence + (detectedTerms.length * 0.1), 1.0),
                         type: category,
                         extractedTopic,
                         detectedTerms
@@ -672,8 +594,8 @@ export class AIAssistant {
         for (const [term, category] of Object.entries(mechanicTerms)) {
             if (normalizedText.includes(term) && this._hasQuestionWord(normalizedText)) {
                 // Check if we already detected this
-                const alreadyDetected = questions.some(
-                    (q) => q.extractedTopic && q.extractedTopic.includes(term)
+                const alreadyDetected = questions.some(q =>
+                    q.extractedTopic && q.extractedTopic.includes(term)
                 );
 
                 if (!alreadyDetected) {
@@ -703,38 +625,14 @@ export class AIAssistant {
     _hasQuestionWord(text) {
         const questionWords = [
             // English
-            'how',
-            'what',
-            'when',
-            'where',
-            'why',
-            'who',
-            'can',
-            'does',
-            'do',
-            'is',
-            'are',
+            'how', 'what', 'when', 'where', 'why', 'who', 'can', 'does', 'do', 'is', 'are',
             // Italian
-            'come',
-            'cosa',
-            'quando',
-            'dove',
-            'perché',
-            'chi',
-            'posso',
-            'può',
-            'puoi',
-            'è',
-            'sono',
-            'qual',
-            'quale',
-            'quanti',
-            'quante',
-            'quanto'
+            'come', 'cosa', 'quando', 'dove', 'perché', 'chi', 'posso', 'può', 'puoi',
+            'è', 'sono', 'qual', 'quale', 'quanti', 'quante', 'quanto'
         ];
 
         const words = text.split(/\s+/);
-        return words.some((word) => questionWords.includes(word));
+        return words.some(word => questionWords.includes(word));
     }
 
     /**
@@ -745,33 +643,33 @@ export class AIAssistant {
     _buildSystemPrompt() {
         const sensitivityGuide = {
             low: 'Sii tollerante con le deviazioni minori, segnala solo quando i giocatori si allontanano completamente dalla storia.',
-            medium: "Bilancia la tolleranza per l'improvvisazione con l'aderenza alla trama principale.",
+            medium: 'Bilancia la tolleranza per l\'improvvisazione con l\'aderenza alla trama principale.',
             high: 'Monitora attentamente ogni deviazione dalla trama e segnala anche variazioni minori.'
         };
 
         // Map language codes to language names for instructions
         const languageNames = {
-            it: 'italiano',
-            en: 'inglese',
-            de: 'tedesco',
-            fr: 'francese',
-            es: 'spagnolo',
-            pt: 'portoghese',
-            pl: 'polacco',
-            ru: 'russo',
-            ja: 'giapponese',
-            ko: 'coreano',
-            zh: 'cinese',
-            ar: 'arabo',
-            nl: 'olandese',
-            sv: 'svedese',
-            da: 'danese',
-            no: 'norvegese',
-            fi: 'finlandese',
-            tr: 'turco',
-            cs: 'ceco',
-            hu: 'ungherese',
-            ro: 'rumeno'
+            'it': 'italiano',
+            'en': 'inglese',
+            'de': 'tedesco',
+            'fr': 'francese',
+            'es': 'spagnolo',
+            'pt': 'portoghese',
+            'pl': 'polacco',
+            'ru': 'russo',
+            'ja': 'giapponese',
+            'ko': 'coreano',
+            'zh': 'cinese',
+            'ar': 'arabo',
+            'nl': 'olandese',
+            'sv': 'svedese',
+            'da': 'danese',
+            'no': 'norvegese',
+            'fi': 'finlandese',
+            'tr': 'turco',
+            'cs': 'ceco',
+            'hu': 'ungherese',
+            'ro': 'rumeno'
         };
 
         const responseLang = languageNames[this._primaryLanguage] || languageNames['it'];
@@ -819,13 +717,10 @@ Quando i giocatori sono fuori tema, suggerisci modi creativi per riportarli nell
      * @returns {Array<{role: string, content: string}>} The messages array
      * @private
      */
-    _buildAnalysisMessages(
-        transcription,
-        includeSuggestions,
-        checkOffTrack,
-        detectedLanguages = []
-    ) {
-        const messages = [{ role: 'system', content: this._buildSystemPrompt() }];
+    _buildAnalysisMessages(transcription, includeSuggestions, checkOffTrack, detectedLanguages = []) {
+        const messages = [
+            { role: 'system', content: this._buildSystemPrompt() }
+        ];
 
         // Add adventure context if available
         if (this._adventureContext) {
@@ -886,7 +781,9 @@ Quando i giocatori sono fuori tema, suggerisci modi creativi per riportarli nell
      * @private
      */
     _buildOffTrackMessages(transcription, detectedLanguages = []) {
-        const messages = [{ role: 'system', content: this._buildSystemPrompt() }];
+        const messages = [
+            { role: 'system', content: this._buildSystemPrompt() }
+        ];
 
         if (this._adventureContext) {
             messages.push({
@@ -931,7 +828,9 @@ Quando i giocatori sono fuori tema, suggerisci modi creativi per riportarli nell
      * @private
      */
     _buildSuggestionMessages(transcription, maxSuggestions, detectedLanguages = []) {
-        const messages = [{ role: 'system', content: this._buildSystemPrompt() }];
+        const messages = [
+            { role: 'system', content: this._buildSystemPrompt() }
+        ];
 
         if (this._adventureContext) {
             messages.push({
@@ -979,7 +878,9 @@ Quando i giocatori sono fuori tema, suggerisci modi creativi per riportarli nell
      * @private
      */
     _buildNarrativeBridgeMessages(currentSituation, targetScene) {
-        const messages = [{ role: 'system', content: this._buildSystemPrompt() }];
+        const messages = [
+            { role: 'system', content: this._buildSystemPrompt() }
+        ];
 
         if (this._adventureContext) {
             messages.push({
@@ -1011,14 +912,10 @@ Scrivi una breve narrazione (2-3 frasi) che il DM può usare per riportare delic
      * @returns {Array<{role: string, content: string}>} The messages array
      * @private
      */
-    _buildNPCDialogueMessages(
-        npcName,
-        npcContext,
-        transcription,
-        maxOptions,
-        detectedLanguages = []
-    ) {
-        const messages = [{ role: 'system', content: this._buildSystemPrompt() }];
+    _buildNPCDialogueMessages(npcName, npcContext, transcription, maxOptions, detectedLanguages = []) {
+        const messages = [
+            { role: 'system', content: this._buildSystemPrompt() }
+        ];
 
         // Add NPC context as system message
         if (npcContext) {
@@ -1070,7 +967,7 @@ Rispondi in formato JSON:
             response = await fetch(`${this._baseUrl}/chat/completions`, {
                 method: 'POST',
                 headers: {
-                    Authorization: `Bearer ${this._apiKey}`,
+                    'Authorization': `Bearer ${this._apiKey}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -1099,33 +996,6 @@ Rispondi in formato JSON:
     }
 
     /**
-     * Creates a user-friendly error for network failures
-     * @param {Error} networkError - The original network error
-     * @returns {Object} Error object with status and message
-     * @private
-     */
-    _createNetworkError(networkError) {
-        const isTimeout =
-            networkError.name === 'AbortError' || networkError.message?.includes('timeout');
-
-        if (isTimeout) {
-            return {
-                message: game.i18n.localize('NARRATOR.Errors.Timeout'),
-                code: 'timeout',
-                status: 0,
-                isNetworkError: true
-            };
-        }
-
-        return {
-            message: game.i18n.localize('NARRATOR.Errors.NetworkError'),
-            code: 'network_error',
-            status: 0,
-            isNetworkError: true
-        };
-    }
-
-    /**
      * Parses the analysis response from the API
      * @param {Object} response - The API response
      * @returns {ContextAnalysis} The parsed analysis
@@ -1143,43 +1013,26 @@ Rispondi in formato JSON:
                 parsed.suggestions,
                 10,
                 'suggestions'
-            ).map((s) => ({
+            ).map(s => ({
                 type: s.type || 'narration',
                 content: this._validateString(s.content || '', 5000, 'suggestion.content'),
-                pageReference: s.pageReference
-                    ? this._validateString(s.pageReference, 200, 'suggestion.pageReference')
-                    : undefined,
+                pageReference: s.pageReference ? this._validateString(s.pageReference, 200, 'suggestion.pageReference') : undefined,
                 confidence: this._validateNumber(s.confidence, 0, 1, 'suggestion.confidence')
             }));
 
             // Validate and sanitize offTrackStatus
-            const offTrackStatus = parsed.offTrackStatus
-                ? {
-                      isOffTrack: Boolean(parsed.offTrackStatus.isOffTrack),
-                      severity: this._validateNumber(
-                          parsed.offTrackStatus.severity,
-                          0,
-                          1,
-                          'offTrackStatus.severity'
-                      ),
-                      reason: this._validateString(
-                          parsed.offTrackStatus.reason || '',
-                          1000,
-                          'offTrackStatus.reason'
-                      ),
-                      narrativeBridge: parsed.offTrackStatus.narrativeBridge
-                          ? this._validateString(
-                                parsed.offTrackStatus.narrativeBridge,
-                                2000,
-                                'offTrackStatus.narrativeBridge'
-                            )
-                          : undefined
-                  }
-                : {
-                      isOffTrack: false,
-                      severity: 0,
-                      reason: ''
-                  };
+            const offTrackStatus = parsed.offTrackStatus ? {
+                isOffTrack: Boolean(parsed.offTrackStatus.isOffTrack),
+                severity: this._validateNumber(parsed.offTrackStatus.severity, 0, 1, 'offTrackStatus.severity'),
+                reason: this._validateString(parsed.offTrackStatus.reason || '', 1000, 'offTrackStatus.reason'),
+                narrativeBridge: parsed.offTrackStatus.narrativeBridge ?
+                    this._validateString(parsed.offTrackStatus.narrativeBridge, 2000, 'offTrackStatus.narrativeBridge') :
+                    undefined
+            } : {
+                isOffTrack: false,
+                severity: 0,
+                reason: ''
+            };
 
             return {
                 suggestions: validatedSuggestions,
@@ -1188,23 +1041,20 @@ Rispondi in formato JSON:
                 summary: this._validateString(parsed.summary || '', 2000, 'summary'),
                 rulesQuestions: [] // Will be populated by analyzeContext
             };
+
         } catch (error) {
-            console.warn(
-                `${MODULE_ID} | Failed to parse analysis response as JSON, using fallback`
-            );
+            console.warn(`${MODULE_ID} | Failed to parse analysis response as JSON, using fallback`);
 
             // Apply validation even to fallback content
             const sanitizedContent = this._validateString(content, 5000, 'fallback.content');
             const sanitizedSummary = this._validateString(content, 200, 'fallback.summary');
 
             return {
-                suggestions: [
-                    {
-                        type: 'narration',
-                        content: sanitizedContent,
-                        confidence: 0.5
-                    }
-                ],
+                suggestions: [{
+                    type: 'narration',
+                    content: sanitizedContent,
+                    confidence: 0.5
+                }],
                 offTrackStatus: {
                     isOffTrack: false,
                     severity: 0,
@@ -1233,10 +1083,11 @@ Rispondi in formato JSON:
                 isOffTrack: Boolean(parsed.isOffTrack),
                 severity: this._validateNumber(parsed.severity, 0, 1, 'severity'),
                 reason: this._validateString(parsed.reason || '', 1000, 'reason'),
-                narrativeBridge: parsed.narrativeBridge
-                    ? this._validateString(parsed.narrativeBridge, 2000, 'narrativeBridge')
-                    : undefined
+                narrativeBridge: parsed.narrativeBridge ?
+                    this._validateString(parsed.narrativeBridge, 2000, 'narrativeBridge') :
+                    undefined
             };
+
         } catch (error) {
             console.warn(`${MODULE_ID} | Failed to parse off-track response, returning default`);
             return {
@@ -1261,31 +1112,31 @@ Rispondi in formato JSON:
             const parsed = JSON.parse(this._extractJson(content));
 
             // Validate and sanitize suggestions array (max 10 items)
-            const validatedSuggestions = this._validateArray(parsed.suggestions, 10, 'suggestions')
-                .slice(0, maxSuggestions)
-                .map((s) => ({
+            const validatedSuggestions = this._validateArray(
+                parsed.suggestions,
+                10,
+                'suggestions'
+            ).slice(0, maxSuggestions)
+                .map(s => ({
                     type: s.type || 'narration',
                     content: this._validateString(s.content || '', 5000, 'suggestion.content'),
-                    pageReference: s.pageReference
-                        ? this._validateString(s.pageReference, 200, 'suggestion.pageReference')
-                        : undefined,
+                    pageReference: s.pageReference ? this._validateString(s.pageReference, 200, 'suggestion.pageReference') : undefined,
                     confidence: this._validateNumber(s.confidence, 0, 1, 'suggestion.confidence')
                 }));
 
             return validatedSuggestions;
+
         } catch (error) {
             console.warn(`${MODULE_ID} | Failed to parse suggestions response`);
 
             // Apply validation even to fallback content
             const sanitizedContent = this._validateString(content, 5000, 'fallback.content');
 
-            return [
-                {
-                    type: 'narration',
-                    content: sanitizedContent,
-                    confidence: 0.3
-                }
-            ];
+            return [{
+                type: 'narration',
+                content: sanitizedContent,
+                confidence: 0.3
+            }];
         }
     }
 
@@ -1307,12 +1158,12 @@ Rispondi in formato JSON:
                 parsed.dialogueOptions,
                 5,
                 'dialogueOptions'
-            )
-                .slice(0, maxOptions)
-                .map((option) => this._validateString(option || '', 2000, 'dialogueOption'))
-                .filter((option) => option.length > 0); // Remove empty options
+            ).slice(0, maxOptions)
+                .map(option => this._validateString(option || '', 2000, 'dialogueOption'))
+                .filter(option => option.length > 0); // Remove empty options
 
             return validatedOptions;
+
         } catch (error) {
             console.warn(`${MODULE_ID} | Failed to parse NPC dialogue response`);
 
@@ -1514,9 +1365,7 @@ Rispondi in formato JSON:
         );
 
         // Get current scene type
-        const sceneType = transition.detected
-            ? transition.sceneType
-            : this._sceneDetector.getCurrentSceneType();
+        const sceneType = transition.detected ? transition.sceneType : this._sceneDetector.getCurrentSceneType();
 
         // Update session state with current scene
         if (transition.detected) {
@@ -1534,81 +1383,6 @@ Rispondi in formato JSON:
         };
     }
 
-    /**
-     * Handles API errors and returns user-friendly error messages
-     * @param {Object} error - The API error
-     * @returns {Error} A user-friendly error
-     * @private
-     */
-    _handleApiError(error) {
-        let message;
-
-        // Handle network errors first
-        if (error.isNetworkError || error.status === 0) {
-            message = error.message || game.i18n.localize('NARRATOR.Errors.NetworkError');
-            const err = new Error(message);
-            err.isNetworkError = true;
-            return err;
-        }
-
-        switch (error.status) {
-            case 401:
-                message = game.i18n.localize('NARRATOR.Errors.InvalidApiKey');
-                break;
-            case 429:
-                message = game.i18n.localize('NARRATOR.Errors.RateLimited');
-                break;
-            case 400:
-                message = game.i18n.format('NARRATOR.Errors.BadRequest', {
-                    details: error.message
-                });
-                break;
-            case 500:
-            case 502:
-            case 503:
-                message = game.i18n.localize('NARRATOR.Errors.ServerError');
-                break;
-            case 504:
-                message = game.i18n.localize('NARRATOR.Errors.Timeout');
-                break;
-            default:
-                message = game.i18n.format('NARRATOR.Errors.AIAssistantFailed', {
-                    status: error.status,
-                    message: error.message
-                });
-        }
-
-        return new Error(message);
-    }
-
-    /**
-     * Shows a user notification for AI assistant errors
-     * @param {Error} error - The error to display
-     */
-    static notifyError(error) {
-        if (typeof ui !== 'undefined' && ui.notifications) {
-            ui.notifications.error(error.message);
-        }
-    }
-
-    /**
-     * Clears the conversation history
-     */
-    clearHistory() {
-        this._conversationHistory = [];
-    }
-
-    /**
-     * Gets the conversation history
-     * @param {number} [limit] - Maximum entries to return
-     * @returns {Array<{role: string, content: string}>} The history
-     */
-    getHistory(limit) {
-        if (limit && limit > 0) {
-            return this._conversationHistory.slice(-limit);
-        }
-        return [...this._conversationHistory];
-    }
 
     /**
      * Resets the session state
@@ -1628,13 +1402,13 @@ Rispondi in formato JSON:
      */
     getStats() {
         return {
-            configured: this.isConfigured(),
+            ...super.getStats(),
             model: this._model,
             sensitivity: this._sensitivity,
             primaryLanguage: this._primaryLanguage,
             hasContext: Boolean(this._adventureContext),
             contextLength: this._adventureContext.length,
-            historySize: this._conversationHistory.length,
+            conversationHistorySize: this._conversationHistory.length,
             suggestionsGenerated: this._sessionState.suggestionsCount,
             lastOffTrackCheck: this._sessionState.lastOffTrackCheck
         };

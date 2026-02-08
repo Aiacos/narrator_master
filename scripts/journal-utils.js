@@ -5,6 +5,7 @@
  */
 
 import { MODULE_ID } from './settings.js';
+import { Logger } from './logger.js';
 
 /**
  * Expands a folder ID to all journal IDs contained within it (recursively)
@@ -31,12 +32,12 @@ export function expandFolderToJournals(folderId) {
     const journalIds = [];
 
     // Get journals directly in this folder
-    const journals = game.journal.filter((j) => j.folder?.id === folderId);
-    journals.forEach((j) => journalIds.push(j.id));
+    const journals = game.journal.filter(j => j.folder?.id === folderId);
+    journals.forEach(j => journalIds.push(j.id));
 
     // Recursively get journals from child folders
-    const childFolders = game.folders.filter(
-        (f) => f.type === 'JournalEntry' && f.folder?.id === folderId
+    const childFolders = game.folders.filter(f =>
+        f.type === 'JournalEntry' && f.folder?.id === folderId
     );
 
     for (const childFolder of childFolders) {
@@ -44,7 +45,7 @@ export function expandFolderToJournals(folderId) {
         journalIds.push(...childJournalIds);
     }
 
-    console.log(`${MODULE_ID} | Expanded folder "${folder.name}" to ${journalIds.length} journals`);
+    Logger.debug(`Expanded folder "${folder.name}" to ${journalIds.length} journals`, 'expandFolderToJournals');
 
     return journalIds;
 }
@@ -57,7 +58,7 @@ export function expandFolderToJournals(folderId) {
  */
 export function resolveToJournalIds(ids) {
     if (!Array.isArray(ids)) {
-        console.warn(`${MODULE_ID} | resolveToJournalIds expects an array, got:`, typeof ids);
+        Logger.warn(`resolveToJournalIds expects an array, got: ${typeof ids}`, 'resolveToJournalIds');
         return [];
     }
 
@@ -65,7 +66,7 @@ export function resolveToJournalIds(ids) {
 
     for (const id of ids) {
         if (!id || typeof id !== 'string') {
-            console.warn(`${MODULE_ID} | Invalid ID in array:`, id);
+            Logger.warn('Invalid ID in array', 'resolveToJournalIds', id);
             continue;
         }
 
@@ -75,9 +76,9 @@ export function resolveToJournalIds(ids) {
             // Expand folder to journal IDs
             try {
                 const expandedIds = expandFolderToJournals(id);
-                expandedIds.forEach((jId) => journalIds.add(jId));
+                expandedIds.forEach(jId => journalIds.add(jId));
             } catch (error) {
-                console.warn(`${MODULE_ID} | Failed to expand folder ${id}:`, error);
+                Logger.warn(`Failed to expand folder ${id}`, 'resolveToJournalIds', error);
             }
             continue;
         }
@@ -90,11 +91,11 @@ export function resolveToJournalIds(ids) {
         }
 
         // ID not found
-        console.warn(`${MODULE_ID} | ID not found (not a journal or folder): ${id}`);
+        Logger.warn(`ID not found (not a journal or folder): ${id}`, 'resolveToJournalIds');
     }
 
     const result = Array.from(journalIds);
-    console.log(`${MODULE_ID} | Resolved ${ids.length} IDs to ${result.length} unique journal IDs`);
+    Logger.debug(`Resolved ${ids.length} IDs to ${result.length} unique journal IDs`, 'resolveToJournalIds');
 
     return result;
 }
@@ -105,11 +106,11 @@ export function resolveToJournalIds(ids) {
  */
 export function getAllJournalIds() {
     if (!game.journal) {
-        console.warn(`${MODULE_ID} | Journal collection not available`);
+        Logger.warn('Journal collection not available', 'getAllJournalIds');
         return [];
     }
 
-    return game.journal.map((j) => j.id);
+    return game.journal.map(j => j.id);
 }
 
 /**

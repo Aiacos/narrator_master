@@ -17,7 +17,9 @@
             "SensitivityMedium": "Media - Bilanciato",
             "SensitivityHigh": "Alta - Anche piccole variazioni",
             "SpeakerLabelsName": "Etichette Parlanti",
-            "SpeakerLabelsHint": "Abilita l'assegnazione di nomi personalizzati ai parlanti rilevati nella trascrizione"
+            "SpeakerLabelsHint": "Abilita l'assegnazione di nomi personalizzati ai parlanti rilevati nella trascrizione",
+            "DebugModeName": "Modalità Debug",
+            "DebugModeHint": "Abilita messaggi di debug dettagliati nella console del browser. Utile per diagnosticare problemi e monitorare il comportamento del modulo"
         },
 
         "Panel": {

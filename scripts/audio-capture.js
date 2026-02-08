@@ -5,6 +5,7 @@
  */
 
 import { MODULE_ID } from './settings.js';
+import { Logger } from './logger.js';
 
 /**
  * Maximum file size for OpenAI Whisper API (25MB)
@@ -269,7 +270,7 @@ export class AudioCapture {
      * @throws {Error} If permission denied or microphone unavailable
      */
     async requestPermission() {
-        console.log(`${MODULE_ID} | Requesting microphone permission`);
+        Logger.info('Requesting microphone permission', 'AudioCapture');
 
         if (!this.isSupported) {
             const error = {
@@ -282,10 +283,11 @@ export class AudioCapture {
 
         try {
             this._stream = await navigator.mediaDevices.getUserMedia(this._constraints);
-            console.log(`${MODULE_ID} | Microphone permission granted`);
+            Logger.info('Microphone permission granted', 'AudioCapture');
             this._emit(AudioCaptureEvent.PERMISSION_GRANTED);
             this._emit(AudioCaptureEvent.STREAM_STARTED, this._stream);
             return this._stream;
+
         } catch (error) {
             const captureError = this._handlePermissionError(error);
             this._emit(AudioCaptureEvent.PERMISSION_DENIED, captureError);
@@ -334,7 +336,7 @@ export class AudioCapture {
                 code = 'unknown';
         }
 
-        console.error(`${MODULE_ID} | Microphone error: ${code} - ${error.message}`);
+        Logger.error(`Microphone error: ${code} - ${error.message}`, 'AudioCapture', error);
 
         return {
             message,
@@ -350,7 +352,7 @@ export class AudioCapture {
      */
     async start() {
         if (this._state === RecordingState.RECORDING) {
-            console.warn(`${MODULE_ID} | Already recording`);
+            Logger.warn('Already recording', 'AudioCapture');
             return;
         }
 
@@ -393,13 +395,13 @@ export class AudioCapture {
                 this._startTime = Date.now();
                 this._state = RecordingState.RECORDING;
                 this._emit(AudioCaptureEvent.STATE_CHANGE, this._state);
-                console.log(`${MODULE_ID} | Recording started`);
+                Logger.debug('Recording started', 'AudioCapture');
             };
 
             this._recorder.onstop = () => {
                 this._state = RecordingState.INACTIVE;
                 this._emit(AudioCaptureEvent.STATE_CHANGE, this._state);
-                console.log(`${MODULE_ID} | Recording stopped`);
+                Logger.debug('Recording stopped', 'AudioCapture');
             };
 
             this._recorder.onerror = (event) => {
@@ -409,7 +411,7 @@ export class AudioCapture {
                     originalError: event.error
                 };
                 this._emit(AudioCaptureEvent.ERROR, error);
-                console.error(`${MODULE_ID} | Recording error:`, event.error);
+                Logger.error('Recording error', 'AudioCapture', event.error);
             };
 
             this._recorder.onpause = () => {
@@ -428,10 +430,11 @@ export class AudioCapture {
             // Set up max duration timeout
             if (this._maxDuration > 0) {
                 this._maxDurationTimeout = setTimeout(() => {
-                    console.log(`${MODULE_ID} | Max duration reached, stopping recording`);
+                    Logger.debug('Max duration reached, stopping recording', 'AudioCapture');
                     this.stop();
                 }, this._maxDuration);
             }
+
         } catch (error) {
             const captureError = {
                 message: game.i18n.format('NARRATOR.Errors.RecorderInitFailed', {
@@ -451,7 +454,7 @@ export class AudioCapture {
      */
     async stop() {
         if (!this._recorder || this._state === RecordingState.INACTIVE) {
-            console.warn(`${MODULE_ID} | Not currently recording`);
+            Logger.warn('Not currently recording', 'AudioCapture');
             return this.getAudioBlob();
         }
 
@@ -469,7 +472,7 @@ export class AudioCapture {
             this._recorder.onstop = () => {
                 this._state = RecordingState.INACTIVE;
                 this._emit(AudioCaptureEvent.STATE_CHANGE, this._state);
-                console.log(`${MODULE_ID} | Recording stopped, chunks: ${this._chunks.length}`);
+                Logger.debug(`Recording stopped, chunks: ${this._chunks.length}`, 'AudioCapture');
                 resolve(this.getAudioBlob());
             };
 
@@ -508,7 +511,7 @@ export class AudioCapture {
 
         // Check file size
         if (blob.size > MAX_FILE_SIZE) {
-            console.warn(`${MODULE_ID} | Audio blob exceeds max size: ${blob.size} bytes`);
+            Logger.warn(`Audio blob exceeds max size: ${blob.size} bytes`, 'AudioCapture');
         }
 
         return blob;
@@ -536,9 +539,7 @@ export class AudioCapture {
         const blob = new Blob(this._chunks, { type: this._mimeType });
 
         // Log chunk boundary reset
-        console.log(
-            `${MODULE_ID} | Chunk boundary reset - size: ${blob.size} bytes, chunks: ${this._chunks.length}`
-        );
+        Logger.debug(`Chunk boundary reset - size: ${blob.size} bytes, chunks: ${this._chunks.length}`, 'AudioCapture');
 
         // Clear chunks and reset size counter
         this._chunks = [];
@@ -552,12 +553,12 @@ export class AudioCapture {
      */
     releaseStream() {
         if (this._stream) {
-            this._stream.getTracks().forEach((track) => {
+            this._stream.getTracks().forEach(track => {
                 track.stop();
             });
             this._stream = null;
             this._emit(AudioCaptureEvent.STREAM_STOPPED);
-            console.log(`${MODULE_ID} | Media stream released`);
+            Logger.debug('Media stream released', 'AudioCapture');
         }
 
         if (this._audioContext) {
@@ -586,7 +587,7 @@ export class AudioCapture {
         this._listeners.clear();
         this._state = RecordingState.INACTIVE;
 
-        console.log(`${MODULE_ID} | AudioCapture destroyed`);
+        Logger.debug('AudioCapture destroyed', 'AudioCapture');
     }
 
     /**
@@ -595,7 +596,7 @@ export class AudioCapture {
      */
     initializeAnalyser() {
         if (!this._stream) {
-            console.warn(`${MODULE_ID} | Cannot initialize analyser without stream`);
+            Logger.warn('Cannot initialize analyser without stream', 'AudioCapture');
             return null;
         }
 
@@ -607,8 +608,9 @@ export class AudioCapture {
             source.connect(this._analyser);
 
             return this._analyser;
+
         } catch (error) {
-            console.error(`${MODULE_ID} | Failed to initialize analyser:`, error);
+            Logger.error('Failed to initialize analyser', 'AudioCapture', error);
             return null;
         }
     }
@@ -671,7 +673,7 @@ export class AudioCapture {
                 try {
                     callback(data);
                 } catch (error) {
-                    console.error(`${MODULE_ID} | Event listener error:`, error);
+                    Logger.error('Event listener error', 'AudioCapture', error);
                 }
             }
         }
@@ -688,9 +690,9 @@ export class AudioCapture {
 
         try {
             const devices = await navigator.mediaDevices.enumerateDevices();
-            return devices.filter((device) => device.kind === 'audioinput');
+            return devices.filter(device => device.kind === 'audioinput');
         } catch (error) {
-            console.error(`${MODULE_ID} | Failed to enumerate devices:`, error);
+            Logger.error('Failed to enumerate devices', 'AudioCapture', error);
             return [];
         }
     }

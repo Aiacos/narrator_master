@@ -17,6 +17,8 @@
             "SensitivityHigh": "High - Even small variations",
             "SpeakerLabelsName": "Speaker Labels",
             "SpeakerLabelsHint": "Enable custom name assignment to detected speakers in transcription",
+            "DebugModeName": "Debug Mode",
+            "DebugModeHint": "Enable detailed debug messages in the browser console. Useful for troubleshooting issues and monitoring module behavior",
             "RulesDetectionName": "Rules Detection",
             "RulesDetectionHint": "Enable automatic detection of rules questions in conversations",
             "RulesSourceName": "SRD Rules Source",

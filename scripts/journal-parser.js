@@ -5,6 +5,7 @@
  */
 
 import { MODULE_ID } from './settings.js';
+import { Logger } from './logger.js';
 
 /**
  * Represents a parsed journal page with extracted content
@@ -64,7 +65,7 @@ export class JournalParser {
         // Check cache first
         if (this._cachedContent.has(journalId)) {
             const cached = this._cachedContent.get(journalId);
-            console.log(`${MODULE_ID} | Using cached journal content for: ${journalId}`);
+            Logger.debug(`Using cached journal content for: ${journalId}`, 'JournalParser.parseJournal');
             return cached;
         }
 
@@ -74,7 +75,7 @@ export class JournalParser {
             throw new Error(game.i18n.format('NARRATOR.Errors.JournalNotFound', { id: journalId }));
         }
 
-        console.log(`${MODULE_ID} | Parsing journal: ${journal.name}`);
+        Logger.debug(`Parsing journal: ${journal.name}`, 'JournalParser.parseJournal');
 
         const pages = [];
         let totalCharacters = 0;
@@ -106,7 +107,7 @@ export class JournalParser {
         // Build keyword index for the journal
         this._buildKeywordIndex(journalId, pages);
 
-        console.log(`${MODULE_ID} | Parsed ${pages.length} pages, ${totalCharacters} characters`);
+        Logger.debug(`Parsed ${pages.length} pages, ${totalCharacters} characters`, 'JournalParser.parseJournal');
 
         return parsedJournal;
     }
@@ -176,7 +177,7 @@ export class JournalParser {
             const words = page.text
                 .toLowerCase()
                 .split(/\s+/)
-                .filter((word) => word.length >= 3);
+                .filter(word => word.length >= 3);
 
             for (const word of words) {
                 const key = `${journalId}:${word}`;
@@ -197,7 +198,7 @@ export class JournalParser {
     searchByKeywords(journalId, keywords) {
         const cached = this._cachedContent.get(journalId);
         if (!cached) {
-            console.warn(`${MODULE_ID} | Journal not cached: ${journalId}`);
+            Logger.warn(`Journal not cached: ${journalId}`, 'JournalParser.searchByKeywords');
             return [];
         }
 
@@ -216,7 +217,7 @@ export class JournalParser {
             }
         }
 
-        return cached.pages.filter((page) => matchingPageIds.has(page.id));
+        return cached.pages.filter(page => matchingPageIds.has(page.id));
     }
 
     /**
@@ -228,11 +229,13 @@ export class JournalParser {
     getFullText(journalId) {
         const cached = this._cachedContent.get(journalId);
         if (!cached) {
-            console.warn(`${MODULE_ID} | Journal not cached: ${journalId}`);
+            Logger.warn(`Journal not cached: ${journalId}`, 'JournalParser.getFullText');
             return '';
         }
 
-        return cached.pages.map((page) => `## ${page.name}\n${page.text}`).join('\n\n');
+        return cached.pages
+            .map(page => `## ${page.name}\n${page.text}`)
+            .join('\n\n');
     }
 
     /**
@@ -247,7 +250,7 @@ export class JournalParser {
             return null;
         }
 
-        return cached.pages.find((page) => page.id === pageId) || null;
+        return cached.pages.find(page => page.id === pageId) || null;
     }
 
     /**
@@ -267,7 +270,7 @@ export class JournalParser {
             pageCount: cached.pages.length,
             totalCharacters: cached.totalCharacters,
             parsedAt: cached.parsedAt,
-            pageNames: cached.pages.map((p) => p.name)
+            pageNames: cached.pages.map(p => p.name)
         };
     }
 
@@ -277,11 +280,11 @@ export class JournalParser {
      */
     listAvailableJournals() {
         if (!game.journal) {
-            console.warn(`${MODULE_ID} | Journal collection not available`);
+            Logger.warn('Journal collection not available', 'JournalParser.listAvailableJournals');
             return [];
         }
 
-        return game.journal.map((journal) => ({
+        return game.journal.map(journal => ({
             id: journal.id,
             name: journal.name
         }));
@@ -301,7 +304,7 @@ export class JournalParser {
             }
         }
 
-        console.log(`${MODULE_ID} | Cleared cache for journal: ${journalId}`);
+        Logger.debug(`Cleared cache for journal: ${journalId}`, 'JournalParser.clearCache');
     }
 
     /**
@@ -310,7 +313,7 @@ export class JournalParser {
     clearAllCache() {
         this._cachedContent.clear();
         this._keywordIndex.clear();
-        console.log(`${MODULE_ID} | Cleared all journal cache`);
+        Logger.debug('Cleared all journal cache', 'JournalParser.clearAllCache');
     }
 
     /**
@@ -367,7 +370,7 @@ export class JournalParser {
      */
     async parseAllJournals() {
         if (!game.journal) {
-            console.warn(`${MODULE_ID} | Journal collection not available`);
+            Logger.warn('Journal collection not available', 'JournalParser.parseAllJournals');
             return [];
         }
 
@@ -377,11 +380,11 @@ export class JournalParser {
                 const parsed = await this.parseJournal(journal.id);
                 results.push(parsed);
             } catch (error) {
-                console.warn(`${MODULE_ID} | Failed to parse journal "${journal.name}":`, error);
+                Logger.warn(`Failed to parse journal "${journal.name}"`, 'JournalParser.parseAllJournals', error);
             }
         }
 
-        console.log(`${MODULE_ID} | Parsed ${results.length} journals total`);
+        Logger.debug(`Parsed ${results.length} journals total`, 'JournalParser.parseAllJournals');
         return results;
     }
 
@@ -448,104 +451,28 @@ export class JournalParser {
     extractProperNouns(journalId) {
         const cached = this._cachedContent.get(journalId);
         if (!cached) {
-            console.warn(`${MODULE_ID} | Journal not cached: ${journalId}`);
+            Logger.warn(`Journal not cached: ${journalId}`, 'JournalParser.extractProperNouns');
             return [];
         }
 
         // Common words to exclude (Italian and English)
         const commonWords = new Set([
             // Italian articles, prepositions, conjunctions
-            'il',
-            'lo',
-            'la',
-            'i',
-            'gli',
-            'le',
-            'un',
-            'uno',
-            'una',
-            'di',
-            'a',
-            'da',
-            'in',
-            'con',
-            'su',
-            'per',
-            'tra',
-            'fra',
-            'e',
-            'o',
-            'ma',
-            'però',
-            'quindi',
-            'allora',
-            'quando',
-            'se',
-            'che',
-            'chi',
-            'cui',
-            'quale',
-            'quanto',
+            'il', 'lo', 'la', 'i', 'gli', 'le', 'un', 'uno', 'una',
+            'di', 'a', 'da', 'in', 'con', 'su', 'per', 'tra', 'fra',
+            'e', 'o', 'ma', 'però', 'quindi', 'allora', 'quando', 'se',
+            'che', 'chi', 'cui', 'quale', 'quanto',
             // Italian common words
-            'non',
-            'si',
-            'anche',
-            'come',
-            'dove',
-            'dopo',
-            'prima',
-            'molto',
-            'tutto',
-            'ogni',
-            'altro',
-            'stesso',
-            'sempre',
+            'non', 'si', 'anche', 'come', 'dove', 'dopo', 'prima',
+            'molto', 'tutto', 'ogni', 'altro', 'stesso', 'sempre',
             // English articles, prepositions, conjunctions
-            'the',
-            'a',
-            'an',
-            'of',
-            'to',
-            'in',
-            'for',
-            'on',
-            'with',
-            'at',
-            'by',
-            'from',
-            'up',
-            'about',
-            'into',
-            'through',
-            'and',
-            'or',
-            'but',
-            'if',
-            'then',
-            'when',
-            'where',
-            'that',
-            'this',
-            'these',
-            'those',
-            'which',
-            'who',
-            'what',
+            'the', 'a', 'an', 'of', 'to', 'in', 'for', 'on', 'with',
+            'at', 'by', 'from', 'up', 'about', 'into', 'through',
+            'and', 'or', 'but', 'if', 'then', 'when', 'where',
+            'that', 'this', 'these', 'those', 'which', 'who', 'what',
             // English common words
-            'not',
-            'all',
-            'can',
-            'will',
-            'just',
-            'should',
-            'now',
-            'there',
-            'their',
-            'they',
-            'have',
-            'has',
-            'had',
-            'been'
+            'not', 'all', 'can', 'will', 'just', 'should', 'now',
+            'there', 'their', 'they', 'have', 'has', 'had', 'been'
         ]);
 
         const properNouns = new Map(); // Use Map to track frequency
@@ -584,9 +511,7 @@ export class JournalParser {
             .sort((a, b) => b[1] - a[1])
             .map(([word]) => word);
 
-        console.log(
-            `${MODULE_ID} | Extracted ${result.length} proper nouns from journal: ${cached.name}`
-        );
+        Logger.debug(`Extracted ${result.length} proper nouns from journal: ${cached.name}`, 'JournalParser.extractProperNouns');
 
         return result;
     }
@@ -600,7 +525,7 @@ export class JournalParser {
     extractNPCProfiles(journalId) {
         const cached = this._cachedContent.get(journalId);
         if (!cached) {
-            console.warn(`${MODULE_ID} | Journal not cached: ${journalId}`);
+            Logger.warn(`Journal not cached: ${journalId}`, 'JournalParser.extractNPCProfiles');
             return [];
         }
 
@@ -610,36 +535,13 @@ export class JournalParser {
         // Keywords that indicate NPC descriptions (Italian and English)
         const npcIndicators = [
             // Italian
-            'personaggio',
-            'png',
-            'npc',
-            'alleato',
-            'nemico',
-            'mercante',
-            'locandiere',
-            'fabbro',
-            'mago',
-            'guerriero',
-            'chierico',
-            'personalità',
-            'carattere',
-            'temperamento',
-            'atteggiamento',
+            'personaggio', 'png', 'npc', 'alleato', 'nemico', 'mercante',
+            'locandiere', 'fabbro', 'mago', 'guerriero', 'chierico',
+            'personalità', 'carattere', 'temperamento', 'atteggiamento',
             // English
-            'character',
-            'npc',
-            'ally',
-            'enemy',
-            'merchant',
-            'innkeeper',
-            'blacksmith',
-            'wizard',
-            'warrior',
-            'cleric',
-            'personality',
-            'character',
-            'temperament',
-            'attitude'
+            'character', 'npc', 'ally', 'enemy', 'merchant', 'innkeeper',
+            'blacksmith', 'wizard', 'warrior', 'cleric',
+            'personality', 'character', 'temperament', 'attitude'
         ];
 
         const npcProfiles = [];
@@ -676,7 +578,7 @@ export class JournalParser {
                         const trimmedSentence = sentence.trim();
 
                         // Check if sentence contains NPC indicators
-                        const hasIndicator = npcIndicators.some((indicator) =>
+                        const hasIndicator = npcIndicators.some(indicator =>
                             sentence.toLowerCase().includes(indicator)
                         );
 
@@ -693,29 +595,13 @@ export class JournalParser {
 
                         // Extract personality traits (sentences with personality/temperament keywords)
                         const personalityKeywords = [
-                            'personalità',
-                            'carattere',
-                            'temperamento',
-                            'atteggiamento',
-                            'personality',
-                            'character',
-                            'temperament',
-                            'attitude',
-                            'gentile',
-                            'brusco',
-                            'amichevole',
-                            'ostile',
-                            'timido',
-                            'coraggioso',
-                            'kind',
-                            'gruff',
-                            'friendly',
-                            'hostile',
-                            'shy',
-                            'brave'
+                            'personalità', 'carattere', 'temperamento', 'atteggiamento',
+                            'personality', 'character', 'temperament', 'attitude',
+                            'gentile', 'brusco', 'amichevole', 'ostile', 'timido', 'coraggioso',
+                            'kind', 'gruff', 'friendly', 'hostile', 'shy', 'brave'
                         ];
 
-                        const hasPersonalityKeyword = personalityKeywords.some((keyword) =>
+                        const hasPersonalityKeyword = personalityKeywords.some(keyword =>
                             sentence.toLowerCase().includes(keyword)
                         );
 
@@ -744,9 +630,7 @@ export class JournalParser {
             }
         }
 
-        console.log(
-            `${MODULE_ID} | Extracted ${npcProfiles.length} NPC profiles from journal: ${cached.name}`
-        );
+        Logger.debug(`Extracted ${npcProfiles.length} NPC profiles from journal: ${cached.name}`, 'JournalParser.extractNPCProfiles');
 
         return npcProfiles;
     }
@@ -761,12 +645,12 @@ export class JournalParser {
     getNPCContext(journalId, npcName) {
         const cached = this._cachedContent.get(journalId);
         if (!cached) {
-            console.warn(`${MODULE_ID} | Journal not cached: ${journalId}`);
+            Logger.warn(`Journal not cached: ${journalId}`, 'JournalParser.getNPCContext');
             return '';
         }
 
         if (!npcName || typeof npcName !== 'string') {
-            console.warn(`${MODULE_ID} | Invalid NPC name provided`);
+            Logger.warn('Invalid NPC name provided', 'JournalParser.getNPCContext');
             return '';
         }
 
@@ -807,7 +691,7 @@ export class JournalParser {
 
         // If no context found, return empty string
         if (relevantPages.length === 0) {
-            console.warn(`${MODULE_ID} | No context found for NPC: ${npcName}`);
+            Logger.warn(`No context found for NPC: ${npcName}`, 'JournalParser.getNPCContext');
             return '';
         }
 
@@ -823,9 +707,7 @@ export class JournalParser {
 
         const formattedContext = contextParts.join('\n');
 
-        console.log(
-            `${MODULE_ID} | Retrieved context for NPC "${npcName}" (${formattedContext.length} characters)`
-        );
+        Logger.debug(`Retrieved context for NPC "${npcName}" (${formattedContext.length} characters)`, 'JournalParser.getNPCContext');
 
         return formattedContext;
     }

@@ -7,6 +7,13 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/spec/v2.0
 
 ## [Unreleased]
 
+### Changed
+- **API Service Architecture** - Refactored API service classes to eliminate code duplication
+  - Created `BaseApiService` base class with common functionality (error handling, API key management, configuration checks)
+  - Refactored `TranscriptionService`, `AIAssistant`, and `ImageGenerator` to extend `BaseApiService`
+  - Standardized error handling patterns across all API services
+  - Improved code maintainability and consistency
+
 ### Planned
 - Integrazione con Discord per cattura audio alternativa
 - Supporto multilingua (oltre all'Italiano)

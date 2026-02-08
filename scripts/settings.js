@@ -23,7 +23,8 @@ export const SETTINGS = {
     SPEAKER_LABELS: 'speakerLabels',
     SELECTED_JOURNALS: 'selectedJournals',
     RULES_DETECTION: 'rulesDetection',
-    RULES_SOURCE: 'rulesSource'
+    RULES_SOURCE: 'rulesSource',
+    DEBUG_MODE: 'debugMode'
 };
 
 /**
@@ -39,7 +40,7 @@ export function registerSettings() {
         config: true,
         type: String,
         default: '',
-        onChange: (value) => {
+        onChange: value => {
             if (window.narratorMaster) {
                 window.narratorMaster.updateApiKey(value);
             }
@@ -55,12 +56,12 @@ export function registerSettings() {
         type: String,
         default: 'it',
         choices: {
-            auto: 'Auto-detect',
-            it: 'Italiano',
-            en: 'English',
-            de: 'Deutsch',
-            fr: 'Francais',
-            es: 'Espanol'
+            'auto': 'Auto-detect',
+            'it': 'Italiano',
+            'en': 'English',
+            'de': 'Deutsch',
+            'fr': 'Francais',
+            'es': 'Espanol'
         }
     });
 
@@ -93,9 +94,9 @@ export function registerSettings() {
         type: String,
         default: 'medium',
         choices: {
-            low: 'NARRATOR.Settings.SensitivityLow',
-            medium: 'NARRATOR.Settings.SensitivityMedium',
-            high: 'NARRATOR.Settings.SensitivityHigh'
+            'low': 'NARRATOR.Settings.SensitivityLow',
+            'medium': 'NARRATOR.Settings.SensitivityMedium',
+            'high': 'NARRATOR.Settings.SensitivityHigh'
         }
     });
 
@@ -138,9 +139,19 @@ export function registerSettings() {
         type: String,
         default: 'auto',
         choices: {
-            auto: 'NARRATOR.Settings.RulesSourceAuto',
-            dnd5e: 'NARRATOR.Settings.RulesSourceDnd5e'
+            'auto': 'NARRATOR.Settings.RulesSourceAuto',
+            'dnd5e': 'NARRATOR.Settings.RulesSourceDnd5e'
         }
+    });
+
+    // Debug mode - Enable verbose logging for development and troubleshooting
+    game.settings.register(MODULE_ID, SETTINGS.DEBUG_MODE, {
+        name: 'NARRATOR.Settings.DebugModeName',
+        hint: 'NARRATOR.Settings.DebugModeHint',
+        scope: 'world',
+        config: true,
+        type: Boolean,
+        default: false
     });
 }
 
@@ -256,6 +267,14 @@ export class SettingsManager {
     }
 
     /**
+     * Gets the debug mode setting
+     * @returns {boolean} True if debug mode is enabled
+     */
+    getDebugMode() {
+        return game.settings.get(MODULE_ID, SETTINGS.DEBUG_MODE) || false;
+    }
+
+    /**
      * Checks if the API key is configured
      * @returns {boolean} True if API key is set
      */
@@ -295,7 +314,8 @@ export class SettingsManager {
             speakerLabels: this.getSpeakerLabels(),
             selectedJournals: this.getSelectedJournals(),
             rulesDetection: this.getRulesDetection(),
-            rulesSource: this.getRulesSource()
+            rulesSource: this.getRulesSource(),
+            debugMode: this.getDebugMode()
         };
     }
 }

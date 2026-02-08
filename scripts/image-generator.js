@@ -5,6 +5,7 @@
  */
 
 import { MODULE_ID, SETTINGS } from './settings.js';
+import { OpenAIServiceBase } from './openai-service-base.js';
 
 /**
  * Default model for image generation (gpt-image-1 is recommended for long-term support)
@@ -114,8 +115,9 @@ const IMAGE_STYLES = {
 /**
  * ImageGenerator - Handles AI-powered image generation for infographics and scene visuals
  * Uses OpenAI gpt-image-1 model (preferred) or dall-e-3 (deprecated May 2026)
+ * @extends OpenAIServiceBase
  */
-export class ImageGenerator {
+export class ImageGenerator extends OpenAIServiceBase {
     /**
      * Creates a new ImageGenerator instance
      * @param {string} apiKey - The OpenAI API key
@@ -124,21 +126,11 @@ export class ImageGenerator {
      * @param {string} [options.defaultSize='1024x1024'] - Default image size
      * @param {string} [options.defaultQuality='standard'] - Default image quality
      * @param {boolean} [options.autoCacheImages=true] - Automatically download and cache images
+     * @param {number} [options.maxHistorySize=50] - Maximum history entries to keep
      */
     constructor(apiKey, options = {}) {
-        /**
-         * OpenAI API key
-         * @type {string}
-         * @private
-         */
-        this._apiKey = apiKey || '';
-
-        /**
-         * Base URL for OpenAI API
-         * @type {string}
-         * @private
-         */
-        this._baseUrl = 'https://api.openai.com/v1';
+        // Call parent constructor
+        super(apiKey, options);
 
         /**
          * Model to use for image generation
@@ -176,20 +168,6 @@ export class ImageGenerator {
         this._imageCache = new Map();
 
         /**
-         * Generation history
-         * @type {GenerationResult[]}
-         * @private
-         */
-        this._history = [];
-
-        /**
-         * Maximum history entries to keep
-         * @type {number}
-         * @private
-         */
-        this._maxHistorySize = 50;
-
-        /**
          * Maximum cache entries to keep
          * @type {number}
          * @private
@@ -198,30 +176,12 @@ export class ImageGenerator {
     }
 
     /**
-     * Updates the API key
-     * @param {string} apiKey - The new API key
-     */
-    setApiKey(apiKey) {
-        this._apiKey = apiKey || '';
-    }
-
-    /**
-     * Checks if the API key is configured
-     * @returns {boolean} True if API key is set
-     */
-    isConfigured() {
-        return this._apiKey && this._apiKey.trim().length > 0;
-    }
-
-    /**
      * Sets the model to use for image generation
      * @param {string} model - The model name ('gpt-image-1' or 'dall-e-3')
      */
     setModel(model) {
         if (model === 'dall-e-3') {
-            console.warn(
-                `${MODULE_ID} | Warning: dall-e-3 is deprecated and loses support on May 12, 2026. Consider using gpt-image-1.`
-            );
+            console.warn(`${MODULE_ID} | Warning: dall-e-3 is deprecated and loses support on May 12, 2026. Consider using gpt-image-1.`);
         }
         this._model = model || DEFAULT_MODEL;
     }
@@ -295,9 +255,7 @@ export class ImageGenerator {
         const returnBase64 = Boolean(options.returnBase64);
         const cacheImage = options.cacheImage !== false && this._autoCacheImages;
 
-        console.log(
-            `${MODULE_ID} | Generating image: "${prompt.substring(0, 50)}...", size: ${size}, quality: ${quality}`
-        );
+        console.log(`${MODULE_ID} | Generating image: "${prompt.substring(0, 50)}...", size: ${size}, quality: ${quality}`);
 
         try {
             // Build request body
@@ -320,6 +278,7 @@ export class ImageGenerator {
             console.log(`${MODULE_ID} | Image generated successfully`);
 
             return result;
+
         } catch (error) {
             if (error.status) {
                 throw this._handleApiError(error);
@@ -350,17 +309,9 @@ export class ImageGenerator {
         const sceneType = options.sceneType || null;
 
         // Build a specialized prompt for RPG infographics
-        const prompt = this._buildInfographicPrompt(
-            eventDescription,
-            artStyle,
-            mood,
-            elements,
-            sceneType
-        );
+        const prompt = this._buildInfographicPrompt(eventDescription, artStyle, mood, elements, sceneType);
 
-        console.log(
-            `${MODULE_ID} | Generating infographic for: "${eventDescription.substring(0, 50)}..."`
-        );
+        console.log(`${MODULE_ID} | Generating infographic for: "${eventDescription.substring(0, 50)}..."`);
 
         return this.generate(prompt, {
             size: options.size || IMAGE_SIZES.LARGE,
@@ -391,17 +342,9 @@ export class ImageGenerator {
         const sceneType = options.sceneType || null;
 
         // Build scene-specific prompt
-        const prompt = this._buildScenePrompt(
-            sceneDescription,
-            location,
-            lighting,
-            characters,
-            sceneType
-        );
+        const prompt = this._buildScenePrompt(sceneDescription, location, lighting, characters, sceneType);
 
-        console.log(
-            `${MODULE_ID} | Generating scene illustration: "${sceneDescription.substring(0, 50)}..."`
-        );
+        console.log(`${MODULE_ID} | Generating scene illustration: "${sceneDescription.substring(0, 50)}..."`);
 
         return this.generate(prompt, {
             size: options.size || IMAGE_SIZES.WIDE,
@@ -456,7 +399,7 @@ export class ImageGenerator {
             response = await fetch(`${this._baseUrl}/images/generations`, {
                 method: 'POST',
                 headers: {
-                    Authorization: `Bearer ${this._apiKey}`,
+                    'Authorization': `Bearer ${this._apiKey}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(requestBody)
@@ -477,33 +420,6 @@ export class ImageGenerator {
         }
 
         return await response.json();
-    }
-
-    /**
-     * Creates a user-friendly error for network failures
-     * @param {Error} networkError - The original network error
-     * @returns {Object} Error object with status and message
-     * @private
-     */
-    _createNetworkError(networkError) {
-        const isTimeout =
-            networkError.name === 'AbortError' || networkError.message?.includes('timeout');
-
-        if (isTimeout) {
-            return {
-                message: game.i18n.localize('NARRATOR.Errors.Timeout'),
-                code: 'timeout',
-                status: 0,
-                isNetworkError: true
-            };
-        }
-
-        return {
-            message: game.i18n.localize('NARRATOR.Errors.NetworkError'),
-            code: 'network_error',
-            status: 0,
-            isNetworkError: true
-        };
     }
 
     /**
@@ -678,6 +594,7 @@ export class ImageGenerator {
             this._trimCache();
 
             console.log(`${MODULE_ID} | Image cached successfully`);
+
         } catch (error) {
             console.warn(`${MODULE_ID} | Failed to cache image:`, error);
         }
@@ -714,7 +631,7 @@ export class ImageGenerator {
         let hash = 0;
         for (let i = 0; i < prompt.length; i++) {
             const char = prompt.charCodeAt(i);
-            hash = (hash << 5) - hash + char;
+            hash = ((hash << 5) - hash) + char;
             hash = hash & hash;
         }
         return `img_${Math.abs(hash).toString(16)}`;
@@ -728,9 +645,8 @@ export class ImageGenerator {
         if (this._imageCache.size <= this._maxCacheSize) return;
 
         // Remove oldest entries
-        const entries = Array.from(this._imageCache.entries()).sort(
-            (a, b) => a[1].createdAt - b[1].createdAt
-        );
+        const entries = Array.from(this._imageCache.entries())
+            .sort((a, b) => a[1].createdAt - b[1].createdAt);
 
         const toRemove = entries.slice(0, this._imageCache.size - this._maxCacheSize);
         for (const [key] of toRemove) {
@@ -772,7 +688,9 @@ export class ImageGenerator {
      */
     getValidCachedImages() {
         const now = new Date();
-        return this.getAllCachedImages().filter((img) => img.base64 || now <= img.expiresAt);
+        return this.getAllCachedImages().filter(img =>
+            img.base64 || now <= img.expiresAt
+        );
     }
 
     /**
@@ -801,40 +719,6 @@ export class ImageGenerator {
      */
     clearCache() {
         this._imageCache.clear();
-    }
-
-    /**
-     * Adds a generation result to history
-     * @param {GenerationResult} result - The result to add
-     * @private
-     */
-    _addToHistory(result) {
-        this._history.push(result);
-
-        // Trim history if exceeds max size
-        if (this._history.length > this._maxHistorySize) {
-            this._history = this._history.slice(-this._maxHistorySize);
-        }
-    }
-
-    /**
-     * Gets the generation history
-     * @param {number} [limit] - Maximum entries to return
-     * @returns {GenerationResult[]} Array of generation results
-     */
-    getHistory(limit) {
-        const history = [...this._history];
-        if (limit && limit > 0) {
-            return history.slice(-limit);
-        }
-        return history;
-    }
-
-    /**
-     * Clears the generation history
-     */
-    clearHistory() {
-        this._history = [];
     }
 
     /**
@@ -876,9 +760,7 @@ export class ImageGenerator {
                 const removedCount = gallery.length - 50;
                 gallery = gallery.slice(-50);
 
-                console.warn(
-                    `${MODULE_ID} | Gallery limit reached. Removed ${removedCount} oldest image(s) to maintain 50 image limit.`
-                );
+                console.warn(`${MODULE_ID} | Gallery limit reached. Removed ${removedCount} oldest image(s) to maintain 50 image limit.`);
             }
 
             await game.settings.set(MODULE_ID, SETTINGS.IMAGE_GALLERY, gallery);
@@ -931,7 +813,7 @@ export class ImageGenerator {
 
         try {
             const gallery = await this.loadGallery();
-            const image = gallery.find((img) => img.id === imageId);
+            const image = gallery.find(img => img.id === imageId);
 
             if (!image) {
                 console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
@@ -973,7 +855,7 @@ export class ImageGenerator {
 
         try {
             const gallery = await this.loadGallery();
-            const image = gallery.find((img) => img.id === imageId);
+            const image = gallery.find(img => img.id === imageId);
 
             if (!image) {
                 console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
@@ -1014,7 +896,7 @@ export class ImageGenerator {
 
         try {
             const gallery = await this.loadGallery();
-            const image = gallery.find((img) => img.id === imageId);
+            const image = gallery.find(img => img.id === imageId);
 
             if (!image) {
                 console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
@@ -1023,9 +905,7 @@ export class ImageGenerator {
 
             image.isFavorite = !image.isFavorite;
             await this._syncWithSettings(gallery);
-            console.log(
-                `${MODULE_ID} | Toggled favorite for image ${imageId}: ${image.isFavorite}`
-            );
+            console.log(`${MODULE_ID} | Toggled favorite for image ${imageId}: ${image.isFavorite}`);
             return image.isFavorite;
         } catch (error) {
             console.error(`${MODULE_ID} | Failed to toggle favorite:`, error);
@@ -1047,7 +927,7 @@ export class ImageGenerator {
 
         try {
             const gallery = await this.loadGallery();
-            const image = gallery.find((img) => img.id === imageId);
+            const image = gallery.find(img => img.id === imageId);
 
             if (!image) {
                 console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
@@ -1077,7 +957,7 @@ export class ImageGenerator {
 
         try {
             const gallery = await this.loadGallery();
-            const index = gallery.findIndex((img) => img.id === imageId);
+            const index = gallery.findIndex(img => img.id === imageId);
 
             if (index === -1) {
                 console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
@@ -1108,21 +988,21 @@ export class ImageGenerator {
             let gallery = await this.loadGallery();
 
             if (filters.category) {
-                gallery = gallery.filter((img) => img.category === filters.category);
+                gallery = gallery.filter(img => img.category === filters.category);
             }
 
             if (filters.tag) {
-                gallery = gallery.filter(
-                    (img) => Array.isArray(img.tags) && img.tags.includes(filters.tag)
+                gallery = gallery.filter(img =>
+                    Array.isArray(img.tags) && img.tags.includes(filters.tag)
                 );
             }
 
             if (typeof filters.isFavorite === 'boolean') {
-                gallery = gallery.filter((img) => img.isFavorite === filters.isFavorite);
+                gallery = gallery.filter(img => img.isFavorite === filters.isFavorite);
             }
 
             if (filters.session) {
-                gallery = gallery.filter((img) => img.session === filters.session);
+                gallery = gallery.filter(img => img.session === filters.session);
             }
 
             return gallery;
@@ -1144,7 +1024,7 @@ export class ImageGenerator {
 
         try {
             const gallery = await this.loadGallery();
-            return gallery.find((img) => img.id === imageId) || null;
+            return gallery.find(img => img.id === imageId) || null;
         } catch (error) {
             console.error(`${MODULE_ID} | Failed to get gallery image:`, error);
             return null;
@@ -1167,64 +1047,21 @@ export class ImageGenerator {
 
     /**
      * Handles API errors and returns user-friendly error messages
+     * Overrides base class to add image-specific error handling
      * @param {Object} error - The API error
+     * @param {string} [operation='Image Generation'] - The operation being performed
      * @returns {Error} A user-friendly error
      * @private
      */
-    _handleApiError(error) {
-        let message;
-
-        // Handle network errors first
-        if (error.isNetworkError || error.status === 0) {
-            message = error.message || game.i18n.localize('NARRATOR.Errors.NetworkError');
-            const err = new Error(message);
-            err.isNetworkError = true;
-            return err;
+    _handleApiError(error, operation = 'Image Generation') {
+        // Check for image-specific errors (content policy)
+        if (error.status === 400 && error.message && error.message.includes('safety')) {
+            const message = game.i18n.localize('NARRATOR.Errors.ContentPolicy');
+            return new Error(message);
         }
 
-        switch (error.status) {
-            case 401:
-                message = game.i18n.localize('NARRATOR.Errors.InvalidApiKey');
-                break;
-            case 429:
-                message = game.i18n.localize('NARRATOR.Errors.RateLimited');
-                break;
-            case 400:
-                // Check for content policy violation
-                if (error.message && error.message.includes('safety')) {
-                    message = game.i18n.localize('NARRATOR.Errors.ContentPolicy');
-                } else {
-                    message = game.i18n.format('NARRATOR.Errors.BadRequest', {
-                        details: error.message
-                    });
-                }
-                break;
-            case 500:
-            case 502:
-            case 503:
-                message = game.i18n.localize('NARRATOR.Errors.ServerError');
-                break;
-            case 504:
-                message = game.i18n.localize('NARRATOR.Errors.Timeout');
-                break;
-            default:
-                message = game.i18n.format('NARRATOR.Errors.ImageGenerationFailed', {
-                    status: error.status,
-                    message: error.message
-                });
-        }
-
-        return new Error(message);
-    }
-
-    /**
-     * Shows a user notification for image generation errors
-     * @param {Error} error - The error to display
-     */
-    static notifyError(error) {
-        if (typeof ui !== 'undefined' && ui.notifications) {
-            ui.notifications.error(error.message);
-        }
+        // Delegate to base class for standard error handling
+        return super._handleApiError(error, operation);
     }
 
     /**
@@ -1253,18 +1090,22 @@ export class ImageGenerator {
 
     /**
      * Gets service statistics
+     * Overrides base class to add image-specific statistics
      * @returns {Object} Statistics about the service usage
      */
     getStats() {
+        // Get base statistics
+        const baseStats = super.getStats();
+
+        // Add image-specific statistics
         return {
-            configured: this.isConfigured(),
+            ...baseStats,
             model: this._model,
             defaultSize: this._defaultSize,
             defaultQuality: this._defaultQuality,
             autoCacheEnabled: this._autoCacheImages,
             cacheSize: this._imageCache.size,
             validCacheEntries: this.getValidCachedImages().length,
-            historySize: this._history.length,
             totalGenerated: this._history.length
         };
     }

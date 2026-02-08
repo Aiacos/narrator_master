@@ -83,4 +83,21 @@ Il piano originale diceva "la trascrizione è interna". I merge successivi hanno
 
 ## COMPLETATI
 
-_(Spostare qui gli issue risolti con data e commit hash)_
+### 7. Migrazione da console.log a Logger utility (code quality)
+- **Data risoluzione**: 2026-02-08
+- **File interessati**: Tutti i file in `scripts/` (main.js, audio-capture.js, transcription.js, ai-assistant.js, image-generator.js, journal-parser.js, journal-utils.js, rules-reference.js, vocabulary-manager.js, settings.js)
+- **Problema**: Uso diretto di `console.log`, `console.warn`, `console.error` in tutto il codebase, causando warning ESLint e mancanza di controllo centralizzato sul logging di produzione.
+- **Soluzione implementata**:
+  - Creato `scripts/logger.js` — utility centralizzata con metodi `debug()`, `info()`, `warn()`, `error()`
+  - Aggiunto setting `debugMode` in `settings.js` per abilitare/disabilitare i messaggi di debug
+  - Migrati ~80+ statement console.* a Logger calls in tutti i file del modulo
+  - Logger usa `console.warn` per debug/info/warn e `console.error` per errori (conforme a ESLint no-console)
+  - Debug messages sono soppressi di default e attivabili tramite UI settings
+  - Aggiornato `CLAUDE.md` con linee guida per l'uso del Logger
+- **Benefici**:
+  - ESLint passa senza warning su console.* nel codice di produzione
+  - Logging controllabile tramite settings (debug mode on/off)
+  - Output consistente con prefisso MODULE_ID e context identifier
+  - Facilita debugging senza inquinare la console in produzione
+- **Commit principali**: 9a06cc3 (migrazione main.js), 76cea1f (documentazione CLAUDE.md)
+- **Task**: 020-reduce-console-log-usage-in-production-code-per-es
