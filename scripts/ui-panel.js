@@ -138,6 +138,18 @@ export class NarratorPanel extends Application {
          * @type {SpeakerLabelService|null}
          */
         this.speakerLabelService = null;
+
+        /**
+         * Scene segments with scene type and timestamp
+         * @type {Array<{type: string, timestamp: number, isManual: boolean, index: number}>}
+         */
+        this.sceneSegments = [];
+
+        /**
+         * Callback for manual scene break marking
+         * @type {Function|null}
+         */
+        this.onMarkSceneBreak = null;
     }
 
     /**
@@ -203,6 +215,13 @@ export class NarratorPanel extends Application {
             transcriptEntries: this.transcriptSegments,
             hasTranscript: this.transcriptSegments.length > 0,
 
+            // Scene segments
+            sceneSegments: this.sceneSegments,
+            hasScenes: this.sceneSegments.length > 0,
+
+            // Merged transcript with scene breaks
+            transcriptWithScenes: this._mergeTranscriptWithScenes(),
+
             // Recording state
             recordingState: this.recordingState,
             isRecording: this.recordingState === RECORDING_STATE.RECORDING,
@@ -242,7 +261,8 @@ export class NarratorPanel extends Application {
                 transcriptTab: game.i18n.localize('NARRATOR.Panel.TranscriptTab'),
                 noTranscript: game.i18n.localize('NARRATOR.Panel.NoTranscript'),
                 clearTranscript: game.i18n.localize('NARRATOR.Panel.ClearTranscript'),
-                exportTranscript: game.i18n.localize('NARRATOR.Panel.ExportTranscript')
+                exportTranscript: game.i18n.localize('NARRATOR.Panel.ExportTranscript'),
+                markSceneBreak: game.i18n.localize('NARRATOR.Scenes.MarkSceneBreak')
             }
         };
     }
@@ -257,6 +277,20 @@ export class NarratorPanel extends Application {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    /**
+     * Formats Unix timestamp to HH:MM:SS format
+     * @param {number} timestamp - Unix timestamp in milliseconds
+     * @returns {string} Formatted time string
+     * @private
+     */
+    _formatTimestamp(timestamp) {
+        const date = new Date(timestamp);
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const seconds = date.getSeconds().toString().padStart(2, '0');
+        return `${hours}:${minutes}:${seconds}`;
     }
 
     /**
@@ -296,6 +330,9 @@ export class NarratorPanel extends Application {
         html.find('.copy-transcript').click(this._onCopyTranscript.bind(this));
         html.find('.export-transcript').click(this._onExportTranscript.bind(this));
         html.find('.clear-transcript').click(this._onClearTranscript.bind(this));
+
+        // Scene break controls
+        html.find('.mark-scene-break').click(this._onMarkSceneBreak.bind(this));
     }
 
     /**
@@ -584,10 +621,8 @@ export class NarratorPanel extends Application {
             return;
         }
 
-        // Format transcript as text
-        const text = this.transcriptSegments
-            .map(segment => `[${segment.timestamp}] ${segment.speaker}: ${segment.text}`)
-            .join('\n\n');
+        // Format transcript as text with scene breaks
+        const text = this._formatTranscriptWithScenes();
 
         await this._copyToClipboard(text);
     }
@@ -605,10 +640,8 @@ export class NarratorPanel extends Application {
         }
 
         try {
-            // Format transcript as text
-            const text = this.transcriptSegments
-                .map(segment => `[${segment.timestamp}] ${segment.speaker}: ${segment.text}`)
-                .join('\n\n');
+            // Format transcript as text with scene breaks
+            const text = this._formatTranscriptWithScenes();
 
             // Create blob and download
             const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
@@ -656,6 +689,65 @@ export class NarratorPanel extends Application {
         if (confirmed) {
             this.clearTranscript();
         }
+    }
+
+    /**
+     * Handles mark scene break button click
+     * @param {Event} event - Click event
+     * @private
+     */
+    async _onMarkSceneBreak(event) {
+        event.preventDefault();
+
+        // Show dialog to select scene type
+        const sceneType = await this._showSceneTypeDialog();
+
+        if (sceneType && this.onMarkSceneBreak) {
+            await this.onMarkSceneBreak(sceneType);
+        }
+    }
+
+    /**
+     * Shows a dialog to select scene type
+     * @returns {Promise<string|null>} Selected scene type or null if canceled
+     * @private
+     */
+    async _showSceneTypeDialog() {
+        return new Promise((resolve) => {
+            const dialog = new Dialog({
+                title: game.i18n.localize('NARRATOR.Scenes.MarkSceneBreak'),
+                content: `
+                    <div class="form-group">
+                        <label>${game.i18n.localize('NARRATOR.Scenes.SelectSceneType')}</label>
+                        <select id="scene-type-select" style="width: 100%;">
+                            <option value="exploration">${game.i18n.localize('NARRATOR.Scenes.SceneTypeExploration')}</option>
+                            <option value="combat">${game.i18n.localize('NARRATOR.Scenes.SceneTypeCombat')}</option>
+                            <option value="social">${game.i18n.localize('NARRATOR.Scenes.SceneTypeSocial')}</option>
+                            <option value="rest">${game.i18n.localize('NARRATOR.Scenes.SceneTypeRest')}</option>
+                        </select>
+                    </div>
+                `,
+                buttons: {
+                    ok: {
+                        icon: '<i class="fas fa-check"></i>',
+                        label: game.i18n.localize('NARRATOR.Scenes.MarkBreak'),
+                        callback: (html) => {
+                            const select = html.find('#scene-type-select')[0];
+                            resolve(select.value);
+                        }
+                    },
+                    cancel: {
+                        icon: '<i class="fas fa-times"></i>',
+                        label: game.i18n.localize('Cancel'),
+                        callback: () => resolve(null)
+                    }
+                },
+                default: 'ok',
+                close: () => resolve(null)
+            });
+
+            dialog.render(true);
+        });
     }
 
     /**
@@ -824,10 +916,53 @@ export class NarratorPanel extends Application {
     }
 
     /**
-     * Clears the transcript
+     * Adds a scene break marker
+     * @param {string} sceneType - Type of scene (exploration, combat, social, rest)
+     * @param {number} timestamp - Timestamp of the scene break
+     * @param {boolean} [isManual=false] - Whether this is a manually marked scene break
+     */
+    addSceneBreak(sceneType, timestamp, isManual = false) {
+        // Validate scene type
+        const validTypes = ['exploration', 'combat', 'social', 'rest'];
+        if (!validTypes.includes(sceneType)) {
+            console.warn(`Invalid scene type: ${sceneType}`);
+            return;
+        }
+
+        // Get the index where this scene break should be inserted
+        // This is the current length of transcript segments
+        const index = this.transcriptSegments.length;
+
+        // Add the scene break
+        this.sceneSegments.push({
+            type: sceneType,
+            timestamp: timestamp,
+            isManual: isManual,
+            index: index
+        });
+
+        this.render(false);
+    }
+
+    /**
+     * Gets the current scene (most recent scene break)
+     * @returns {Object|null} Current scene object or null if no scenes
+     */
+    getCurrentScene() {
+        if (this.sceneSegments.length === 0) {
+            return null;
+        }
+
+        // Return the most recent scene
+        return this.sceneSegments[this.sceneSegments.length - 1];
+    }
+
+    /**
+     * Clears the transcript and scene segments
      */
     clearTranscript() {
         this.transcriptSegments = [];
+        this.sceneSegments = [];
         this.render(false);
     }
 
@@ -879,6 +1014,86 @@ export class NarratorPanel extends Application {
                 segment.speaker = newLabel;
             }
         }
+    }
+
+    /**
+     * Merges transcript segments with scene breaks for template rendering
+     * @returns {Array<Object>} Merged array of transcript entries and scene breaks
+     * @private
+     */
+    _mergeTranscriptWithScenes() {
+        const merged = [];
+
+        // Build a map of scene breaks by index
+        const scenesByIndex = new Map();
+        for (const scene of this.sceneSegments) {
+            scenesByIndex.set(scene.index, scene);
+        }
+
+        // Iterate through transcript segments and insert scene breaks
+        for (let i = 0; i < this.transcriptSegments.length; i++) {
+            // Check if there's a scene break at this index
+            if (scenesByIndex.has(i)) {
+                const scene = scenesByIndex.get(i);
+                // Capitalize first letter for localization key
+                const sceneTypeKey = scene.type.charAt(0).toUpperCase() + scene.type.slice(1);
+                merged.push({
+                    type: 'scene-break',
+                    sceneType: scene.type,
+                    sceneTypeLabel: game.i18n.localize(`NARRATOR.Scenes.SceneType${sceneTypeKey}`),
+                    timestamp: this._formatTimestamp(scene.timestamp),
+                    isManual: scene.isManual,
+                    manualLabel: scene.isManual ? game.i18n.localize('NARRATOR.Scenes.ManualBreak') : game.i18n.localize('NARRATOR.Scenes.AutomaticBreak')
+                });
+            }
+
+            // Add the transcript segment
+            const segment = this.transcriptSegments[i];
+            merged.push({
+                type: 'transcript',
+                speaker: segment.speaker,
+                text: segment.text,
+                timestamp: segment.timestamp
+            });
+        }
+
+        return merged;
+    }
+
+    /**
+     * Formats transcript with scene breaks integrated
+     * @returns {string} Formatted transcript text
+     * @private
+     */
+    _formatTranscriptWithScenes() {
+        const lines = [];
+
+        // Build a map of scene breaks by index
+        const scenesByIndex = new Map();
+        for (const scene of this.sceneSegments) {
+            scenesByIndex.set(scene.index, scene);
+        }
+
+        // Iterate through transcript segments and insert scene breaks
+        for (let i = 0; i < this.transcriptSegments.length; i++) {
+            // Check if there's a scene break at this index
+            if (scenesByIndex.has(i)) {
+                const scene = scenesByIndex.get(i);
+                const sceneTypeName = game.i18n.localize(`NARRATOR.Scenes.SceneType${scene.type.charAt(0).toUpperCase() + scene.type.slice(1)}`);
+                const manualMarker = scene.isManual ? ` [${game.i18n.localize('NARRATOR.Scenes.ManualSceneBreak')}]` : '';
+                lines.push('');
+                lines.push('═'.repeat(50));
+                lines.push(`${game.i18n.localize('NARRATOR.Scenes.SceneBreak')}: ${sceneTypeName}${manualMarker}`);
+                lines.push('═'.repeat(50));
+                lines.push('');
+            }
+
+            // Add the transcript segment
+            const segment = this.transcriptSegments[i];
+            lines.push(`[${segment.timestamp}] ${segment.speaker}: ${segment.text}`);
+        }
+
+        return lines.join('\n');
     }
 
     /**

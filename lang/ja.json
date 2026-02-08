@@ -1,7 +1,6 @@
 {
     "NARRATOR": {
         "PanelTitle": "Narrator Master - DMアシスタント",
-
         "Settings": {
             "ApiKeyName": "OpenAI APIキー",
             "ApiKeyHint": "OpenAI APIキーを入力してください。クレジット付きアカウントが必要です（最低$5）。platform.openai.com/api-keysから取得できます",
@@ -15,7 +14,6 @@
             "SensitivityMedium": "中 - バランス型",
             "SensitivityHigh": "高 - 小さな変化も検知"
         },
-
         "Panel": {
             "Title": "Narrator Master",
             "TogglePanel": "DMパネルを開く/閉じる",
@@ -43,7 +41,6 @@
             "JournalStatus": "{count}個のジャーナルを読み込み済み",
             "JournalStatusEmpty": "利用可能なジャーナルはありません"
         },
-
         "Errors": {
             "NotInitialized": "Narrator Masterはまだ初期化されていません。完全に読み込まれるまでお待ちください。",
             "InitFailed": "Narrator Masterの初期化に失敗しました",
@@ -79,11 +76,9 @@
             "InvalidJournalId": "無効なジャーナルIDです。",
             "JournalNotFound": "ジャーナルが見つかりません：{id}"
         },
-
         "Warnings": {
             "ConfigIncomplete": "設定が不完全です"
         },
-
         "Notifications": {
             "CopiedToClipboard": "クリップボードにコピーしました！",
             "RecordingStarted": "録音を開始しました",
@@ -97,7 +92,6 @@
             "MicrophoneReady": "マイクが録音準備完了です",
             "PlayersOffTrack": "注意：プレイヤーがストーリーから外れています！"
         },
-
         "OffTrack": {
             "NoContext": "脱線検知のための冒険コンテキストが設定されていません。",
             "ParseError": "脱線検知のレスポンスを解析できませんでした。",
@@ -105,7 +99,6 @@
             "Severe": "プレイヤーが冒険から完全に脱線しています。",
             "Minor": "メインストーリーからわずかに逸脱しています。"
         },
-
         "Suggestions": {
             "TypeNarration": "ナレーション",
             "TypeDialogue": "対話",
@@ -115,7 +108,6 @@
             "MediumConfidence": "中信頼度",
             "LowConfidence": "低信頼度"
         },
-
         "Recording": {
             "StateInactive": "非アクティブ",
             "StateRecording": "録音中",
@@ -125,7 +117,6 @@
             "AudioLevelNormal": "音声レベル：通常",
             "AudioLevelHigh": "音声レベル：高"
         },
-
         "Journal": {
             "NoJournalFound": "ジャーナルが見つかりません",
             "ParsingJournal": "ジャーナルを解析中...",
@@ -133,7 +124,6 @@
             "PageCount": "{count}ページが見つかりました",
             "UnnamedPage": "名前のないページ"
         },
-
         "Images": {
             "Generating": "生成中...",
             "CacheExpired": "画像URLの有効期限が切れました。ローカルキャッシュを使用します",
@@ -142,7 +132,6 @@
             "Delete": "削除",
             "Download": "ダウンロード"
         },
-
         "Tooltips": {
             "ToggleRecording": "音声録音を開始または停止",
             "GenerateImage": "現在のコンテキストに基づいて画像を生成",
@@ -150,13 +139,28 @@
             "CopyText": "テキストをクリップボードにコピー",
             "OpenSettings": "モジュール設定を開く"
         },
-
         "Accessibility": {
             "RecordButton": "録音ボタン",
             "AudioLevel": "音声レベルインジケーター",
             "TabNavigation": "タブナビゲーション",
             "ImageGallery": "画像ギャラリー",
             "SuggestionsList": "提案リスト"
+        },
+        "Scenes": {
+            "SceneBreak": "Scene Break",
+            "SceneTypeExploration": "Exploration",
+            "SceneTypeCombat": "Combat",
+            "SceneTypeSocial": "Social",
+            "SceneTypeRest": "Rest",
+            "SceneTransitionDetected": "Scene transition detected",
+            "ManualSceneBreak": "Manual scene break",
+            "MarkSceneBreak": "Mark Scene Break",
+            "SceneType": "Scene Type",
+            "AutomaticBreak": "Automatic",
+            "ManualBreak": "Manual",
+            "SelectSceneType": "Select the scene type",
+            "SceneMarked": "Scene break marked",
+            "NoActiveScene": "No active scene"
         }
     }
 }

@@ -12,6 +12,7 @@ import { ImageGenerator } from './image-generator.js';
 import { JournalParser } from './journal-parser.js';
 import { NarratorPanel, RECORDING_STATE } from './ui-panel.js';
 import { SpeakerLabelService } from './speaker-labels.js';
+import { SceneDetector } from './scene-detector.js';
 
 /**
  * Error notification types for different severity levels
@@ -170,6 +171,12 @@ class NarratorMaster {
         this.speakerLabelService = null;
 
         /**
+         * Scene detector service
+         * @type {SceneDetector|null}
+         */
+        this.sceneDetector = null;
+
+        /**
          * Audio level update interval ID
          * @type {number|null}
          * @private
@@ -254,6 +261,11 @@ class NarratorMaster {
         // Initialize Speaker Label Service (no API key needed)
         this.speakerLabelService = new SpeakerLabelService();
 
+        // Initialize Scene Detector (no API key needed)
+        this.sceneDetector = new SceneDetector({
+            sensitivity: this.settings.getOffTrackSensitivity()
+        });
+
         // Initialize Audio Capture
         this.audioCapture = new AudioCapture({
             timeslice: 5000, // 5 second chunks for better processing
@@ -272,7 +284,8 @@ class NarratorMaster {
 
         this.aiAssistant = new AIAssistant(apiKey, {
             model: 'gpt-4o-mini',
-            sensitivity: this.settings.getOffTrackSensitivity()
+            sensitivity: this.settings.getOffTrackSensitivity(),
+            sceneDetector: this.sceneDetector
         });
 
         this.imageGenerator = new ImageGenerator(apiKey, {
@@ -467,7 +480,16 @@ class NarratorMaster {
             const labeledText = this._formatTranscriptionWithLabels(transcription);
 
             // Analyze transcription with AI (results shown to user)
-            await this._analyzeTranscription(labeledText);
+            const analysis = await this._analyzeTranscription(labeledText);
+
+            // Handle scene transitions
+            if (analysis && analysis.sceneInfo && analysis.sceneInfo.isTransition && this.panel) {
+                this.panel.addSceneBreak(
+                    analysis.sceneInfo.type,
+                    analysis.sceneInfo.timestamp,
+                    false // false for automatic detection
+                );
+            }
 
         } catch (error) {
             this._handleServiceError(error, 'Transcription');
@@ -477,12 +499,13 @@ class NarratorMaster {
     /**
      * Analyzes transcription with AI assistant
      * @param {string} text - Transcribed text to analyze
+     * @returns {Promise<Object|null>} The analysis result including sceneInfo, or null if failed
      * @private
      */
     async _analyzeTranscription(text) {
         if (!this.aiAssistant.isConfigured()) {
             console.warn(`${MODULE_ID} | AI assistant not configured`);
-            return;
+            return null;
         }
 
         try {
@@ -504,9 +527,12 @@ class NarratorMaster {
                 }
             }
 
+            return analysis;
+
         } catch (error) {
             console.error(`${MODULE_ID} | AI analysis error:`, error);
             // Don't show notification for analysis errors - not critical
+            return null;
         }
     }
 
@@ -618,7 +644,16 @@ class NarratorMaster {
                 const labeledText = this._formatTranscriptionWithLabels(transcription);
 
                 // Final AI analysis
-                await this._analyzeTranscription(labeledText);
+                const analysis = await this._analyzeTranscription(labeledText);
+
+                // Handle scene transitions
+                if (analysis && analysis.sceneInfo && analysis.sceneInfo.isTransition && this.panel) {
+                    this.panel.addSceneBreak(
+                        analysis.sceneInfo.type,
+                        analysis.sceneInfo.timestamp,
+                        false // false for automatic detection
+                    );
+                }
             }
 
         } catch (error) {
@@ -670,15 +705,21 @@ class NarratorMaster {
         }
 
         try {
+            // Get current scene type for scene-aware image generation
+            const currentScene = this.panel?.getCurrentScene();
+            const sceneType = currentScene?.type || null;
+
             const result = await this.imageGenerator.generateInfographic(context, {
                 style: 'fantasy',
-                mood: 'dramatic'
+                mood: 'dramatic',
+                sceneType: sceneType
             });
 
             if (this.panel && result.url) {
                 this.panel.addImage({
                     url: result.base64 ? `data:image/png;base64,${result.base64}` : result.url,
-                    prompt: result.prompt
+                    prompt: result.prompt,
+                    sceneType: sceneType
                 });
 
                 ErrorNotificationHelper.info(game.i18n.localize('NARRATOR.Notifications.ImageGenerated'));

@@ -1,7 +1,6 @@
 {
     "NARRATOR": {
         "PanelTitle": "Narrator Master - Assistente de Mestre",
-
         "Settings": {
             "ApiKeyName": "Chave API OpenAI",
             "ApiKeyHint": "Sua chave API OpenAI. Requer uma conta com créditos (mínimo $5). Obtenha em platform.openai.com/api-keys",
@@ -15,7 +14,6 @@
             "SensitivityMedium": "Média - Equilibrado",
             "SensitivityHigh": "Alta - Até pequenas variações"
         },
-
         "Panel": {
             "Title": "Narrator Master",
             "TogglePanel": "Abrir/Fechar Painel do Mestre",
@@ -43,7 +41,6 @@
             "JournalStatus": "{count} diários carregados",
             "JournalStatusEmpty": "Nenhum diário disponível"
         },
-
         "Errors": {
             "NotInitialized": "Narrator Master ainda não foi inicializado. Aguarde o carregamento completo.",
             "InitFailed": "Falha na inicialização do Narrator Master",
@@ -79,11 +76,9 @@
             "InvalidJournalId": "ID de Diário inválido.",
             "JournalNotFound": "Diário não encontrado: {id}"
         },
-
         "Warnings": {
             "ConfigIncomplete": "Configuração incompleta"
         },
-
         "Notifications": {
             "CopiedToClipboard": "Copiado para área de transferência!",
             "RecordingStarted": "Gravação iniciada",
@@ -97,7 +92,6 @@
             "MicrophoneReady": "Microfone pronto para gravação",
             "PlayersOffTrack": "Atenção: Os jogadores estão se desviando do enredo!"
         },
-
         "OffTrack": {
             "NoContext": "Nenhum contexto de aventura definido para detecção fora do tema.",
             "ParseError": "Impossível analisar a resposta da detecção fora do tema.",
@@ -105,7 +99,6 @@
             "Severe": "Os jogadores estão completamente fora do tema em relação à aventura.",
             "Minor": "Pequeno desvio do enredo principal."
         },
-
         "Suggestions": {
             "TypeNarration": "Narração",
             "TypeDialogue": "Diálogo",
@@ -115,7 +108,6 @@
             "MediumConfidence": "Média confiança",
             "LowConfidence": "Baixa confiança"
         },
-
         "Recording": {
             "StateInactive": "Inativo",
             "StateRecording": "Gravando",
@@ -125,7 +117,6 @@
             "AudioLevelNormal": "Nível de áudio normal",
             "AudioLevelHigh": "Nível de áudio alto"
         },
-
         "Journal": {
             "NoJournalFound": "Diário não encontrado",
             "ParsingJournal": "Analisando Diário...",
@@ -133,7 +124,6 @@
             "PageCount": "{count} páginas encontradas",
             "UnnamedPage": "Página sem nome"
         },
-
         "Images": {
             "Generating": "Gerando...",
             "CacheExpired": "URL da imagem expirada, usando cache local",
@@ -142,7 +132,6 @@
             "Delete": "Excluir",
             "Download": "Baixar"
         },
-
         "Tooltips": {
             "ToggleRecording": "Iniciar ou parar a gravação de áudio",
             "GenerateImage": "Gerar uma imagem baseada no contexto atual",
@@ -150,13 +139,28 @@
             "CopyText": "Copiar o texto para área de transferência",
             "OpenSettings": "Abrir as configurações do módulo"
         },
-
         "Accessibility": {
             "RecordButton": "Botão de gravação",
             "AudioLevel": "Indicador de nível de áudio",
             "TabNavigation": "Navegação por abas",
             "ImageGallery": "Galeria de imagens",
             "SuggestionsList": "Lista de sugestões"
+        },
+        "Scenes": {
+            "SceneBreak": "Scene Break",
+            "SceneTypeExploration": "Exploration",
+            "SceneTypeCombat": "Combat",
+            "SceneTypeSocial": "Social",
+            "SceneTypeRest": "Rest",
+            "SceneTransitionDetected": "Scene transition detected",
+            "ManualSceneBreak": "Manual scene break",
+            "MarkSceneBreak": "Mark Scene Break",
+            "SceneType": "Scene Type",
+            "AutomaticBreak": "Automatic",
+            "ManualBreak": "Manual",
+            "SelectSceneType": "Select the scene type",
+            "SceneMarked": "Scene break marked",
+            "NoActiveScene": "No active scene"
         }
     }
 }

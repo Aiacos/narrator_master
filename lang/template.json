@@ -151,6 +151,23 @@
             "OpenSettings": ""
         },
 
+        "Scenes": {
+            "SceneBreak": "",
+            "SceneTypeExploration": "",
+            "SceneTypeCombat": "",
+            "SceneTypeSocial": "",
+            "SceneTypeRest": "",
+            "SceneTransitionDetected": "",
+            "ManualSceneBreak": "",
+            "MarkSceneBreak": "",
+            "SceneType": "",
+            "AutomaticBreak": "",
+            "ManualBreak": "",
+            "SelectSceneType": "",
+            "SceneMarked": "",
+            "NoActiveScene": ""
+        },
+
         "Accessibility": {
             "RecordButton": "",
             "AudioLevel": "",

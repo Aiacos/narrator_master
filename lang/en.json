@@ -151,6 +151,23 @@
             "OpenSettings": "Open module settings"
         },
 
+        "Scenes": {
+            "SceneBreak": "Scene Break",
+            "SceneTypeExploration": "Exploration",
+            "SceneTypeCombat": "Combat",
+            "SceneTypeSocial": "Social",
+            "SceneTypeRest": "Rest",
+            "SceneTransitionDetected": "Scene transition detected",
+            "ManualSceneBreak": "Manual scene break",
+            "MarkSceneBreak": "Mark Scene Break",
+            "SceneType": "Scene Type",
+            "AutomaticBreak": "Automatic",
+            "ManualBreak": "Manual",
+            "SelectSceneType": "Select the scene type",
+            "SceneMarked": "Scene break marked",
+            "NoActiveScene": "No active scene"
+        },
+
         "Accessibility": {
             "RecordButton": "Record button",
             "AudioLevel": "Audio level indicator",

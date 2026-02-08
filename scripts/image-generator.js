@@ -333,6 +333,7 @@ export class ImageGenerator {
      * @param {string} [options.style='fantasy'] - Art style ('fantasy', 'realistic', 'sketch')
      * @param {string} [options.mood='dramatic'] - Image mood ('dramatic', 'peaceful', 'mysterious')
      * @param {string[]} [options.elements=[]] - Additional elements to include
+     * @param {string} [options.sceneType] - Scene type ('exploration', 'combat', 'social', 'rest')
      * @returns {Promise<GenerationResult>} The generation result
      */
     async generateInfographic(eventDescription, options = {}) {
@@ -343,9 +344,10 @@ export class ImageGenerator {
         const artStyle = options.style || 'fantasy';
         const mood = options.mood || 'dramatic';
         const elements = options.elements || [];
+        const sceneType = options.sceneType || null;
 
         // Build a specialized prompt for RPG infographics
-        const prompt = this._buildInfographicPrompt(eventDescription, artStyle, mood, elements);
+        const prompt = this._buildInfographicPrompt(eventDescription, artStyle, mood, elements, sceneType);
 
         console.log(`${MODULE_ID} | Generating infographic for: "${eventDescription.substring(0, 50)}..."`);
 
@@ -364,6 +366,7 @@ export class ImageGenerator {
      * @param {string} [options.location] - Location type ('dungeon', 'forest', 'tavern', etc.)
      * @param {string} [options.lighting] - Lighting condition ('torchlit', 'moonlight', 'daylight')
      * @param {string[]} [options.characters=[]] - Characters in the scene
+     * @param {string} [options.sceneType] - Scene type ('exploration', 'combat', 'social', 'rest')
      * @returns {Promise<GenerationResult>} The generation result
      */
     async generateSceneIllustration(sceneDescription, options = {}) {
@@ -374,9 +377,10 @@ export class ImageGenerator {
         const location = options.location || '';
         const lighting = options.lighting || '';
         const characters = options.characters || [];
+        const sceneType = options.sceneType || null;
 
         // Build scene-specific prompt
-        const prompt = this._buildScenePrompt(sceneDescription, location, lighting, characters);
+        const prompt = this._buildScenePrompt(sceneDescription, location, lighting, characters, sceneType);
 
         console.log(`${MODULE_ID} | Generating scene illustration: "${sceneDescription.substring(0, 50)}..."`);
 
@@ -519,10 +523,11 @@ export class ImageGenerator {
      * @param {string} style - Art style
      * @param {string} mood - Image mood
      * @param {string[]} elements - Additional elements
+     * @param {string} [sceneType] - Scene type ('exploration', 'combat', 'social', 'rest')
      * @returns {string} The constructed prompt
      * @private
      */
-    _buildInfographicPrompt(description, style, mood, elements) {
+    _buildInfographicPrompt(description, style, mood, elements, sceneType) {
         const styleMap = {
             fantasy: 'high fantasy art style, magical, detailed illustration',
             realistic: 'realistic digital painting, photorealistic, detailed',
@@ -536,8 +541,19 @@ export class ImageGenerator {
             action: 'dynamic composition, motion blur, intense action'
         };
 
+        const sceneTypeMap = {
+            combat: 'dynamic action, battle stance, intense combat',
+            social: 'character interaction, conversation, interpersonal dynamics',
+            exploration: 'discovery, landscape, adventure atmosphere',
+            rest: 'calm, peaceful, restorative moment'
+        };
+
         let prompt = `${styleMap[style] || styleMap.fantasy}, ${moodMap[mood] || moodMap.dramatic}. `;
         prompt += `Scene: ${description}. `;
+
+        if (sceneType && sceneTypeMap[sceneType]) {
+            prompt += `${sceneTypeMap[sceneType]}. `;
+        }
 
         if (elements.length > 0) {
             prompt += `Include: ${elements.join(', ')}. `;
@@ -554,12 +570,24 @@ export class ImageGenerator {
      * @param {string} location - Location type
      * @param {string} lighting - Lighting condition
      * @param {string[]} characters - Characters in scene
+     * @param {string} [sceneType] - Scene type ('exploration', 'combat', 'social', 'rest')
      * @returns {string} The constructed prompt
      * @private
      */
-    _buildScenePrompt(description, location, lighting, characters) {
+    _buildScenePrompt(description, location, lighting, characters, sceneType) {
+        const sceneTypeMap = {
+            combat: 'dynamic action, battle stance, intense combat',
+            social: 'character interaction, conversation, interpersonal dynamics',
+            exploration: 'discovery, landscape, adventure atmosphere',
+            rest: 'calm, peaceful, restorative moment'
+        };
+
         let prompt = 'Fantasy RPG scene illustration, high fantasy art style, detailed. ';
         prompt += `Scene: ${description}. `;
+
+        if (sceneType && sceneTypeMap[sceneType]) {
+            prompt += `${sceneTypeMap[sceneType]}. `;
+        }
 
         if (location) {
             prompt += `Location: ${location}. `;

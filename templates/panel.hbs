@@ -223,6 +223,10 @@
             <div class="transcript-header">
                 <h3>{{i18n.transcriptTab}}</h3>
                 <div class="transcript-actions">
+                    <button type="button" class="mark-scene-break" title="{{i18n.markSceneBreak}}">
+                        <i class="fas fa-flag"></i>
+                        {{i18n.markSceneBreak}}
+                    </button>
                     {{#if hasTranscript}}
                     <button type="button" class="copy-transcript" title="{{i18n.copyToClipboard}}">
                         <i class="fas fa-copy"></i>
@@ -240,14 +244,44 @@
             <div class="transcript-content">
                 {{#if hasTranscript}}
                 <div class="transcript-list">
-                    {{#each transcriptEntries}}
-                    <div class="transcript-segment" data-speaker="{{this.speaker}}" data-timestamp="{{this.timestamp}}">
-                        <div class="segment-header">
-                            <span class="speaker-label">{{this.speaker}}</span>
-                            <span class="transcript-timestamp">{{this.timestamp}}</span>
+                    {{#each transcriptWithScenes}}
+                        {{#if (eq this.type "scene-break")}}
+                        {{!-- Scene Break Separator --}}
+                        <div class="scene-break" data-scene-type="{{this.sceneType}}" data-timestamp="{{this.timestamp}}">
+                            <div class="scene-break-line"></div>
+                            <div class="scene-break-content">
+                                <span class="scene-type-badge scene-type-{{this.sceneType}}">
+                                    {{#if (eq this.sceneType "exploration")}}
+                                    <i class="fas fa-compass"></i>
+                                    {{else if (eq this.sceneType "combat")}}
+                                    <i class="fas fa-crossed-swords"></i>
+                                    {{else if (eq this.sceneType "social")}}
+                                    <i class="fas fa-comments"></i>
+                                    {{else if (eq this.sceneType "rest")}}
+                                    <i class="fas fa-bed"></i>
+                                    {{/if}}
+                                    {{this.sceneTypeLabel}}
+                                </span>
+                                <span class="scene-timestamp">{{this.timestamp}}</span>
+                                {{#if this.isManual}}
+                                <span class="scene-manual-indicator" title="{{this.manualLabel}}">
+                                    <i class="fas fa-hand-pointer"></i>
+                                    {{this.manualLabel}}
+                                </span>
+                                {{/if}}
+                            </div>
+                            <div class="scene-break-line"></div>
                         </div>
-                        <div class="transcript-text">{{this.text}}</div>
-                    </div>
+                        {{else}}
+                        {{!-- Regular Transcript Segment --}}
+                        <div class="transcript-segment" data-speaker="{{this.speaker}}" data-timestamp="{{this.timestamp}}">
+                            <div class="segment-header">
+                                <span class="speaker-label">{{this.speaker}}</span>
+                                <span class="transcript-timestamp">{{this.timestamp}}</span>
+                            </div>
+                            <div class="transcript-text">{{this.text}}</div>
+                        </div>
+                        {{/if}}
                     {{/each}}
                 </div>
                 {{else}}

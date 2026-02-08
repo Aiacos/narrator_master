@@ -1,7 +1,6 @@
 {
     "NARRATOR": {
         "PanelTitle": "Narrator Master - Spielleiter-Assistent",
-
         "Settings": {
             "ApiKeyName": "OpenAI API-Schlüssel",
             "ApiKeyHint": "Ihr OpenAI API-Schlüssel. Erfordert ein Konto mit Guthaben (mindestens $5). Erhalten Sie ihn von platform.openai.com/api-keys",
@@ -15,7 +14,6 @@
             "SensitivityMedium": "Mittel - Ausgewogen",
             "SensitivityHigh": "Hoch - Auch kleine Abweichungen"
         },
-
         "Panel": {
             "Title": "Narrator Master",
             "TogglePanel": "Spielleiter-Panel öffnen/schließen",
@@ -43,7 +41,6 @@
             "JournalStatus": "{count} Journale geladen",
             "JournalStatusEmpty": "Keine Journale verfügbar"
         },
-
         "Errors": {
             "NotInitialized": "Narrator Master ist noch nicht initialisiert. Warten Sie, bis das Laden abgeschlossen ist.",
             "InitFailed": "Narrator Master Initialisierung fehlgeschlagen",
@@ -79,11 +76,9 @@
             "InvalidJournalId": "Ungültige Journal-ID.",
             "JournalNotFound": "Journal nicht gefunden: {id}"
         },
-
         "Warnings": {
             "ConfigIncomplete": "Konfiguration unvollständig"
         },
-
         "Notifications": {
             "CopiedToClipboard": "In Zwischenablage kopiert!",
             "RecordingStarted": "Aufnahme gestartet",
@@ -97,7 +92,6 @@
             "MicrophoneReady": "Mikrofon bereit für die Aufnahme",
             "PlayersOffTrack": "Achtung: Die Spieler weichen von der Handlung ab!"
         },
-
         "OffTrack": {
             "NoContext": "Kein Abenteuerkontext für die Abweichungserkennung festgelegt.",
             "ParseError": "Die Antwort der Abweichungserkennung konnte nicht analysiert werden.",
@@ -105,7 +99,6 @@
             "Severe": "Die Spieler sind völlig vom Abenteuer abgewichen.",
             "Minor": "Leichte Abweichung von der Haupthandlung."
         },
-
         "Suggestions": {
             "TypeNarration": "Erzählung",
             "TypeDialogue": "Dialog",
@@ -115,7 +108,6 @@
             "MediumConfidence": "Mittlere Konfidenz",
             "LowConfidence": "Niedrige Konfidenz"
         },
-
         "Recording": {
             "StateInactive": "Inaktiv",
             "StateRecording": "Aufnahme läuft",
@@ -125,7 +117,6 @@
             "AudioLevelNormal": "Normaler Audiopegel",
             "AudioLevelHigh": "Hoher Audiopegel"
         },
-
         "Journal": {
             "NoJournalFound": "Journal nicht gefunden",
             "ParsingJournal": "Journal wird analysiert...",
@@ -133,7 +124,6 @@
             "PageCount": "{count} Seiten gefunden",
             "UnnamedPage": "Seite ohne Namen"
         },
-
         "Images": {
             "Generating": "Generierung läuft...",
             "CacheExpired": "Bild-URL abgelaufen, verwende lokalen Cache",
@@ -142,7 +132,6 @@
             "Delete": "Löschen",
             "Download": "Herunterladen"
         },
-
         "Tooltips": {
             "ToggleRecording": "Audioaufnahme starten oder stoppen",
             "GenerateImage": "Ein Bild basierend auf dem aktuellen Kontext generieren",
@@ -150,13 +139,28 @@
             "CopyText": "Text in die Zwischenablage kopieren",
             "OpenSettings": "Moduleinstellungen öffnen"
         },
-
         "Accessibility": {
             "RecordButton": "Aufnahme-Schaltfläche",
             "AudioLevel": "Audiopegel-Indikator",
             "TabNavigation": "Tab-Navigation",
             "ImageGallery": "Bildergalerie",
             "SuggestionsList": "Vorschlagsliste"
+        },
+        "Scenes": {
+            "SceneBreak": "Scene Break",
+            "SceneTypeExploration": "Exploration",
+            "SceneTypeCombat": "Combat",
+            "SceneTypeSocial": "Social",
+            "SceneTypeRest": "Rest",
+            "SceneTransitionDetected": "Scene transition detected",
+            "ManualSceneBreak": "Manual scene break",
+            "MarkSceneBreak": "Mark Scene Break",
+            "SceneType": "Scene Type",
+            "AutomaticBreak": "Automatic",
+            "ManualBreak": "Manual",
+            "SelectSceneType": "Select the scene type",
+            "SceneMarked": "Scene break marked",
+            "NoActiveScene": "No active scene"
         }
     }
 }

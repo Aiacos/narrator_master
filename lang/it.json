@@ -202,6 +202,23 @@
             "ColorCode": "Codice Colore",
             "SpeakerColor": "Colore Parlante {number}",
             "TranscriptionWithSpeakers": "Trascrizione con Parlanti"
+        },
+
+        "Scenes": {
+            "SceneBreak": "Interruzione di Scena",
+            "SceneTypeExploration": "Esplorazione",
+            "SceneTypeCombat": "Combattimento",
+            "SceneTypeSocial": "Sociale",
+            "SceneTypeRest": "Riposo",
+            "SceneTransitionDetected": "Transizione di scena rilevata",
+            "ManualSceneBreak": "Interruzione di scena manuale",
+            "MarkSceneBreak": "Segna Interruzione di Scena",
+            "SceneType": "Tipo di Scena",
+            "AutomaticBreak": "Automatico",
+            "ManualBreak": "Manuale",
+            "SelectSceneType": "Seleziona il tipo di scena",
+            "SceneMarked": "Interruzione di scena marcata",
+            "NoActiveScene": "Nessuna scena attiva"
         }
     }
 }
