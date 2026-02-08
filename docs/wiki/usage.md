@@ -253,49 +253,58 @@ Se modifichi il Journal durante la sessione:
 
 ## Risoluzione Problemi
 
-### Il microfono non funziona
+> **📖 Guida Completa Disponibile**: Per una risoluzione dettagliata dei problemi, consulta la **[Guida alla Risoluzione dei Problemi](troubleshooting.md)** dedicata, che copre **tutti i 40+ messaggi di errore** con spiegazioni complete, cause e soluzioni passo-passo.
+
+### Problemi Piu Comuni (Quick Reference)
+
+Di seguito trovi soluzioni rapide per i problemi piu frequenti. Per dettagli completi e messaggi di errore specifici, vedi la [guida completa](troubleshooting.md).
+
+#### Il microfono non funziona
 
 1. Verifica le **impostazioni del browser** (icona lucchetto)
 2. Prova con un **browser diverso** (Chrome consigliato)
 3. Controlla che **nessun'altra app** usi il microfono
 4. Verifica che sia **HTTPS** (tranne localhost)
 
-### La trascrizione non appare
+→ [Dettagli completi sui problemi audio](troubleshooting.md#problemi-audio)
+
+#### La trascrizione non appare
 
 1. Controlla la **chiave API** nelle impostazioni
 2. Verifica di avere **crediti OpenAI**
 3. Guarda la **console browser** (F12) per errori
 4. Prova a **parlare piu forte/chiaro**
 
-### I suggerimenti non sono pertinenti
+→ [Dettagli completi sui problemi di trascrizione](troubleshooting.md#problemi-trascrizione)
+
+#### I suggerimenti non sono pertinenti
 
 1. **Seleziona un Journal** piu dettagliato
 2. Verifica che il Journal contenga **testo** (non solo immagini)
 3. Regola la **sensibilita** del rilevamento
 4. Il sistema migliora con piu **contesto audio**
 
-### "Limite di rate superato"
+→ [Dettagli completi sui problemi AI](troubleshooting.md#problemi-ai)
 
-1. **Attendi** qualche minuto
-2. Considera di **upgradare** il piano OpenAI
-3. Riduci la **frequenza** di generazione immagini
-
-### Il pannello non si apre
+#### Il pannello non si apre
 
 1. Verifica di essere **GM** nel mondo
 2. Controlla che il modulo sia **attivato**
 3. **Ricarica** la pagina (F5)
 4. Controlla **errori** nella console (F12)
 
-### Messaggi di Errore Comuni
+→ [Dettagli completi sui problemi UI](troubleshooting.md#problemi-ui)
 
-| Errore | Soluzione |
-|--------|-----------|
-| "Chiave API non configurata" | Aggiungi la chiave nelle impostazioni |
-| "Errore di rete" | Verifica la connessione internet |
-| "Permesso microfono negato" | Consenti il microfono nel browser |
-| "File troppo grande" | L'audio dovrebbe essere chunked automaticamente |
-| "Limite di richieste" | Attendi e riprova |
+### Messaggi di Errore
+
+Il modulo puo mostrare oltre 40 messaggi di errore diversi. Ogni messaggio e documentato nella [Guida alla Risoluzione dei Problemi](troubleshooting.md) con:
+
+- **Spiegazione** del problema
+- **Cause** possibili
+- **Soluzioni** passo-passo
+- **Prevenzione** per evitare il problema in futuro
+
+**Consulta la guida completa**: [troubleshooting.md](troubleshooting.md)
 
 ## Scorciatoie e Trucchi
 

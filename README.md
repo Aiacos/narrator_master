@@ -171,6 +171,10 @@ Based on OpenAI pricing (as of 2024-2026):
 
 ## Troubleshooting
 
+> **📖 For complete troubleshooting documentation**, see the **[Troubleshooting Guide](docs/wiki/troubleshooting.md)** which includes detailed solutions, error code references, and advanced debugging steps.
+
+Below are the **5 most common issues** and their quick solutions:
+
 ### Microphone Not Working
 
 **Symptom**: Recording button doesn't work or no audio is captured
@@ -230,6 +234,8 @@ Based on OpenAI pricing (as of 2024-2026):
 | `Limite di rate superato` | Too many API requests | Wait a moment, consider upgrading OpenAI plan |
 | `File troppo grande` | Audio exceeds 25MB | Module should auto-chunk; report if persists |
 | `Permesso microfono negato` | Browser blocked microphone | Allow microphone in browser settings |
+
+> **Note**: For a complete list of all error codes and their localization keys, see the [Troubleshooting Guide](docs/wiki/troubleshooting.md).
 
 ## Architecture
 
