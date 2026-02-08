@@ -232,7 +232,12 @@ export class SessionAnalytics {
             return;
         }
 
-        if (!segment || !segment.speaker || typeof segment.start !== 'number' || typeof segment.end !== 'number') {
+        if (
+            !segment ||
+            !segment.speaker ||
+            typeof segment.start !== 'number' ||
+            typeof segment.end !== 'number'
+        ) {
             console.warn('SessionAnalytics: Invalid segment data', segment);
             return;
         }
@@ -278,12 +283,10 @@ export class SessionAnalytics {
         // Update percentages and averages
         for (const speakerId in this._speakerMetrics) {
             const metrics = this._speakerMetrics[speakerId];
-            metrics.avgSegmentDuration = metrics.segmentCount > 0
-                ? metrics.speakingTime / metrics.segmentCount
-                : 0;
-            metrics.percentage = totalSpeakingTime > 0
-                ? (metrics.speakingTime / totalSpeakingTime) * 100
-                : 0;
+            metrics.avgSegmentDuration =
+                metrics.segmentCount > 0 ? metrics.speakingTime / metrics.segmentCount : 0;
+            metrics.percentage =
+                totalSpeakingTime > 0 ? (metrics.speakingTime / totalSpeakingTime) * 100 : 0;
         }
     }
 
@@ -368,7 +371,8 @@ export class SessionAnalytics {
             totalSpeakingTime: totalSpeakingTime,
             speakerCount: speakerStats.length,
             dominantSpeaker: speakerStats.length > 0 ? speakerStats[0].speakerId : null,
-            quietestSpeaker: speakerStats.length > 0 ? speakerStats[speakerStats.length - 1].speakerId : null,
+            quietestSpeaker:
+                speakerStats.length > 0 ? speakerStats[speakerStats.length - 1].speakerId : null,
             timeline: this.getTimeline()
         };
     }
@@ -431,12 +435,14 @@ export class SessionAnalytics {
         try {
             const sessionData = {
                 sessions: this._sessionHistory,
-                currentSession: this._currentSession ? {
-                    metadata: this._currentSession,
-                    speakerMetrics: this._speakerMetrics,
-                    segments: this._segments,
-                    sessionStartOffset: this._sessionStartOffset
-                } : null
+                currentSession: this._currentSession
+                    ? {
+                          metadata: this._currentSession,
+                          speakerMetrics: this._speakerMetrics,
+                          segments: this._segments,
+                          sessionStartOffset: this._sessionStartOffset
+                      }
+                    : null
             };
 
             await this._settingsManager.setSessionData(sessionData);

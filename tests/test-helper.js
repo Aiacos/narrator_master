@@ -124,10 +124,18 @@ export class MockJournalCollection {
  */
 export const mockNotifications = {
     _calls: [],
-    info: function(message) { this._calls.push({ type: 'info', message }); },
-    warn: function(message) { this._calls.push({ type: 'warn', message }); },
-    error: function(message) { this._calls.push({ type: 'error', message }); },
-    clear: function() { this._calls = []; }
+    info: function (message) {
+        this._calls.push({ type: 'info', message });
+    },
+    warn: function (message) {
+        this._calls.push({ type: 'warn', message });
+    },
+    error: function (message) {
+        this._calls.push({ type: 'error', message });
+    },
+    clear: function () {
+        this._calls = [];
+    }
 };
 
 /**
@@ -249,14 +257,20 @@ export function setupMockDocument() {
                 textContent: '',
                 innerText: '',
                 children: [],
-                appendChild: function(child) { this.children.push(child); },
-                querySelector: function() { return null; },
-                querySelectorAll: function() { return []; }
+                appendChild: function (child) {
+                    this.children.push(child);
+                },
+                querySelector: function () {
+                    return null;
+                },
+                querySelectorAll: function () {
+                    return [];
+                }
             };
 
             // Handle HTML parsing for div elements
             Object.defineProperty(element, 'innerHTML', {
-                set: function(value) {
+                set: function (value) {
                     this._innerHTML = value;
                     // Simple HTML to text conversion for testing
                     this.textContent = value
@@ -265,7 +279,7 @@ export function setupMockDocument() {
                         .trim();
                     this.innerText = this.textContent;
                 },
-                get: function() {
+                get: function () {
                     return this._innerHTML || '';
                 }
             });
@@ -321,7 +335,7 @@ export function setupMockDocument() {
  * Cleans up all global mocks
  */
 export function cleanupMocks() {
-    const targets = [globalThis, global].filter(t => typeof t !== 'undefined');
+    const targets = [globalThis, global].filter((t) => typeof t !== 'undefined');
 
     for (const target of targets) {
         delete target.game;
@@ -351,7 +365,9 @@ export function cleanupMocks() {
 export const assert = {
     equal: (actual, expected, message = '') => {
         if (actual !== expected) {
-            throw new Error(`Assertion failed${message ? ': ' + message : ''}: expected ${expected}, got ${actual}`);
+            throw new Error(
+                `Assertion failed${message ? ': ' + message : ''}: expected ${expected}, got ${actual}`
+            );
         }
     },
 
@@ -359,20 +375,26 @@ export const assert = {
         const actualStr = JSON.stringify(actual);
         const expectedStr = JSON.stringify(expected);
         if (actualStr !== expectedStr) {
-            throw new Error(`Assertion failed${message ? ': ' + message : ''}: expected ${expectedStr}, got ${actualStr}`);
+            throw new Error(
+                `Assertion failed${message ? ': ' + message : ''}: expected ${expectedStr}, got ${actualStr}`
+            );
         }
     },
 
     ok: (value, message = '') => {
         if (!value) {
-            throw new Error(`Assertion failed${message ? ': ' + message : ''}: expected truthy value, got ${value}`);
+            throw new Error(
+                `Assertion failed${message ? ': ' + message : ''}: expected truthy value, got ${value}`
+            );
         }
     },
 
     throws: async (fn, message = '') => {
         try {
             await fn();
-            throw new Error(`Assertion failed${message ? ': ' + message : ''}: expected function to throw`);
+            throw new Error(
+                `Assertion failed${message ? ': ' + message : ''}: expected function to throw`
+            );
         } catch (error) {
             if (error.message.startsWith('Assertion failed')) {
                 throw error;
@@ -386,19 +408,25 @@ export const assert = {
         try {
             await fn();
         } catch (error) {
-            throw new Error(`Assertion failed${message ? ': ' + message : ''}: function threw: ${error.message}`);
+            throw new Error(
+                `Assertion failed${message ? ': ' + message : ''}: function threw: ${error.message}`
+            );
         }
     },
 
     includes: (array, item, message = '') => {
         if (!Array.isArray(array) || !array.includes(item)) {
-            throw new Error(`Assertion failed${message ? ': ' + message : ''}: expected array to include ${item}`);
+            throw new Error(
+                `Assertion failed${message ? ': ' + message : ''}: expected array to include ${item}`
+            );
         }
     },
 
     contains: (str, substr, message = '') => {
         if (typeof str !== 'string' || !str.includes(substr)) {
-            throw new Error(`Assertion failed${message ? ': ' + message : ''}: expected "${str}" to contain "${substr}"`);
+            throw new Error(
+                `Assertion failed${message ? ': ' + message : ''}: expected "${str}" to contain "${substr}"`
+            );
         }
     }
 };
@@ -485,11 +513,11 @@ export function createMockFormData() {
 // Set up FormData mock globally if not available
 if (typeof FormData === 'undefined') {
     if (typeof globalThis !== 'undefined') {
-        globalThis.FormData = function() {
+        globalThis.FormData = function () {
             return createMockFormData();
         };
     } else if (typeof global !== 'undefined') {
-        global.FormData = function() {
+        global.FormData = function () {
             return createMockFormData();
         };
     }
@@ -497,7 +525,7 @@ if (typeof FormData === 'undefined') {
 
 // Set up Blob mock globally if not available
 if (typeof Blob === 'undefined') {
-    const MockBlob = function(parts = [], options = {}) {
+    const MockBlob = function (parts = [], options = {}) {
         return createMockBlob(options.type, parts.length > 0 ? parts[0].length : 0);
     };
 

@@ -4,13 +4,7 @@
  * @module tests/validation
  */
 
-import {
-    setupMockGame,
-    setupMockUI,
-    cleanupMocks,
-    assert,
-    TestRunner
-} from './test-helper.js';
+import { setupMockGame, setupMockUI, cleanupMocks, assert, TestRunner } from './test-helper.js';
 
 // Note: We need to set up mocks before importing the module
 let AIAssistant;
@@ -82,7 +76,11 @@ export async function runTests() {
 
         assert.equal(validateString(123, 100, 'test'), '123', 'Should convert number to string');
         assert.equal(validateString(true, 100, 'test'), 'true', 'Should convert boolean to string');
-        assert.equal(validateString({ key: 'value' }, 100, 'test'), '[object Object]', 'Should convert object to string');
+        assert.equal(
+            validateString({ key: 'value' }, 100, 'test'),
+            '[object Object]',
+            'Should convert object to string'
+        );
 
         teardown();
     });
@@ -128,7 +126,11 @@ export async function runTests() {
         const specialChars = '<script>alert("xss")</script>';
         const result = validateString(specialChars, 100, 'test');
 
-        assert.equal(result, specialChars, 'Should preserve special characters (sanitization is handled by Handlebars)');
+        assert.equal(
+            result,
+            specialChars,
+            'Should preserve special characters (sanitization is handled by Handlebars)'
+        );
         teardown();
     });
 
@@ -216,7 +218,11 @@ export async function runTests() {
 
         assert.equal(validateNumber('0.5', 0, 1, 'test'), 0.5, 'Should parse string to number');
         assert.equal(validateNumber('42', 0, 100, 'test'), 42, 'Should parse integer string');
-        assert.equal(validateNumber('3.14159', 0, 10, 'test'), 3.14159, 'Should parse float string');
+        assert.equal(
+            validateNumber('3.14159', 0, 10, 'test'),
+            3.14159,
+            'Should parse float string'
+        );
 
         teardown();
     });
@@ -256,7 +262,11 @@ export async function runTests() {
         await setup();
         const { validateNumber } = createTestAssistant();
 
-        assert.equal(validateNumber(-5, -10, 0, 'test'), -5, 'Should handle negative values in range');
+        assert.equal(
+            validateNumber(-5, -10, 0, 'test'),
+            -5,
+            'Should handle negative values in range'
+        );
         assert.equal(validateNumber(-15, -10, 0, 'test'), -10, 'Should clamp below negative min');
         assert.equal(validateNumber(5, -10, 0, 'test'), 0, 'Should clamp above negative max');
 
@@ -332,10 +342,26 @@ export async function runTests() {
         await setup();
         const { validateArray } = createTestAssistant();
 
-        assert.equal(validateArray('string', 10, 'test').length, 0, 'Should return empty array for string');
-        assert.equal(validateArray(123, 10, 'test').length, 0, 'Should return empty array for number');
-        assert.equal(validateArray({ key: 'value' }, 10, 'test').length, 0, 'Should return empty array for object');
-        assert.equal(validateArray(true, 10, 'test').length, 0, 'Should return empty array for boolean');
+        assert.equal(
+            validateArray('string', 10, 'test').length,
+            0,
+            'Should return empty array for string'
+        );
+        assert.equal(
+            validateArray(123, 10, 'test').length,
+            0,
+            'Should return empty array for number'
+        );
+        assert.equal(
+            validateArray({ key: 'value' }, 10, 'test').length,
+            0,
+            'Should return empty array for object'
+        );
+        assert.equal(
+            validateArray(true, 10, 'test').length,
+            0,
+            'Should return empty array for boolean'
+        );
 
         teardown();
     });
@@ -458,12 +484,16 @@ export async function runTests() {
         const { validateString, validateNumber, validateArray } = createTestAssistant();
 
         // Simulate validation of a suggestion object
-        const suggestions = validateArray([
-            {
-                content: 'Test suggestion that is very long and needs truncation'.repeat(200),
-                confidence: 1.5
-            }
-        ], 10, 'suggestions');
+        const suggestions = validateArray(
+            [
+                {
+                    content: 'Test suggestion that is very long and needs truncation'.repeat(200),
+                    confidence: 1.5
+                }
+            ],
+            10,
+            'suggestions'
+        );
 
         const validatedSuggestion = {
             content: validateString(suggestions[0].content, 5000, 'content'),

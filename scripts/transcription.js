@@ -213,10 +213,12 @@ export class TranscriptionService {
 
         // Check file size
         if (audioBlob.size > MAX_FILE_SIZE) {
-            throw new Error(game.i18n.format('NARRATOR.Errors.FileTooLarge', {
-                size: Math.round(audioBlob.size / (1024 * 1024)),
-                max: 25
-            }));
+            throw new Error(
+                game.i18n.format('NARRATOR.Errors.FileTooLarge', {
+                    size: Math.round(audioBlob.size / (1024 * 1024)),
+                    max: 25
+                })
+            );
         }
 
         // Determine language and speaker names
@@ -238,10 +240,11 @@ export class TranscriptionService {
             // Add to history
             this._addToHistory(result);
 
-            console.log(`${MODULE_ID} | Transcription complete, ${result.segments.length} segments`);
+            console.log(
+                `${MODULE_ID} | Transcription complete, ${result.segments.length} segments`
+            );
 
             return result;
-
         } catch (error) {
             // Handle specific API errors
             if (error.status) {
@@ -269,10 +272,12 @@ export class TranscriptionService {
         }
 
         if (audioBlob.size > MAX_FILE_SIZE) {
-            throw new Error(game.i18n.format('NARRATOR.Errors.FileTooLarge', {
-                size: Math.round(audioBlob.size / (1024 * 1024)),
-                max: 25
-            }));
+            throw new Error(
+                game.i18n.format('NARRATOR.Errors.FileTooLarge', {
+                    size: Math.round(audioBlob.size / (1024 * 1024)),
+                    max: 25
+                })
+            );
         }
 
         const language = options.language || this._language;
@@ -294,7 +299,7 @@ export class TranscriptionService {
             const response = await fetch(`${this._baseUrl}/audio/transcriptions`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${this._apiKey}`
+                    Authorization: `Bearer ${this._apiKey}`
                 },
                 body: formData
             });
@@ -313,7 +318,7 @@ export class TranscriptionService {
             // Convert to standard result format
             const result = {
                 text: data.text || '',
-                segments: (data.segments || []).map(seg => ({
+                segments: (data.segments || []).map((seg) => ({
                     speaker: 'Speaker',
                     text: seg.text,
                     start: seg.start,
@@ -327,7 +332,6 @@ export class TranscriptionService {
             this._addToHistory(result);
 
             return result;
-
         } catch (error) {
             if (error.status) {
                 throw this._handleApiError(error);
@@ -387,7 +391,7 @@ export class TranscriptionService {
             response = await fetch(`${this._baseUrl}/audio/transcriptions`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${this._apiKey}`
+                    Authorization: `Bearer ${this._apiKey}`
                 },
                 body: formData
             });
@@ -416,8 +420,8 @@ export class TranscriptionService {
      * @private
      */
     _createNetworkError(networkError) {
-        const isTimeout = networkError.name === 'AbortError' ||
-            networkError.message?.includes('timeout');
+        const isTimeout =
+            networkError.name === 'AbortError' || networkError.message?.includes('timeout');
 
         if (isTimeout) {
             return {
@@ -449,7 +453,7 @@ export class TranscriptionService {
 
         // Extract segments from diarized response
         // Include per-segment language if available, otherwise use top-level language
-        const segments = (response.segments || []).map(seg => {
+        const segments = (response.segments || []).map((seg) => {
             const segment = {
                 speaker: seg.speaker || 'Unknown',
                 text: seg.text || '',
@@ -468,15 +472,16 @@ export class TranscriptionService {
         });
 
         // Build full text from segments
-        const text = segments.map(seg => seg.text).join(' ');
+        const text = segments.map((seg) => seg.text).join(' ');
 
         // Extract unique speakers
-        const speakers = [...new Set(segments.map(seg => seg.speaker))];
+        const speakers = [...new Set(segments.map((seg) => seg.speaker))];
 
         // Calculate total duration
-        const duration = segments.length > 0
-            ? Math.max(...segments.map(seg => seg.end))
-            : response.duration || 0;
+        const duration =
+            segments.length > 0
+                ? Math.max(...segments.map((seg) => seg.end))
+                : response.duration || 0;
 
         return {
             text,
@@ -592,14 +597,16 @@ export class TranscriptionService {
      */
     getRecentTranscriptionText(count = 5) {
         const recent = this.getHistory(count);
-        return recent.map(result => {
-            return result.segments
-                .map(seg => {
-                    const languageLabel = seg.language ? ` (${seg.language})` : '';
-                    return `${seg.speaker}${languageLabel}: ${seg.text}`;
-                })
-                .join('\n');
-        }).join('\n\n');
+        return recent
+            .map((result) => {
+                return result.segments
+                    .map((seg) => {
+                        const languageLabel = seg.language ? ` (${seg.language})` : '';
+                        return `${seg.speaker}${languageLabel}: ${seg.text}`;
+                    })
+                    .join('\n');
+            })
+            .join('\n\n');
     }
 
     /**
@@ -609,7 +616,7 @@ export class TranscriptionService {
      */
     estimateDuration(audioBlob) {
         // Rough estimate: WebM/Opus at ~32kbps
-        const bytesPerSecond = 32 * 1024 / 8;
+        const bytesPerSecond = (32 * 1024) / 8;
         return audioBlob.size / bytesPerSecond;
     }
 
@@ -653,7 +660,7 @@ export class TranscriptionService {
             }
 
             // Rebuild the speakers array with updated labels
-            const uniqueSpeakers = [...new Set(result.segments.map(seg => seg.speaker))];
+            const uniqueSpeakers = [...new Set(result.segments.map((seg) => seg.speaker))];
             result.speakers = uniqueSpeakers;
         }
 

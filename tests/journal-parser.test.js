@@ -41,10 +41,22 @@ function teardown() {
  */
 function createTestJournal() {
     const pages = [
-        new MockJournalPage('page1', 'Introduzione', 'text', '<p>Benvenuti nell\'avventura!</p>', 1),
-        new MockJournalPage('page2', 'Capitolo 1', 'text', '<h1>Il Viaggio</h1><p>I nostri eroi partono.</p>', 2),
+        new MockJournalPage('page1', 'Introduzione', 'text', "<p>Benvenuti nell'avventura!</p>", 1),
+        new MockJournalPage(
+            'page2',
+            'Capitolo 1',
+            'text',
+            '<h1>Il Viaggio</h1><p>I nostri eroi partono.</p>',
+            2
+        ),
         new MockJournalPage('page3', 'Mappa', 'image', '', 3), // Non-text page
-        new MockJournalPage('page4', 'Capitolo 2', 'text', '<p>La <strong>battaglia</strong> inizia.</p>', 4)
+        new MockJournalPage(
+            'page4',
+            'Capitolo 2',
+            'text',
+            '<p>La <strong>battaglia</strong> inizia.</p>',
+            4
+        )
     ];
 
     return new MockJournalEntry('journal1', 'Avventura Test', pages);
@@ -170,7 +182,10 @@ export async function runTests() {
 
         for (const payload of xssPayloads) {
             const result = parser.stripHtml(payload);
-            assert.ok(!result.includes('alert'), `Should not contain alert for payload: ${payload}`);
+            assert.ok(
+                !result.includes('alert'),
+                `Should not contain alert for payload: ${payload}`
+            );
             assert.ok(!result.includes('onclick'), 'Should not contain onclick');
             assert.ok(!result.includes('onload'), 'Should not contain onload');
             assert.ok(!result.includes('onfocus'), 'Should not contain onfocus');
@@ -189,7 +204,10 @@ export async function runTests() {
         const result = parser.stripHtml('<a href="javascript:alert(1)">Click</a>');
 
         assert.equal(result, 'Click', 'Link text should be preserved');
-        assert.ok(!result.includes('javascript:'), 'Result should not contain javascript: protocol');
+        assert.ok(
+            !result.includes('javascript:'),
+            'Result should not contain javascript: protocol'
+        );
         assert.ok(!result.includes('alert'), 'Result should not contain alert');
 
         teardown();
@@ -201,7 +219,9 @@ export async function runTests() {
 
         const parser = new JournalParser();
 
-        const result = parser.stripHtml('<a href="data:text/html,<script>alert(1)</script>">Link</a>');
+        const result = parser.stripHtml(
+            '<a href="data:text/html,<script>alert(1)</script>">Link</a>'
+        );
 
         assert.equal(result, 'Link', 'Link text should be preserved');
         assert.ok(!result.includes('data:'), 'Result should not contain data: protocol');
@@ -216,7 +236,9 @@ export async function runTests() {
 
         const parser = new JournalParser();
 
-        const result = parser.stripHtml('<p>Before</p><iframe src="javascript:alert(1)"></iframe><p>After</p>');
+        const result = parser.stripHtml(
+            '<p>Before</p><iframe src="javascript:alert(1)"></iframe><p>After</p>'
+        );
 
         assert.equal(result, 'Before After', 'Iframe should be completely removed');
         assert.ok(!result.includes('iframe'), 'Result should not contain iframe');
@@ -261,7 +283,10 @@ export async function runTests() {
         const result = parser.stripHtml(complexPayload);
 
         assert.ok(result.includes('Legitimate content'), 'Should preserve legitimate content');
-        assert.ok(result.includes('More legitimate content'), 'Should preserve all legitimate content');
+        assert.ok(
+            result.includes('More legitimate content'),
+            'Should preserve all legitimate content'
+        );
         assert.ok(result.includes('Link'), 'Should preserve link text');
         assert.ok(result.includes('Click'), 'Should preserve div text');
         assert.ok(!result.includes('alert'), 'Should not contain any alert calls');
@@ -280,15 +305,9 @@ export async function runTests() {
 
         const parser = new JournalParser();
 
-        await assert.throws(
-            () => parser.parseJournal(''),
-            'Should throw for empty journal ID'
-        );
+        await assert.throws(() => parser.parseJournal(''), 'Should throw for empty journal ID');
 
-        await assert.throws(
-            () => parser.parseJournal(null),
-            'Should throw for null journal ID'
-        );
+        await assert.throws(() => parser.parseJournal(null), 'Should throw for null journal ID');
 
         teardown();
     });
@@ -337,9 +356,12 @@ export async function runTests() {
         const result = await parser.parseJournal('journal1');
 
         // Original journal has 4 pages, but one is image type
-        const pageTypes = result.pages.map(p => p.type);
+        const pageTypes = result.pages.map((p) => p.type);
         assert.ok(!pageTypes.includes('image'), 'Image pages should be excluded');
-        assert.ok(pageTypes.every(t => t === 'text'), 'All pages should be text type');
+        assert.ok(
+            pageTypes.every((t) => t === 'text'),
+            'All pages should be text type'
+        );
 
         teardown();
     });
@@ -361,7 +383,11 @@ export async function runTests() {
 
         // Second parse should return cached version
         const result2 = await parser.parseJournal('journal1');
-        assert.equal(result1.parsedAt.getTime(), result2.parsedAt.getTime(), 'Should return same cached result');
+        assert.equal(
+            result1.parsedAt.getTime(),
+            result2.parsedAt.getTime(),
+            'Should return same cached result'
+        );
 
         teardown();
     });
@@ -613,11 +639,14 @@ export async function runTests() {
         const firstParsedAt = result1.parsedAt;
 
         // Wait a tiny bit to ensure different timestamp
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
 
         const result2 = await parser.refreshJournal('journal1');
 
-        assert.ok(result2.parsedAt.getTime() > firstParsedAt.getTime(), 'Should have newer timestamp after refresh');
+        assert.ok(
+            result2.parsedAt.getTime() > firstParsedAt.getTime(),
+            'Should have newer timestamp after refresh'
+        );
 
         teardown();
     });
@@ -693,8 +722,12 @@ export async function runTests() {
 }
 
 // Export for direct execution
-if (typeof process !== 'undefined' && process.argv && process.argv[1]?.includes('journal-parser.test')) {
-    runTests().then(results => {
+if (
+    typeof process !== 'undefined' &&
+    process.argv &&
+    process.argv[1]?.includes('journal-parser.test')
+) {
+    runTests().then((results) => {
         process.exit(results.failed > 0 ? 1 : 0);
     });
 }

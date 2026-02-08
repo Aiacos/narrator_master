@@ -58,9 +58,7 @@ function createMockTranscriptionResponse() {
 function createMockSimpleResponse() {
     return {
         text: 'Questo è il testo trascritto.',
-        segments: [
-            { text: 'Questo è il testo trascritto.', start: 0, end: 3 }
-        ],
+        segments: [{ text: 'Questo è il testo trascritto.', start: 0, end: 3 }],
         language: 'it',
         duration: 3.0
     };
@@ -179,7 +177,7 @@ export async function runTests() {
         service.addKnownSpeaker('Marco');
 
         const names = service.getKnownSpeakerNames();
-        const marcoCount = names.filter(n => n === 'Marco').length;
+        const marcoCount = names.filter((n) => n === 'Marco').length;
         assert.equal(marcoCount, 1, 'Should not have duplicate names');
 
         teardown();
@@ -206,15 +204,9 @@ export async function runTests() {
 
         const service = new TranscriptionService('valid-key');
 
-        await assert.throws(
-            () => service.transcribe(null),
-            'Should throw for null blob'
-        );
+        await assert.throws(() => service.transcribe(null), 'Should throw for null blob');
 
-        await assert.throws(
-            () => service.transcribe('not-a-blob'),
-            'Should throw for non-blob'
-        );
+        await assert.throws(() => service.transcribe('not-a-blob'), 'Should throw for non-blob');
 
         teardown();
     });
@@ -226,10 +218,7 @@ export async function runTests() {
         const service = new TranscriptionService('valid-key');
         const largeBlob = createMockBlob('audio/webm', 30 * 1024 * 1024); // 30MB
 
-        await assert.throws(
-            () => service.transcribe(largeBlob),
-            'Should throw for files > 25MB'
-        );
+        await assert.throws(() => service.transcribe(largeBlob), 'Should throw for files > 25MB');
 
         teardown();
     });
@@ -259,9 +248,15 @@ export async function runTests() {
             // Verify fetch was called correctly
             assert.ok(mockFetch.calls.length > 0, 'Fetch should have been called');
             const call = mockFetch.calls[0];
-            assert.ok(call.url.includes('/audio/transcriptions'), 'Should call transcriptions endpoint');
+            assert.ok(
+                call.url.includes('/audio/transcriptions'),
+                'Should call transcriptions endpoint'
+            );
             assert.equal(call.options.method, 'POST', 'Should use POST method');
-            assert.ok(call.options.headers.Authorization.includes('Bearer'), 'Should include auth header');
+            assert.ok(
+                call.options.headers.Authorization.includes('Bearer'),
+                'Should include auth header'
+            );
         } finally {
             globalThis.fetch = originalFetch;
         }
@@ -368,7 +363,10 @@ export async function runTests() {
         const error = service._handleApiError({ status: 401, message: 'Invalid key' });
 
         assert.ok(error instanceof Error, 'Should return Error instance');
-        assert.ok(error.message.includes('InvalidApiKey') || error.message.length > 0, 'Should have error message');
+        assert.ok(
+            error.message.includes('InvalidApiKey') || error.message.length > 0,
+            'Should have error message'
+        );
 
         teardown();
     });
@@ -381,7 +379,10 @@ export async function runTests() {
         const error = service._handleApiError({ status: 429, message: 'Rate limited' });
 
         assert.ok(error instanceof Error, 'Should return Error instance');
-        assert.ok(error.message.includes('RateLimited') || error.message.length > 0, 'Should have error message');
+        assert.ok(
+            error.message.includes('RateLimited') || error.message.length > 0,
+            'Should have error message'
+        );
 
         teardown();
     });
@@ -579,7 +580,10 @@ export async function runTests() {
         await setup();
 
         const service = new TranscriptionService('key');
-        assert.ok(!service.isMultiLanguageMode(), 'Multi-language mode should be disabled by default');
+        assert.ok(
+            !service.isMultiLanguageMode(),
+            'Multi-language mode should be disabled by default'
+        );
 
         service.setMultiLanguageMode(true);
         assert.ok(service.isMultiLanguageMode(), 'Multi-language mode should be enabled');
@@ -598,7 +602,10 @@ export async function runTests() {
             multiLanguageMode: true
         });
 
-        assert.ok(service.isMultiLanguageMode(), 'Multi-language mode should be enabled from constructor');
+        assert.ok(
+            service.isMultiLanguageMode(),
+            'Multi-language mode should be enabled from constructor'
+        );
 
         teardown();
     });
@@ -613,7 +620,11 @@ export async function runTests() {
 
         const stats = service.getStats();
 
-        assert.equal(stats.multiLanguageMode, true, 'Stats should include multi-language mode status');
+        assert.equal(
+            stats.multiLanguageMode,
+            true,
+            'Stats should include multi-language mode status'
+        );
 
         teardown();
     });
@@ -644,63 +655,77 @@ export async function runTests() {
     });
 
     // Test: _parseResponse uses top-level language as fallback
-    runner.test('_parseResponse uses top-level language when segment language missing', async () => {
-        await setup();
+    runner.test(
+        '_parseResponse uses top-level language when segment language missing',
+        async () => {
+            await setup();
 
-        const service = new TranscriptionService('key');
+            const service = new TranscriptionService('key');
 
-        const rawResponse = {
-            segments: [
-                { speaker: 'Player1', text: 'Hello', start: 0, end: 1 },
-                { speaker: 'Player2', text: 'World', start: 1, end: 2 }
-            ],
-            language: 'en'
-        };
+            const rawResponse = {
+                segments: [
+                    { speaker: 'Player1', text: 'Hello', start: 0, end: 1 },
+                    { speaker: 'Player2', text: 'World', start: 1, end: 2 }
+                ],
+                language: 'en'
+            };
 
-        const result = service._parseResponse(rawResponse, 'en');
+            const result = service._parseResponse(rawResponse, 'en');
 
-        assert.equal(result.segments[0].language, 'en', 'Should use top-level language as fallback');
-        assert.equal(result.segments[1].language, 'en', 'Should use top-level language as fallback');
+            assert.equal(
+                result.segments[0].language,
+                'en',
+                'Should use top-level language as fallback'
+            );
+            assert.equal(
+                result.segments[1].language,
+                'en',
+                'Should use top-level language as fallback'
+            );
 
-        teardown();
-    });
+            teardown();
+        }
+    );
 
     // Test: transcribe in multi-language mode omits language parameter
-    runner.test('transcribe in multi-language mode sends appropriate language parameter', async () => {
-        await setup();
+    runner.test(
+        'transcribe in multi-language mode sends appropriate language parameter',
+        async () => {
+            await setup();
 
-        let capturedFormData = null;
-        const mockFetch = async (url, options) => {
-            // Capture the FormData for inspection
-            capturedFormData = options.body;
-            return {
-                ok: true,
-                status: 200,
-                json: async () => createMockTranscriptionResponse()
+            let capturedFormData = null;
+            const mockFetch = async (url, options) => {
+                // Capture the FormData for inspection
+                capturedFormData = options.body;
+                return {
+                    ok: true,
+                    status: 200,
+                    json: async () => createMockTranscriptionResponse()
+                };
             };
-        };
 
-        const originalFetch = globalThis.fetch;
-        globalThis.fetch = mockFetch;
+            const originalFetch = globalThis.fetch;
+            globalThis.fetch = mockFetch;
 
-        try {
-            const service = new TranscriptionService('valid-key', {
-                language: 'it',
-                multiLanguageMode: true
-            });
-            const audioBlob = createMockBlob('audio/webm', 1024);
+            try {
+                const service = new TranscriptionService('valid-key', {
+                    language: 'it',
+                    multiLanguageMode: true
+                });
+                const audioBlob = createMockBlob('audio/webm', 1024);
 
-            await service.transcribe(audioBlob);
+                await service.transcribe(audioBlob);
 
-            // In multi-language mode with language set, the language parameter should be omitted
-            // to allow automatic detection
-            assert.ok(capturedFormData !== null, 'Should have captured form data');
-        } finally {
-            globalThis.fetch = originalFetch;
+                // In multi-language mode with language set, the language parameter should be omitted
+                // to allow automatic detection
+                assert.ok(capturedFormData !== null, 'Should have captured form data');
+            } finally {
+                globalThis.fetch = originalFetch;
+            }
+
+            teardown();
         }
-
-        teardown();
-    });
+    );
 
     // Test: transcribe with language='auto' enables automatic detection
     runner.test('transcribe with language auto enables automatic language detection', async () => {
@@ -784,8 +809,12 @@ export async function runTests() {
 }
 
 // Export for direct execution
-if (typeof process !== 'undefined' && process.argv && process.argv[1]?.includes('transcription.test')) {
-    runTests().then(results => {
+if (
+    typeof process !== 'undefined' &&
+    process.argv &&
+    process.argv[1]?.includes('transcription.test')
+) {
+    runTests().then((results) => {
         process.exit(results.failed > 0 ? 1 : 0);
     });
 }

@@ -134,10 +134,13 @@ export class VocabularyManager {
 
         // Check if term already exists (case-insensitive)
         const normalizedTerm = trimmedTerm.toLowerCase();
-        const existingCustomTerms = Object.keys(this._customVocabulary).map(t => t.toLowerCase());
-        const existingDndTerms = this._dndTerms.map(t => t.toLowerCase());
+        const existingCustomTerms = Object.keys(this._customVocabulary).map((t) => t.toLowerCase());
+        const existingDndTerms = this._dndTerms.map((t) => t.toLowerCase());
 
-        if (existingCustomTerms.includes(normalizedTerm) || existingDndTerms.includes(normalizedTerm)) {
+        if (
+            existingCustomTerms.includes(normalizedTerm) ||
+            existingDndTerms.includes(normalizedTerm)
+        ) {
             return false;
         }
 
@@ -183,7 +186,7 @@ export class VocabularyManager {
         }
 
         const normalizedTerm = term.toLowerCase();
-        const allTerms = this.getVocabulary().map(t => t.toLowerCase());
+        const allTerms = this.getVocabulary().map((t) => t.toLowerCase());
 
         return allTerms.includes(normalizedTerm);
     }
@@ -256,7 +259,9 @@ export class VocabularyManager {
         // Import the extracted proper nouns using the existing importTerms method
         const result = await this.importTerms(properNouns, true);
 
-        console.log(`${MODULE_ID} | Imported ${result.added} terms from journal (${result.skipped} skipped)`);
+        console.log(
+            `${MODULE_ID} | Imported ${result.added} terms from journal (${result.skipped} skipped)`
+        );
 
         return result;
     }
@@ -278,9 +283,9 @@ export class VocabularyManager {
         // Prioritize terms: priority terms first, then custom, then D&D
         const customTerms = this.getCustomTerms();
         const sortedTerms = [
-            ...priorityTerms.filter(t => allTerms.includes(t)),
-            ...customTerms.filter(t => !priorityTerms.includes(t)),
-            ...this._dndTerms.filter(t => !priorityTerms.includes(t) && !customTerms.includes(t))
+            ...priorityTerms.filter((t) => allTerms.includes(t)),
+            ...customTerms.filter((t) => !priorityTerms.includes(t)),
+            ...this._dndTerms.filter((t) => !priorityTerms.includes(t) && !customTerms.includes(t))
         ];
 
         // Build prompt string within length limit

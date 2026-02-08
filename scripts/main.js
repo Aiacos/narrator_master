@@ -12,7 +12,7 @@ import { ImageGenerator } from './image-generator.js';
 import { JournalParser } from './journal-parser.js';
 import { NarratorPanel, RECORDING_STATE } from './ui-panel.js';
 import { SpeakerLabelService } from './speaker-labels.js';
-import { ErrorNotificationHelper, NOTIFICATION_TYPE } from './error-notification-helper.js';
+import { ErrorNotificationHelper } from './error-notification-helper.js';
 
 /**
  * NarratorMaster - Main controller class that orchestrates all module components
@@ -141,7 +141,6 @@ class NarratorMaster {
             // Mark as initialized
             this._initialized = true;
             console.log(`${MODULE_ID} | NarratorMaster initialized successfully`);
-
         } catch (error) {
             console.error(`${MODULE_ID} | Failed to initialize NarratorMaster:`, error);
             this._showErrorNotification(error.message);
@@ -262,8 +261,9 @@ class NarratorMaster {
                 });
             }
 
-            console.log(`${MODULE_ID} | Loaded ${parsedJournals.length} journals, ${context.length} chars context`);
-
+            console.log(
+                `${MODULE_ID} | Loaded ${parsedJournals.length} journals, ${context.length} chars context`
+            );
         } catch (error) {
             console.warn(`${MODULE_ID} | Failed to load journals:`, error);
         }
@@ -376,7 +376,6 @@ class NarratorMaster {
 
             // Analyze transcription with AI (results shown to user)
             await this._analyzeTranscription(labeledText);
-
         } catch (error) {
             this._handleServiceError(error, 'Transcription');
         }
@@ -398,7 +397,7 @@ class NarratorMaster {
 
             if (this.panel) {
                 // Update suggestions
-                const suggestionTexts = analysis.suggestions.map(s => s.content);
+                const suggestionTexts = analysis.suggestions.map((s) => s.content);
                 this.panel.updateContent({
                     suggestions: suggestionTexts,
                     offTrack: analysis.offTrackStatus.isOffTrack,
@@ -408,10 +407,11 @@ class NarratorMaster {
 
                 // Show notification if off-track
                 if (analysis.offTrackStatus.isOffTrack && analysis.offTrackStatus.severity > 0.5) {
-                    ui.notifications.warn(game.i18n.localize('NARRATOR.Notifications.PlayersOffTrack'));
+                    ui.notifications.warn(
+                        game.i18n.localize('NARRATOR.Notifications.PlayersOffTrack')
+                    );
                 }
             }
-
         } catch (error) {
             console.error(`${MODULE_ID} | AI analysis error:`, error);
             // Don't show notification for analysis errors - not critical
@@ -528,7 +528,6 @@ class NarratorMaster {
                 // Final AI analysis
                 await this._analyzeTranscription(labeledText);
             }
-
         } catch (error) {
             this._handleServiceError(error, 'Final Audio Processing');
         } finally {
@@ -544,16 +543,22 @@ class NarratorMaster {
      */
     _formatTranscriptionWithLabels(transcription) {
         // If no segments available, fall back to plain text
-        if (!transcription.segments || !Array.isArray(transcription.segments) || transcription.segments.length === 0) {
+        if (
+            !transcription.segments ||
+            !Array.isArray(transcription.segments) ||
+            transcription.segments.length === 0
+        ) {
             return transcription.text;
         }
 
         // Apply custom speaker labels to segments
-        const labeledSegments = this.speakerLabelService.applyLabelsToSegments(transcription.segments);
+        const labeledSegments = this.speakerLabelService.applyLabelsToSegments(
+            transcription.segments
+        );
 
         // Format segments into speaker-aware text
         const formattedText = labeledSegments
-            .map(segment => {
+            .map((segment) => {
                 const speaker = segment.speaker || 'Unknown';
                 const text = segment.text || '';
                 return `${speaker}: ${text}`;
@@ -589,9 +594,10 @@ class NarratorMaster {
                     prompt: result.prompt
                 });
 
-                ErrorNotificationHelper.info(game.i18n.localize('NARRATOR.Notifications.ImageGenerated'));
+                ErrorNotificationHelper.info(
+                    game.i18n.localize('NARRATOR.Notifications.ImageGenerated')
+                );
             }
-
         } catch (error) {
             this._handleServiceError(error, 'Image Generation');
         }
@@ -612,7 +618,9 @@ class NarratorMaster {
             this.imageGenerator?.setApiKey(newApiKey);
 
             console.log(`${MODULE_ID} | Services updated with new API key`);
-            ErrorNotificationHelper.info(game.i18n.localize('NARRATOR.Notifications.ApiKeyUpdated'));
+            ErrorNotificationHelper.info(
+                game.i18n.localize('NARRATOR.Notifications.ApiKeyUpdated')
+            );
         } else {
             console.warn(`${MODULE_ID} | API key cleared`);
         }
@@ -789,16 +797,14 @@ class NarratorMaster {
  * Called early in the Foundry VTT loading process
  * Used for registering settings and loading templates
  */
-Hooks.once('init', async function() {
+Hooks.once('init', async function () {
     console.log(`${MODULE_ID} | Initializing module`);
 
     // Register module settings
     registerSettings();
 
     // Load Handlebars templates
-    await loadTemplates([
-        `modules/${MODULE_ID}/templates/panel.hbs`
-    ]);
+    await loadTemplates([`modules/${MODULE_ID}/templates/panel.hbs`]);
 
     console.log(`${MODULE_ID} | Module initialized`);
 });
@@ -808,7 +814,7 @@ Hooks.once('init', async function() {
  * Called when the game is fully ready
  * Used for creating module instances and GM-only features
  */
-Hooks.once('ready', async function() {
+Hooks.once('ready', async function () {
     console.log(`${MODULE_ID} | Module ready`);
 
     // Only initialize for GM users - this is a DM-only tool
@@ -820,7 +826,10 @@ Hooks.once('ready', async function() {
         await window.narratorMaster.initialize();
 
         // Register keyboard shortcuts for recording controls
-        document.addEventListener('keydown', window.narratorMaster._handleKeyboardShortcuts.bind(window.narratorMaster));
+        document.addEventListener(
+            'keydown',
+            window.narratorMaster._handleKeyboardShortcuts.bind(window.narratorMaster)
+        );
         console.log(`${MODULE_ID} | Keyboard shortcuts registered (Ctrl+Shift+R/S/P)`);
     } else {
         console.log(`${MODULE_ID} | User is not GM, skipping initialization`);
@@ -856,7 +865,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
                     }
                 }
             },
-            'settings': {
+            settings: {
                 name: 'settings',
                 title: game.i18n.localize('NARRATOR.Panel.OpenSettings'),
                 icon: 'fas fa-cog',

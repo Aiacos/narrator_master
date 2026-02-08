@@ -39,7 +39,7 @@ export function registerSettings() {
         config: true,
         type: String,
         default: '',
-        onChange: value => {
+        onChange: (value) => {
             if (window.narratorMaster) {
                 window.narratorMaster.updateApiKey(value);
             }
@@ -55,12 +55,12 @@ export function registerSettings() {
         type: String,
         default: 'it',
         choices: {
-            'auto': 'Auto-detect',
-            'it': 'Italiano',
-            'en': 'English',
-            'de': 'Deutsch',
-            'fr': 'Francais',
-            'es': 'Espanol'
+            auto: 'Auto-detect',
+            it: 'Italiano',
+            en: 'English',
+            de: 'Deutsch',
+            fr: 'Francais',
+            es: 'Espanol'
         }
     });
 
@@ -93,9 +93,9 @@ export function registerSettings() {
         type: String,
         default: 'medium',
         choices: {
-            'low': 'NARRATOR.Settings.SensitivityLow',
-            'medium': 'NARRATOR.Settings.SensitivityMedium',
-            'high': 'NARRATOR.Settings.SensitivityHigh'
+            low: 'NARRATOR.Settings.SensitivityLow',
+            medium: 'NARRATOR.Settings.SensitivityMedium',
+            high: 'NARRATOR.Settings.SensitivityHigh'
         }
     });
 
@@ -138,8 +138,8 @@ export function registerSettings() {
         type: String,
         default: 'auto',
         choices: {
-            'auto': 'NARRATOR.Settings.RulesSourceAuto',
-            'dnd5e': 'NARRATOR.Settings.RulesSourceDnd5e'
+            auto: 'NARRATOR.Settings.RulesSourceAuto',
+            dnd5e: 'NARRATOR.Settings.RulesSourceDnd5e'
         }
     });
 }

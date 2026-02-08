@@ -31,12 +31,12 @@ export function expandFolderToJournals(folderId) {
     const journalIds = [];
 
     // Get journals directly in this folder
-    const journals = game.journal.filter(j => j.folder?.id === folderId);
-    journals.forEach(j => journalIds.push(j.id));
+    const journals = game.journal.filter((j) => j.folder?.id === folderId);
+    journals.forEach((j) => journalIds.push(j.id));
 
     // Recursively get journals from child folders
-    const childFolders = game.folders.filter(f =>
-        f.type === 'JournalEntry' && f.folder?.id === folderId
+    const childFolders = game.folders.filter(
+        (f) => f.type === 'JournalEntry' && f.folder?.id === folderId
     );
 
     for (const childFolder of childFolders) {
@@ -75,7 +75,7 @@ export function resolveToJournalIds(ids) {
             // Expand folder to journal IDs
             try {
                 const expandedIds = expandFolderToJournals(id);
-                expandedIds.forEach(jId => journalIds.add(jId));
+                expandedIds.forEach((jId) => journalIds.add(jId));
             } catch (error) {
                 console.warn(`${MODULE_ID} | Failed to expand folder ${id}:`, error);
             }
@@ -109,7 +109,7 @@ export function getAllJournalIds() {
         return [];
     }
 
-    return game.journal.map(j => j.id);
+    return game.journal.map((j) => j.id);
 }
 
 /**

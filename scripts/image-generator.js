@@ -219,7 +219,9 @@ export class ImageGenerator {
      */
     setModel(model) {
         if (model === 'dall-e-3') {
-            console.warn(`${MODULE_ID} | Warning: dall-e-3 is deprecated and loses support on May 12, 2026. Consider using gpt-image-1.`);
+            console.warn(
+                `${MODULE_ID} | Warning: dall-e-3 is deprecated and loses support on May 12, 2026. Consider using gpt-image-1.`
+            );
         }
         this._model = model || DEFAULT_MODEL;
     }
@@ -293,7 +295,9 @@ export class ImageGenerator {
         const returnBase64 = Boolean(options.returnBase64);
         const cacheImage = options.cacheImage !== false && this._autoCacheImages;
 
-        console.log(`${MODULE_ID} | Generating image: "${prompt.substring(0, 50)}...", size: ${size}, quality: ${quality}`);
+        console.log(
+            `${MODULE_ID} | Generating image: "${prompt.substring(0, 50)}...", size: ${size}, quality: ${quality}`
+        );
 
         try {
             // Build request body
@@ -316,7 +320,6 @@ export class ImageGenerator {
             console.log(`${MODULE_ID} | Image generated successfully`);
 
             return result;
-
         } catch (error) {
             if (error.status) {
                 throw this._handleApiError(error);
@@ -347,9 +350,17 @@ export class ImageGenerator {
         const sceneType = options.sceneType || null;
 
         // Build a specialized prompt for RPG infographics
-        const prompt = this._buildInfographicPrompt(eventDescription, artStyle, mood, elements, sceneType);
+        const prompt = this._buildInfographicPrompt(
+            eventDescription,
+            artStyle,
+            mood,
+            elements,
+            sceneType
+        );
 
-        console.log(`${MODULE_ID} | Generating infographic for: "${eventDescription.substring(0, 50)}..."`);
+        console.log(
+            `${MODULE_ID} | Generating infographic for: "${eventDescription.substring(0, 50)}..."`
+        );
 
         return this.generate(prompt, {
             size: options.size || IMAGE_SIZES.LARGE,
@@ -380,9 +391,17 @@ export class ImageGenerator {
         const sceneType = options.sceneType || null;
 
         // Build scene-specific prompt
-        const prompt = this._buildScenePrompt(sceneDescription, location, lighting, characters, sceneType);
+        const prompt = this._buildScenePrompt(
+            sceneDescription,
+            location,
+            lighting,
+            characters,
+            sceneType
+        );
 
-        console.log(`${MODULE_ID} | Generating scene illustration: "${sceneDescription.substring(0, 50)}..."`);
+        console.log(
+            `${MODULE_ID} | Generating scene illustration: "${sceneDescription.substring(0, 50)}..."`
+        );
 
         return this.generate(prompt, {
             size: options.size || IMAGE_SIZES.WIDE,
@@ -437,7 +456,7 @@ export class ImageGenerator {
             response = await fetch(`${this._baseUrl}/images/generations`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${this._apiKey}`,
+                    Authorization: `Bearer ${this._apiKey}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(requestBody)
@@ -467,8 +486,8 @@ export class ImageGenerator {
      * @private
      */
     _createNetworkError(networkError) {
-        const isTimeout = networkError.name === 'AbortError' ||
-            networkError.message?.includes('timeout');
+        const isTimeout =
+            networkError.name === 'AbortError' || networkError.message?.includes('timeout');
 
         if (isTimeout) {
             return {
@@ -659,7 +678,6 @@ export class ImageGenerator {
             this._trimCache();
 
             console.log(`${MODULE_ID} | Image cached successfully`);
-
         } catch (error) {
             console.warn(`${MODULE_ID} | Failed to cache image:`, error);
         }
@@ -696,7 +714,7 @@ export class ImageGenerator {
         let hash = 0;
         for (let i = 0; i < prompt.length; i++) {
             const char = prompt.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
+            hash = (hash << 5) - hash + char;
             hash = hash & hash;
         }
         return `img_${Math.abs(hash).toString(16)}`;
@@ -710,8 +728,9 @@ export class ImageGenerator {
         if (this._imageCache.size <= this._maxCacheSize) return;
 
         // Remove oldest entries
-        const entries = Array.from(this._imageCache.entries())
-            .sort((a, b) => a[1].createdAt - b[1].createdAt);
+        const entries = Array.from(this._imageCache.entries()).sort(
+            (a, b) => a[1].createdAt - b[1].createdAt
+        );
 
         const toRemove = entries.slice(0, this._imageCache.size - this._maxCacheSize);
         for (const [key] of toRemove) {
@@ -753,9 +772,7 @@ export class ImageGenerator {
      */
     getValidCachedImages() {
         const now = new Date();
-        return this.getAllCachedImages().filter(img =>
-            img.base64 || now <= img.expiresAt
-        );
+        return this.getAllCachedImages().filter((img) => img.base64 || now <= img.expiresAt);
     }
 
     /**
@@ -859,7 +876,9 @@ export class ImageGenerator {
                 const removedCount = gallery.length - 50;
                 gallery = gallery.slice(-50);
 
-                console.warn(`${MODULE_ID} | Gallery limit reached. Removed ${removedCount} oldest image(s) to maintain 50 image limit.`);
+                console.warn(
+                    `${MODULE_ID} | Gallery limit reached. Removed ${removedCount} oldest image(s) to maintain 50 image limit.`
+                );
             }
 
             await game.settings.set(MODULE_ID, SETTINGS.IMAGE_GALLERY, gallery);
@@ -912,7 +931,7 @@ export class ImageGenerator {
 
         try {
             const gallery = await this.loadGallery();
-            const image = gallery.find(img => img.id === imageId);
+            const image = gallery.find((img) => img.id === imageId);
 
             if (!image) {
                 console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
@@ -954,7 +973,7 @@ export class ImageGenerator {
 
         try {
             const gallery = await this.loadGallery();
-            const image = gallery.find(img => img.id === imageId);
+            const image = gallery.find((img) => img.id === imageId);
 
             if (!image) {
                 console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
@@ -995,7 +1014,7 @@ export class ImageGenerator {
 
         try {
             const gallery = await this.loadGallery();
-            const image = gallery.find(img => img.id === imageId);
+            const image = gallery.find((img) => img.id === imageId);
 
             if (!image) {
                 console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
@@ -1004,7 +1023,9 @@ export class ImageGenerator {
 
             image.isFavorite = !image.isFavorite;
             await this._syncWithSettings(gallery);
-            console.log(`${MODULE_ID} | Toggled favorite for image ${imageId}: ${image.isFavorite}`);
+            console.log(
+                `${MODULE_ID} | Toggled favorite for image ${imageId}: ${image.isFavorite}`
+            );
             return image.isFavorite;
         } catch (error) {
             console.error(`${MODULE_ID} | Failed to toggle favorite:`, error);
@@ -1026,7 +1047,7 @@ export class ImageGenerator {
 
         try {
             const gallery = await this.loadGallery();
-            const image = gallery.find(img => img.id === imageId);
+            const image = gallery.find((img) => img.id === imageId);
 
             if (!image) {
                 console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
@@ -1056,7 +1077,7 @@ export class ImageGenerator {
 
         try {
             const gallery = await this.loadGallery();
-            const index = gallery.findIndex(img => img.id === imageId);
+            const index = gallery.findIndex((img) => img.id === imageId);
 
             if (index === -1) {
                 console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
@@ -1087,21 +1108,21 @@ export class ImageGenerator {
             let gallery = await this.loadGallery();
 
             if (filters.category) {
-                gallery = gallery.filter(img => img.category === filters.category);
+                gallery = gallery.filter((img) => img.category === filters.category);
             }
 
             if (filters.tag) {
-                gallery = gallery.filter(img =>
-                    Array.isArray(img.tags) && img.tags.includes(filters.tag)
+                gallery = gallery.filter(
+                    (img) => Array.isArray(img.tags) && img.tags.includes(filters.tag)
                 );
             }
 
             if (typeof filters.isFavorite === 'boolean') {
-                gallery = gallery.filter(img => img.isFavorite === filters.isFavorite);
+                gallery = gallery.filter((img) => img.isFavorite === filters.isFavorite);
             }
 
             if (filters.session) {
-                gallery = gallery.filter(img => img.session === filters.session);
+                gallery = gallery.filter((img) => img.session === filters.session);
             }
 
             return gallery;
@@ -1123,7 +1144,7 @@ export class ImageGenerator {
 
         try {
             const gallery = await this.loadGallery();
-            return gallery.find(img => img.id === imageId) || null;
+            return gallery.find((img) => img.id === imageId) || null;
         } catch (error) {
             console.error(`${MODULE_ID} | Failed to get gallery image:`, error);
             return null;

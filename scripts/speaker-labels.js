@@ -160,7 +160,7 @@ export class SpeakerLabelService {
             return [];
         }
 
-        return segments.map(segment => {
+        return segments.map((segment) => {
             // Create a shallow copy to avoid mutating original
             const updatedSegment = { ...segment };
 
@@ -205,7 +205,9 @@ export class SpeakerLabelService {
     async _loadMappings() {
         try {
             // Check if the setting exists
-            const settingExists = game.settings.settings.has(`${MODULE_ID}.${SPEAKER_MAPPINGS_KEY}`);
+            const settingExists = game.settings.settings.has(
+                `${MODULE_ID}.${SPEAKER_MAPPINGS_KEY}`
+            );
 
             if (!settingExists) {
                 // Register the setting if it doesn't exist

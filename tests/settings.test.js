@@ -4,13 +4,7 @@
  * @module tests/settings
  */
 
-import {
-    setupMockGame,
-    cleanupMocks,
-    MockSettings,
-    assert,
-    TestRunner
-} from './test-helper.js';
+import { setupMockGame, cleanupMocks, MockSettings, assert, TestRunner } from './test-helper.js';
 
 // Note: We need to set up mocks before importing the module
 let MODULE_ID, SETTINGS, registerSettings, SettingsManager;
@@ -72,11 +66,27 @@ export async function runTests() {
 
         assert.equal(SETTINGS.OPENAI_API_KEY, 'openaiApiKey', 'OPENAI_API_KEY value');
         assert.equal(SETTINGS.SELECTED_JOURNAL, 'selectedJournal', 'SELECTED_JOURNAL value');
-        assert.equal(SETTINGS.AUTO_START_RECORDING, 'autoStartRecording', 'AUTO_START_RECORDING value');
-        assert.equal(SETTINGS.TRANSCRIPTION_LANGUAGE, 'transcriptionLanguage', 'TRANSCRIPTION_LANGUAGE value');
+        assert.equal(
+            SETTINGS.AUTO_START_RECORDING,
+            'autoStartRecording',
+            'AUTO_START_RECORDING value'
+        );
+        assert.equal(
+            SETTINGS.TRANSCRIPTION_LANGUAGE,
+            'transcriptionLanguage',
+            'TRANSCRIPTION_LANGUAGE value'
+        );
         assert.equal(SETTINGS.PANEL_POSITION, 'panelPosition', 'PANEL_POSITION value');
-        assert.equal(SETTINGS.SHOW_SPEAKER_LABELS, 'showSpeakerLabels', 'SHOW_SPEAKER_LABELS value');
-        assert.equal(SETTINGS.OFF_TRACK_SENSITIVITY, 'offTrackSensitivity', 'OFF_TRACK_SENSITIVITY value');
+        assert.equal(
+            SETTINGS.SHOW_SPEAKER_LABELS,
+            'showSpeakerLabels',
+            'SHOW_SPEAKER_LABELS value'
+        );
+        assert.equal(
+            SETTINGS.OFF_TRACK_SENSITIVITY,
+            'offTrackSensitivity',
+            'OFF_TRACK_SENSITIVITY value'
+        );
 
         teardown();
     });
@@ -173,7 +183,11 @@ export async function runTests() {
         registerSettings();
 
         const value = game.settings.get(MODULE_ID, SETTINGS.PANEL_POSITION);
-        assert.deepEqual(value, { top: 100, left: 100 }, 'Panel position should have default coordinates');
+        assert.deepEqual(
+            value,
+            { top: 100, left: 100 },
+            'Panel position should have default coordinates'
+        );
 
         teardown();
     });
@@ -187,10 +201,16 @@ export async function runTests() {
         const apiKeyConfig = game.settings.getRegistered(MODULE_ID, SETTINGS.OPENAI_API_KEY);
         assert.equal(apiKeyConfig.type, String, 'API key should be String type');
 
-        const autoStartConfig = game.settings.getRegistered(MODULE_ID, SETTINGS.AUTO_START_RECORDING);
+        const autoStartConfig = game.settings.getRegistered(
+            MODULE_ID,
+            SETTINGS.AUTO_START_RECORDING
+        );
         assert.equal(autoStartConfig.type, Boolean, 'Auto-start should be Boolean type');
 
-        const languageConfig = game.settings.getRegistered(MODULE_ID, SETTINGS.TRANSCRIPTION_LANGUAGE);
+        const languageConfig = game.settings.getRegistered(
+            MODULE_ID,
+            SETTINGS.TRANSCRIPTION_LANGUAGE
+        );
         assert.equal(languageConfig.type, String, 'Language should be String type');
 
         teardown();
@@ -527,8 +547,14 @@ export async function runTests() {
             const config = game.settings.getRegistered(MODULE_ID, key);
             assert.ok(config.name, `${key} should have name`);
             assert.ok(config.hint, `${key} should have hint`);
-            assert.ok(config.name.startsWith('NARRATOR.'), `${key} name should use NARRATOR namespace`);
-            assert.ok(config.hint.startsWith('NARRATOR.'), `${key} hint should use NARRATOR namespace`);
+            assert.ok(
+                config.name.startsWith('NARRATOR.'),
+                `${key} name should use NARRATOR namespace`
+            );
+            assert.ok(
+                config.hint.startsWith('NARRATOR.'),
+                `${key} hint should use NARRATOR namespace`
+            );
         }
 
         teardown();
@@ -576,7 +602,7 @@ export async function runTests() {
 
 // Export for direct execution
 if (typeof process !== 'undefined' && process.argv && process.argv[1]?.includes('settings.test')) {
-    runTests().then(results => {
+    runTests().then((results) => {
         process.exit(results.failed > 0 ? 1 : 0);
     });
 }

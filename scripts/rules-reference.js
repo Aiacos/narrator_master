@@ -372,54 +372,54 @@ export class RulesReferenceService {
     _getMechanicTerms() {
         return {
             // Combat mechanics
-            'grappling': 'combat',
-            'lotta': 'combat',
+            grappling: 'combat',
+            lotta: 'combat',
             'opportunity attack': 'combat',
             'attacco di opportunità': 'combat',
-            'advantage': 'combat',
-            'vantaggio': 'combat',
-            'disadvantage': 'combat',
-            'svantaggio': 'combat',
+            advantage: 'combat',
+            vantaggio: 'combat',
+            disadvantage: 'combat',
+            svantaggio: 'combat',
             'critical hit': 'combat',
             'colpo critico': 'combat',
-            'initiative': 'combat',
-            'iniziativa': 'combat',
-            'dodge': 'combat',
-            'schivare': 'combat',
-            'dash': 'combat',
-            'scattare': 'combat',
-            'disengage': 'combat',
-            'disimpegno': 'combat',
+            initiative: 'combat',
+            iniziativa: 'combat',
+            dodge: 'combat',
+            schivare: 'combat',
+            dash: 'combat',
+            scattare: 'combat',
+            disengage: 'combat',
+            disimpegno: 'combat',
 
             // Spell mechanics
-            'concentration': 'spell',
-            'concentrazione': 'spell',
+            concentration: 'spell',
+            concentrazione: 'spell',
             'spell slot': 'spell',
             'slot incantesimo': 'spell',
-            'ritual': 'spell',
-            'rituale': 'spell',
-            'cantrip': 'spell',
-            'trucchetto': 'spell',
+            ritual: 'spell',
+            rituale: 'spell',
+            cantrip: 'spell',
+            trucchetto: 'spell',
             'casting time': 'spell',
             'tempo di lancio': 'spell',
 
             // Conditions
-            'prone': 'condition',
-            'prono': 'condition',
-            'stunned': 'condition',
-            'stordito': 'condition',
-            'paralyzed': 'condition',
-            'paralizzato': 'condition',
-            'blinded': 'condition',
-            'accecato': 'condition',
-            'charmed': 'condition',
-            'affascinato': 'condition',
-            'frightened': 'condition',
-            'spaventato': 'condition',
-            'poisoned': 'condition',
-            'avvelenato': 'condition',
-            'restrained': 'condition',
-            'trattenuto': 'condition',
+            prone: 'condition',
+            prono: 'condition',
+            stunned: 'condition',
+            stordito: 'condition',
+            paralyzed: 'condition',
+            paralizzato: 'condition',
+            blinded: 'condition',
+            accecato: 'condition',
+            charmed: 'condition',
+            affascinato: 'condition',
+            frightened: 'condition',
+            spaventato: 'condition',
+            poisoned: 'condition',
+            avvelenato: 'condition',
+            restrained: 'condition',
+            trattenuto: 'condition',
 
             // Abilities and checks
             'saving throw': 'ability',
@@ -432,12 +432,12 @@ export class RulesReferenceService {
             // Movement
             'difficult terrain': 'movement',
             'terreno difficile': 'movement',
-            'jump': 'movement',
-            'saltare': 'movement',
-            'climb': 'movement',
-            'scalare': 'movement',
-            'swimming': 'movement',
-            'nuotare': 'movement',
+            jump: 'movement',
+            saltare: 'movement',
+            climb: 'movement',
+            scalare: 'movement',
+            swimming: 'movement',
+            nuotare: 'movement',
 
             // Rest
             'short rest': 'rest',
@@ -456,14 +456,38 @@ export class RulesReferenceService {
     _hasQuestionWord(text) {
         const questionWords = [
             // English
-            'how', 'what', 'when', 'where', 'why', 'who', 'can', 'does', 'do', 'is', 'are',
+            'how',
+            'what',
+            'when',
+            'where',
+            'why',
+            'who',
+            'can',
+            'does',
+            'do',
+            'is',
+            'are',
             // Italian
-            'come', 'cosa', 'quando', 'dove', 'perché', 'chi', 'posso', 'può', 'puoi',
-            'è', 'sono', 'qual', 'quale', 'quanti', 'quante', 'quanto'
+            'come',
+            'cosa',
+            'quando',
+            'dove',
+            'perché',
+            'chi',
+            'posso',
+            'può',
+            'puoi',
+            'è',
+            'sono',
+            'qual',
+            'quale',
+            'quanti',
+            'quante',
+            'quanto'
         ];
 
         const words = text.split(/\s+/);
-        return words.some(word => questionWords.includes(word));
+        return words.some((word) => questionWords.includes(word));
     }
 
     /**
@@ -543,7 +567,9 @@ export class RulesReferenceService {
         // Limit results
         const limitedResults = results.slice(0, limit);
 
-        console.log(`${MODULE_ID} | Found ${results.length} total results, returning ${limitedResults.length}`);
+        console.log(
+            `${MODULE_ID} | Found ${results.length} total results, returning ${limitedResults.length}`
+        );
 
         return limitedResults;
     }
@@ -624,9 +650,9 @@ export class RulesReferenceService {
             if (pack.documentName === 'JournalEntry') {
                 // Extract text from journal pages
                 if (doc.pages) {
-                    const textPages = doc.pages.filter(page => page.type === 'text');
+                    const textPages = doc.pages.filter((page) => page.type === 'text');
                     content = textPages
-                        .map(page => {
+                        .map((page) => {
                             const rawContent = page.text?.content || '';
                             return this._stripHtml(rawContent);
                         })
@@ -668,7 +694,10 @@ export class RulesReferenceService {
                 citation
             };
         } catch (error) {
-            console.warn(`${MODULE_ID} | Error extracting compendium entry ${indexEntry._id}:`, error);
+            console.warn(
+                `${MODULE_ID} | Error extracting compendium entry ${indexEntry._id}:`,
+                error
+            );
             return null;
         }
     }
@@ -726,7 +755,7 @@ export class RulesReferenceService {
             tags.push(doc.system.school);
         }
 
-        return tags.filter(tag => tag && typeof tag === 'string');
+        return tags.filter((tag) => tag && typeof tag === 'string');
     }
 
     /**
@@ -809,31 +838,31 @@ export class RulesReferenceService {
 
         // Known D&D 5e source abbreviations
         const knownSources = {
-            'PHB': 'PHB',
-            'PLAYER': 'PHB',
-            'PLAYERS': 'PHB',
-            'PLAYERSHANDBOOK': 'PHB',
-            'DMG': 'DMG',
-            'DUNGEON': 'DMG',
-            'DUNGEONMASTER': 'DMG',
-            'MM': 'MM',
-            'MONSTER': 'MM',
-            'MONSTERS': 'MM',
-            'XGTE': 'XGtE',
-            'XANATHAR': 'XGtE',
-            'TCE': 'TCE',
-            'TASHA': 'TCE',
-            'VGTM': 'VGtM',
-            'VOLO': 'VGtM',
-            'MTOF': 'MToF',
-            'MORDENKAINEN': 'MToF',
-            'SCAG': 'SCAG',
-            'SWORD': 'SCAG',
-            'EE': 'EE',
-            'ELEMENTAL': 'EE',
-            'EEPC': 'EEPC',
-            'SRD': 'SRD',
-            'BASIC': 'SRD'
+            PHB: 'PHB',
+            PLAYER: 'PHB',
+            PLAYERS: 'PHB',
+            PLAYERSHANDBOOK: 'PHB',
+            DMG: 'DMG',
+            DUNGEON: 'DMG',
+            DUNGEONMASTER: 'DMG',
+            MM: 'MM',
+            MONSTER: 'MM',
+            MONSTERS: 'MM',
+            XGTE: 'XGtE',
+            XANATHAR: 'XGtE',
+            TCE: 'TCE',
+            TASHA: 'TCE',
+            VGTM: 'VGtM',
+            VOLO: 'VGtM',
+            MTOF: 'MToF',
+            MORDENKAINEN: 'MToF',
+            SCAG: 'SCAG',
+            SWORD: 'SCAG',
+            EE: 'EE',
+            ELEMENTAL: 'EE',
+            EEPC: 'EEPC',
+            SRD: 'SRD',
+            BASIC: 'SRD'
         };
 
         // Try exact match first
