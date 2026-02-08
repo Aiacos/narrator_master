@@ -17,7 +17,13 @@
             "SensitivityMedium": "Media - Bilanciato",
             "SensitivityHigh": "Alta - Anche piccole variazioni",
             "SpeakerLabelsName": "Etichette Parlanti",
-            "SpeakerLabelsHint": "Abilita l'assegnazione di nomi personalizzati ai parlanti rilevati nella trascrizione"
+            "SpeakerLabelsHint": "Abilita l'assegnazione di nomi personalizzati ai parlanti rilevati nella trascrizione",
+            "RulesDetectionName": "Rilevamento Regole",
+            "RulesDetectionHint": "Abilita il rilevamento automatico delle domande sulle regole nelle conversazioni",
+            "RulesSourceName": "Fonte Regole SRD",
+            "RulesSourceHint": "Seleziona quale compendio usare per le risposte alle regole",
+            "RulesSourceAuto": "Automatico - Cerca in tutti i compendi",
+            "RulesSourceDnd5e": "D&D 5e - Solo compendi D&D 5e"
         },
 
         "Panel": {
@@ -32,6 +38,7 @@
             "GenerateImage": "Genera Immagine",
             "AssistantTab": "Assistente",
             "ImagesTab": "Immagini",
+            "RulesTab": "Regole",
             "NoSuggestions": "Nessun suggerimento disponibile. Avvia la registrazione e l'assistente analizzerà automaticamente la conversazione.",
             "NoImages": "Nessuna immagine generata. Usa il pulsante 'Genera Immagine' per creare infografiche.",
             "OffTrackWarning": "ATTENZIONE: Fuori Tema!",
@@ -102,7 +109,10 @@
             "EmptyLabel": "L'etichetta non può essere vuota",
             "SaveMappingsFailed": "Impossibile salvare le mappature dei parlanti",
             "NPCNotFound": "NPC non trovato: {name}",
-            "NoNPCContext": "Nessun contesto disponibile per il NPC {name}"
+            "NoNPCContext": "Nessun contesto disponibile per il NPC {name}",
+            "RulesSearchFailed": "Ricerca regole fallita: {message}",
+            "NoCompendiumsAvailable": "Nessun compendio disponibile per la ricerca delle regole",
+            "CompendiumAccessDenied": "Accesso al compendio negato"
         },
 
         "Warnings": {
@@ -174,7 +184,11 @@
             "GenerateImage": "Genera un'immagine basata sul contesto attuale",
             "ClearImages": "Cancella tutte le immagini generate",
             "CopyText": "Copia il testo negli appunti",
-            "OpenSettings": "Apri le impostazioni del modulo"
+            "OpenSettings": "Apri le impostazioni del modulo",
+            "ExpandRuleAnswer": "Espandi per vedere la risposta completa",
+            "CollapseRuleAnswer": "Nascondi la risposta completa",
+            "DismissRuleAnswer": "Chiudi questa risposta alle regole",
+            "CopyRuleAnswer": "Copia la risposta negli appunti"
         },
 
         "Accessibility": {
@@ -226,6 +240,39 @@
             "SelectSceneType": "Seleziona il tipo di scena",
             "SceneMarked": "Interruzione di scena marcata",
             "NoActiveScene": "Nessuna scena attiva"
+        },
+
+        "Rules": {
+            "NoRulesDetected": "Nessuna domanda sulle regole rilevata",
+            "QuestionDetected": "Domanda Rilevata",
+            "Answer": "Risposta",
+            "Source": "Fonte",
+            "Citation": "Citazione",
+            "ExpandAnswer": "Espandi Risposta",
+            "CollapseAnswer": "Nascondi Risposta",
+            "DismissRule": "Chiudi",
+            "CopyAnswer": "Copia Risposta",
+            "SearchingRules": "Ricerca regole in corso...",
+            "NoAnswerFound": "Nessuna risposta trovata nelle fonti SRD",
+            "ConfidenceHigh": "Alta affidabilità",
+            "ConfidenceMedium": "Media affidabilità",
+            "ConfidenceLow": "Bassa affidabilità",
+            "FromCompendium": "Da Compendio",
+            "PageReference": "Pagina {page}",
+            "MultipleAnswers": "{count} risposte trovate",
+            "QuestionType": "Tipo",
+            "QuestionTypeCombat": "Combattimento",
+            "QuestionTypeSpell": "Incantesimo",
+            "QuestionTypeCondition": "Condizione",
+            "QuestionTypeAbility": "Abilità",
+            "QuestionTypeMovement": "Movimento",
+            "QuestionTypeRest": "Riposo",
+            "QuestionTypeGeneral": "Generale",
+            "DetectedQuestion": "Domanda: {question}",
+            "AnswerFrom": "Risposta da {source}",
+            "ClearAllRules": "Cancella Tutte le Regole",
+            "RulesCleared": "Tutte le risposte alle regole sono state cancellate",
+            "RuleAnswerCopied": "Risposta copiata negli appunti"
         }
     }
 }

@@ -6,13 +6,23 @@
             "ApiKeyHint": "OpenAI APIキーを入力してください。クレジット付きアカウントが必要です（最低$5）。platform.openai.com/api-keysから取得できます",
             "LanguageName": "文字起こし言語",
             "LanguageHint": "音声文字起こしの言語（デフォルト：日本語）",
+            "MultiLanguageModeName": "Multi-language Mode",
+            "MultiLanguageModeHint": "Enable transcription in multiple languages",
             "PanelPositionName": "パネル位置",
             "PanelPositionHint": "DMパネルの保存された位置",
             "SensitivityName": "脱線検知感度",
             "SensitivityHint": "プレイヤーが冒険のストーリーから外れた際の検知の厳密さ",
             "SensitivityLow": "低 - 大きな逸脱のみ",
             "SensitivityMedium": "中 - バランス型",
-            "SensitivityHigh": "高 - 小さな変化も検知"
+            "SensitivityHigh": "高 - 小さな変化も検知",
+            "SpeakerLabelsName": "Speaker Labels",
+            "SpeakerLabelsHint": "Enable custom name assignment to detected speakers in transcription",
+            "RulesDetectionName": "Rules Detection",
+            "RulesDetectionHint": "Enable automatic detection of rules questions in conversations",
+            "RulesSourceName": "SRD Rules Source",
+            "RulesSourceHint": "Select which compendium to use for rules answers",
+            "RulesSourceAuto": "Automatic - Search all compendia",
+            "RulesSourceDnd5e": "D&D 5e - Only D&D 5e compendia"
         },
         "Panel": {
             "Title": "Narrator Master",
@@ -26,6 +36,7 @@
             "GenerateImage": "画像生成",
             "AssistantTab": "アシスタント",
             "ImagesTab": "画像",
+            "RulesTab": "Rules",
             "NoSuggestions": "提案はありません。録音を開始すると、アシスタントが自動的に会話を分析します。",
             "NoImages": "画像は生成されていません。「画像生成」ボタンを使用してインフォグラフィックを作成してください。",
             "OffTrackWarning": "警告：脱線しています！",
@@ -39,7 +50,19 @@
             "GeneratedImage": "生成された画像",
             "ListeningStatus": "リスニング中...",
             "JournalStatus": "{count}個のジャーナルを読み込み済み",
-            "JournalStatusEmpty": "利用可能なジャーナルはありません"
+            "JournalStatusEmpty": "利用可能なジャーナルはありません",
+            "TranscriptTab": "Transcript",
+            "NoTranscript": "No transcript available",
+            "ClearTranscript": "Clear Transcript",
+            "ExportTranscript": "Export Transcript",
+            "ConfirmClearTranscript": "Are you sure you want to clear the transcript?",
+            "ConfirmClearImages": "Are you sure you want to clear all images?",
+            "ConfirmDeleteImage": "Are you sure you want to delete this image?",
+            "NPCDialogue": "NPC Dialogues",
+            "NPCDialogueTitle": "NPC Dialogue Suggestions",
+            "NoNPCDialogue": "No NPC dialogue suggestions available. Dialogues will be generated when NPCs are mentioned in conversations.",
+            "CopyDialogue": "Copy Dialogue",
+            "DialogueFor": "Dialogue for {npc}"
         },
         "Errors": {
             "NotInitialized": "Narrator Masterはまだ初期化されていません。完全に読み込まれるまでお待ちください。",
@@ -56,6 +79,8 @@
             "NoPrompt": "画像生成用のプロンプトが提供されていません。",
             "NoDescription": "インフォグラフィック用の説明が提供されていません。",
             "ContentPolicy": "コンテンツがOpenAIのポリシーに違反しています。別の説明を試してください。",
+            "ContentTooLong": "Content too long",
+            "InvalidContent": "Invalid content",
             "AIAssistantFailed": "AIアシスタントに失敗しました（エラー{status}）：{message}",
             "ImageGenerationFailed": "画像生成に失敗しました（エラー{status}）：{message}",
             "NoContextForImage": "画像を生成するためのコンテキストがありません。まず音声を録音してください。",
@@ -74,7 +99,17 @@
             "UnexpectedError": "予期しないエラーが発生しました：{message}",
             "ServiceUnavailable": "サービスが一時的に利用できません。数分後に再試行してください。",
             "InvalidJournalId": "無効なジャーナルIDです。",
-            "JournalNotFound": "ジャーナルが見つかりません：{id}"
+            "JournalNotFound": "ジャーナルが見つかりません：{id}",
+            "ExportFailed": "Transcript export failed. Try again.",
+            "InvalidSpeaker": "Invalid speaker ID",
+            "InvalidLabel": "Invalid speaker label",
+            "EmptyLabel": "Label cannot be empty",
+            "SaveMappingsFailed": "Unable to save speaker mappings",
+            "NPCNotFound": "NPC not found: {name}",
+            "NoNPCContext": "No context available for NPC {name}",
+            "RulesSearchFailed": "Rules search failed: {message}",
+            "NoCompendiumsAvailable": "No compendia available for rules search",
+            "CompendiumAccessDenied": "Compendium access denied"
         },
         "Warnings": {
             "ConfigIncomplete": "設定が不完全です"
@@ -90,7 +125,8 @@
             "TranscriptionComplete": "文字起こしが完了しました",
             "ApiKeyUpdated": "APIキーを更新しました",
             "MicrophoneReady": "マイクが録音準備完了です",
-            "PlayersOffTrack": "注意：プレイヤーがストーリーから外れています！"
+            "PlayersOffTrack": "注意：プレイヤーがストーリーから外れています！",
+            "TranscriptExported": "Transcript exported"
         },
         "OffTrack": {
             "NoContext": "脱線検知のための冒険コンテキストが設定されていません。",
@@ -137,7 +173,11 @@
             "GenerateImage": "現在のコンテキストに基づいて画像を生成",
             "ClearImages": "生成されたすべての画像をクリア",
             "CopyText": "テキストをクリップボードにコピー",
-            "OpenSettings": "モジュール設定を開く"
+            "OpenSettings": "モジュール設定を開く",
+            "ExpandRuleAnswer": "Expand to see full answer",
+            "CollapseRuleAnswer": "Hide full answer",
+            "DismissRuleAnswer": "Dismiss this rules answer",
+            "CopyRuleAnswer": "Copy answer to clipboard"
         },
         "Accessibility": {
             "RecordButton": "録音ボタン",
@@ -145,6 +185,31 @@
             "TabNavigation": "タブナビゲーション",
             "ImageGallery": "画像ギャラリー",
             "SuggestionsList": "提案リスト"
+        },
+        "SpeakerLabels": {
+            "Speaker": "Speaker",
+            "SpeakerNumber": "Speaker {number}",
+            "UnknownSpeaker": "Unknown Speaker",
+            "AssignName": "Assign Name",
+            "EditName": "Edit Name",
+            "ResetName": "Reset Name",
+            "NamePlaceholder": "Enter player name...",
+            "ManageSpeakers": "Manage Speakers",
+            "SpeakerList": "Speaker List",
+            "NoSpeakersDetected": "No speakers detected in the transcription",
+            "SpeakersDetected": "{count} speakers detected",
+            "ClearAllNames": "Clear All Names",
+            "ConfirmClearNames": "Are you sure you want to clear all speaker names?",
+            "NameAssigned": "Name assigned to {speaker}",
+            "NameCleared": "Name cleared from {speaker}",
+            "AllNamesCleared": "All speaker names have been cleared",
+            "DiarizationEnabled": "Speaker identification enabled",
+            "DiarizationDisabled": "Speaker identification disabled",
+            "ShowSpeakerLabels": "Show Speaker Labels",
+            "HideSpeakerLabels": "Hide Speaker Labels",
+            "ColorCode": "Color Code",
+            "SpeakerColor": "Speaker Color {number}",
+            "TranscriptionWithSpeakers": "Transcription with Speakers"
         },
         "Scenes": {
             "SceneBreak": "Scene Break",
@@ -161,6 +226,38 @@
             "SelectSceneType": "Select the scene type",
             "SceneMarked": "Scene break marked",
             "NoActiveScene": "No active scene"
+        },
+        "Rules": {
+            "NoRulesDetected": "No rules questions detected",
+            "QuestionDetected": "Question Detected",
+            "Answer": "Answer",
+            "Source": "Source",
+            "Citation": "Citation",
+            "ExpandAnswer": "Expand Answer",
+            "CollapseAnswer": "Collapse Answer",
+            "DismissRule": "Dismiss",
+            "CopyAnswer": "Copy Answer",
+            "SearchingRules": "Searching rules...",
+            "NoAnswerFound": "No answer found in SRD sources",
+            "ConfidenceHigh": "High confidence",
+            "ConfidenceMedium": "Medium confidence",
+            "ConfidenceLow": "Low confidence",
+            "FromCompendium": "From Compendium",
+            "PageReference": "Page {page}",
+            "MultipleAnswers": "{count} answers found",
+            "QuestionType": "Type",
+            "QuestionTypeCombat": "Combat",
+            "QuestionTypeSpell": "Spell",
+            "QuestionTypeCondition": "Condition",
+            "QuestionTypeAbility": "Ability",
+            "QuestionTypeMovement": "Movement",
+            "QuestionTypeRest": "Rest",
+            "QuestionTypeGeneral": "General",
+            "DetectedQuestion": "Question: {question}",
+            "AnswerFrom": "Answer from {source}",
+            "ClearAllRules": "Clear All Rules",
+            "RulesCleared": "All rules answers have been cleared",
+            "RuleAnswerCopied": "Answer copied to clipboard"
         }
     }
 }

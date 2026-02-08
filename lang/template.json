@@ -1,21 +1,29 @@
 {
     "NARRATOR": {
         "PanelTitle": "",
-
         "Settings": {
             "ApiKeyName": "",
             "ApiKeyHint": "",
             "LanguageName": "",
             "LanguageHint": "",
+            "MultiLanguageModeName": "",
+            "MultiLanguageModeHint": "",
             "PanelPositionName": "",
             "PanelPositionHint": "",
             "SensitivityName": "",
             "SensitivityHint": "",
             "SensitivityLow": "",
             "SensitivityMedium": "",
-            "SensitivityHigh": ""
+            "SensitivityHigh": "",
+            "SpeakerLabelsName": "",
+            "SpeakerLabelsHint": "",
+            "RulesDetectionName": "",
+            "RulesDetectionHint": "",
+            "RulesSourceName": "",
+            "RulesSourceHint": "",
+            "RulesSourceAuto": "",
+            "RulesSourceDnd5e": ""
         },
-
         "Panel": {
             "Title": "",
             "TogglePanel": "",
@@ -28,6 +36,7 @@
             "GenerateImage": "",
             "AssistantTab": "",
             "ImagesTab": "",
+            "RulesTab": "",
             "NoSuggestions": "",
             "NoImages": "",
             "OffTrackWarning": "",
@@ -41,9 +50,20 @@
             "GeneratedImage": "",
             "ListeningStatus": "",
             "JournalStatus": "",
-            "JournalStatusEmpty": ""
+            "JournalStatusEmpty": "",
+            "TranscriptTab": "",
+            "NoTranscript": "",
+            "ClearTranscript": "",
+            "ExportTranscript": "",
+            "ConfirmClearTranscript": "",
+            "ConfirmClearImages": "",
+            "ConfirmDeleteImage": "",
+            "NPCDialogue": "",
+            "NPCDialogueTitle": "",
+            "NoNPCDialogue": "",
+            "CopyDialogue": "",
+            "DialogueFor": ""
         },
-
         "Errors": {
             "NotInitialized": "",
             "InitFailed": "",
@@ -59,6 +79,8 @@
             "NoPrompt": "",
             "NoDescription": "",
             "ContentPolicy": "",
+            "ContentTooLong": "",
+            "InvalidContent": "",
             "AIAssistantFailed": "",
             "ImageGenerationFailed": "",
             "NoContextForImage": "",
@@ -77,13 +99,21 @@
             "UnexpectedError": "",
             "ServiceUnavailable": "",
             "InvalidJournalId": "",
-            "JournalNotFound": ""
+            "JournalNotFound": "",
+            "ExportFailed": "",
+            "InvalidSpeaker": "",
+            "InvalidLabel": "",
+            "EmptyLabel": "",
+            "SaveMappingsFailed": "",
+            "NPCNotFound": "",
+            "NoNPCContext": "",
+            "RulesSearchFailed": "",
+            "NoCompendiumsAvailable": "",
+            "CompendiumAccessDenied": ""
         },
-
         "Warnings": {
             "ConfigIncomplete": ""
         },
-
         "Notifications": {
             "CopiedToClipboard": "",
             "RecordingStarted": "",
@@ -95,9 +125,9 @@
             "TranscriptionComplete": "",
             "ApiKeyUpdated": "",
             "MicrophoneReady": "",
-            "PlayersOffTrack": ""
+            "PlayersOffTrack": "",
+            "TranscriptExported": ""
         },
-
         "OffTrack": {
             "NoContext": "",
             "ParseError": "",
@@ -105,7 +135,6 @@
             "Severe": "",
             "Minor": ""
         },
-
         "Suggestions": {
             "TypeNarration": "",
             "TypeDialogue": "",
@@ -115,7 +144,6 @@
             "MediumConfidence": "",
             "LowConfidence": ""
         },
-
         "Recording": {
             "StateInactive": "",
             "StateRecording": "",
@@ -125,7 +153,6 @@
             "AudioLevelNormal": "",
             "AudioLevelHigh": ""
         },
-
         "Journal": {
             "NoJournalFound": "",
             "ParsingJournal": "",
@@ -133,7 +160,6 @@
             "PageCount": "",
             "UnnamedPage": ""
         },
-
         "Images": {
             "Generating": "",
             "CacheExpired": "",
@@ -142,15 +168,49 @@
             "Delete": "",
             "Download": ""
         },
-
         "Tooltips": {
             "ToggleRecording": "",
             "GenerateImage": "",
             "ClearImages": "",
             "CopyText": "",
-            "OpenSettings": ""
+            "OpenSettings": "",
+            "ExpandRuleAnswer": "",
+            "CollapseRuleAnswer": "",
+            "DismissRuleAnswer": "",
+            "CopyRuleAnswer": ""
         },
-
+        "Accessibility": {
+            "RecordButton": "",
+            "AudioLevel": "",
+            "TabNavigation": "",
+            "ImageGallery": "",
+            "SuggestionsList": ""
+        },
+        "SpeakerLabels": {
+            "Speaker": "",
+            "SpeakerNumber": "",
+            "UnknownSpeaker": "",
+            "AssignName": "",
+            "EditName": "",
+            "ResetName": "",
+            "NamePlaceholder": "",
+            "ManageSpeakers": "",
+            "SpeakerList": "",
+            "NoSpeakersDetected": "",
+            "SpeakersDetected": "",
+            "ClearAllNames": "",
+            "ConfirmClearNames": "",
+            "NameAssigned": "",
+            "NameCleared": "",
+            "AllNamesCleared": "",
+            "DiarizationEnabled": "",
+            "DiarizationDisabled": "",
+            "ShowSpeakerLabels": "",
+            "HideSpeakerLabels": "",
+            "ColorCode": "",
+            "SpeakerColor": "",
+            "TranscriptionWithSpeakers": ""
+        },
         "Scenes": {
             "SceneBreak": "",
             "SceneTypeExploration": "",
@@ -167,13 +227,37 @@
             "SceneMarked": "",
             "NoActiveScene": ""
         },
-
-        "Accessibility": {
-            "RecordButton": "",
-            "AudioLevel": "",
-            "TabNavigation": "",
-            "ImageGallery": "",
-            "SuggestionsList": ""
+        "Rules": {
+            "NoRulesDetected": "",
+            "QuestionDetected": "",
+            "Answer": "",
+            "Source": "",
+            "Citation": "",
+            "ExpandAnswer": "",
+            "CollapseAnswer": "",
+            "DismissRule": "",
+            "CopyAnswer": "",
+            "SearchingRules": "",
+            "NoAnswerFound": "",
+            "ConfidenceHigh": "",
+            "ConfidenceMedium": "",
+            "ConfidenceLow": "",
+            "FromCompendium": "",
+            "PageReference": "",
+            "MultipleAnswers": "",
+            "QuestionType": "",
+            "QuestionTypeCombat": "",
+            "QuestionTypeSpell": "",
+            "QuestionTypeCondition": "",
+            "QuestionTypeAbility": "",
+            "QuestionTypeMovement": "",
+            "QuestionTypeRest": "",
+            "QuestionTypeGeneral": "",
+            "DetectedQuestion": "",
+            "AnswerFrom": "",
+            "ClearAllRules": "",
+            "RulesCleared": "",
+            "RuleAnswerCopied": ""
         }
     }
 }

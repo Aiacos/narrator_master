@@ -1,21 +1,29 @@
 {
     "NARRATOR": {
         "PanelTitle": "Narrator Master - DM Assistant",
-
         "Settings": {
             "ApiKeyName": "OpenAI API Key",
             "ApiKeyHint": "Your OpenAI API key. Requires a paid account with credits (minimum $5). Get it from platform.openai.com/api-keys",
             "LanguageName": "Transcription Language",
             "LanguageHint": "Language for audio transcription (default: English)",
+            "MultiLanguageModeName": "Multi-language Mode",
+            "MultiLanguageModeHint": "Enable transcription in multiple languages",
             "PanelPositionName": "Panel Position",
             "PanelPositionHint": "Saved position of the DM panel",
             "SensitivityName": "Off-Track Detection Sensitivity",
             "SensitivityHint": "How strictly to detect when players deviate from the adventure plot",
             "SensitivityLow": "Low - Only major deviations",
             "SensitivityMedium": "Medium - Balanced",
-            "SensitivityHigh": "High - Even small variations"
+            "SensitivityHigh": "High - Even small variations",
+            "SpeakerLabelsName": "Speaker Labels",
+            "SpeakerLabelsHint": "Enable custom name assignment to detected speakers in transcription",
+            "RulesDetectionName": "Rules Detection",
+            "RulesDetectionHint": "Enable automatic detection of rules questions in conversations",
+            "RulesSourceName": "SRD Rules Source",
+            "RulesSourceHint": "Select which compendium to use for rules answers",
+            "RulesSourceAuto": "Automatic - Search all compendia",
+            "RulesSourceDnd5e": "D&D 5e - Only D&D 5e compendia"
         },
-
         "Panel": {
             "Title": "Narrator Master",
             "TogglePanel": "Open/Close DM Panel",
@@ -28,6 +36,7 @@
             "GenerateImage": "Generate Image",
             "AssistantTab": "Assistant",
             "ImagesTab": "Images",
+            "RulesTab": "Rules",
             "NoSuggestions": "No suggestions available. Start recording and the assistant will automatically analyze the conversation.",
             "NoImages": "No images generated. Use the 'Generate Image' button to create infographics.",
             "OffTrackWarning": "WARNING: Off-Track!",
@@ -41,9 +50,20 @@
             "GeneratedImage": "Generated Image",
             "ListeningStatus": "Listening...",
             "JournalStatus": "{count} journals loaded",
-            "JournalStatusEmpty": "No journals available"
+            "JournalStatusEmpty": "No journals available",
+            "TranscriptTab": "Transcript",
+            "NoTranscript": "No transcript available",
+            "ClearTranscript": "Clear Transcript",
+            "ExportTranscript": "Export Transcript",
+            "ConfirmClearTranscript": "Are you sure you want to clear the transcript?",
+            "ConfirmClearImages": "Are you sure you want to clear all images?",
+            "ConfirmDeleteImage": "Are you sure you want to delete this image?",
+            "NPCDialogue": "NPC Dialogues",
+            "NPCDialogueTitle": "NPC Dialogue Suggestions",
+            "NoNPCDialogue": "No NPC dialogue suggestions available. Dialogues will be generated when NPCs are mentioned in conversations.",
+            "CopyDialogue": "Copy Dialogue",
+            "DialogueFor": "Dialogue for {npc}"
         },
-
         "Errors": {
             "NotInitialized": "Narrator Master is not yet initialized. Wait for complete loading.",
             "InitFailed": "Narrator Master initialization failed",
@@ -59,6 +79,8 @@
             "NoPrompt": "No prompt provided for image generation.",
             "NoDescription": "No description provided for the infographic.",
             "ContentPolicy": "Content violates OpenAI policies. Try a different description.",
+            "ContentTooLong": "Content too long",
+            "InvalidContent": "Invalid content",
             "AIAssistantFailed": "AI Assistant failed (Error {status}): {message}",
             "ImageGenerationFailed": "Image generation failed (Error {status}): {message}",
             "NoContextForImage": "No context available to generate an image. Record some audio first.",
@@ -77,13 +99,21 @@
             "UnexpectedError": "An unexpected error occurred: {message}",
             "ServiceUnavailable": "Service temporarily unavailable. Try again in a few minutes.",
             "InvalidJournalId": "Invalid Journal ID.",
-            "JournalNotFound": "Journal not found: {id}"
+            "JournalNotFound": "Journal not found: {id}",
+            "ExportFailed": "Transcript export failed. Try again.",
+            "InvalidSpeaker": "Invalid speaker ID",
+            "InvalidLabel": "Invalid speaker label",
+            "EmptyLabel": "Label cannot be empty",
+            "SaveMappingsFailed": "Unable to save speaker mappings",
+            "NPCNotFound": "NPC not found: {name}",
+            "NoNPCContext": "No context available for NPC {name}",
+            "RulesSearchFailed": "Rules search failed: {message}",
+            "NoCompendiumsAvailable": "No compendia available for rules search",
+            "CompendiumAccessDenied": "Compendium access denied"
         },
-
         "Warnings": {
             "ConfigIncomplete": "Configuration incomplete"
         },
-
         "Notifications": {
             "CopiedToClipboard": "Copied to clipboard!",
             "RecordingStarted": "Recording started",
@@ -95,9 +125,9 @@
             "TranscriptionComplete": "Transcription complete",
             "ApiKeyUpdated": "API key updated",
             "MicrophoneReady": "Microphone ready for recording",
-            "PlayersOffTrack": "Warning: Players are drifting from the plot!"
+            "PlayersOffTrack": "Warning: Players are drifting from the plot!",
+            "TranscriptExported": "Transcript exported"
         },
-
         "OffTrack": {
             "NoContext": "No adventure context set for off-track detection.",
             "ParseError": "Unable to parse off-track detection response.",
@@ -105,7 +135,6 @@
             "Severe": "Players are completely off-track from the adventure.",
             "Minor": "Slight deviation from the main plot."
         },
-
         "Suggestions": {
             "TypeNarration": "Narration",
             "TypeDialogue": "Dialogue",
@@ -115,7 +144,6 @@
             "MediumConfidence": "Medium confidence",
             "LowConfidence": "Low confidence"
         },
-
         "Recording": {
             "StateInactive": "Inactive",
             "StateRecording": "Recording",
@@ -125,7 +153,6 @@
             "AudioLevelNormal": "Normal audio level",
             "AudioLevelHigh": "High audio level"
         },
-
         "Journal": {
             "NoJournalFound": "Journal not found",
             "ParsingJournal": "Parsing Journal...",
@@ -133,7 +160,6 @@
             "PageCount": "{count} pages found",
             "UnnamedPage": "Unnamed page"
         },
-
         "Images": {
             "Generating": "Generating...",
             "CacheExpired": "Image URL expired, using local cache",
@@ -142,15 +168,49 @@
             "Delete": "Delete",
             "Download": "Download"
         },
-
         "Tooltips": {
             "ToggleRecording": "Start or stop audio recording",
             "GenerateImage": "Generate an image based on the current context",
             "ClearImages": "Clear all generated images",
             "CopyText": "Copy text to clipboard",
-            "OpenSettings": "Open module settings"
+            "OpenSettings": "Open module settings",
+            "ExpandRuleAnswer": "Expand to see full answer",
+            "CollapseRuleAnswer": "Hide full answer",
+            "DismissRuleAnswer": "Dismiss this rules answer",
+            "CopyRuleAnswer": "Copy answer to clipboard"
         },
-
+        "Accessibility": {
+            "RecordButton": "Record button",
+            "AudioLevel": "Audio level indicator",
+            "TabNavigation": "Tab navigation",
+            "ImageGallery": "Image gallery",
+            "SuggestionsList": "Suggestions list"
+        },
+        "SpeakerLabels": {
+            "Speaker": "Speaker",
+            "SpeakerNumber": "Speaker {number}",
+            "UnknownSpeaker": "Unknown Speaker",
+            "AssignName": "Assign Name",
+            "EditName": "Edit Name",
+            "ResetName": "Reset Name",
+            "NamePlaceholder": "Enter player name...",
+            "ManageSpeakers": "Manage Speakers",
+            "SpeakerList": "Speaker List",
+            "NoSpeakersDetected": "No speakers detected in the transcription",
+            "SpeakersDetected": "{count} speakers detected",
+            "ClearAllNames": "Clear All Names",
+            "ConfirmClearNames": "Are you sure you want to clear all speaker names?",
+            "NameAssigned": "Name assigned to {speaker}",
+            "NameCleared": "Name cleared from {speaker}",
+            "AllNamesCleared": "All speaker names have been cleared",
+            "DiarizationEnabled": "Speaker identification enabled",
+            "DiarizationDisabled": "Speaker identification disabled",
+            "ShowSpeakerLabels": "Show Speaker Labels",
+            "HideSpeakerLabels": "Hide Speaker Labels",
+            "ColorCode": "Color Code",
+            "SpeakerColor": "Speaker Color {number}",
+            "TranscriptionWithSpeakers": "Transcription with Speakers"
+        },
         "Scenes": {
             "SceneBreak": "Scene Break",
             "SceneTypeExploration": "Exploration",
@@ -167,13 +227,37 @@
             "SceneMarked": "Scene break marked",
             "NoActiveScene": "No active scene"
         },
-
-        "Accessibility": {
-            "RecordButton": "Record button",
-            "AudioLevel": "Audio level indicator",
-            "TabNavigation": "Tab navigation",
-            "ImageGallery": "Image gallery",
-            "SuggestionsList": "Suggestions list"
+        "Rules": {
+            "NoRulesDetected": "No rules questions detected",
+            "QuestionDetected": "Question Detected",
+            "Answer": "Answer",
+            "Source": "Source",
+            "Citation": "Citation",
+            "ExpandAnswer": "Expand Answer",
+            "CollapseAnswer": "Collapse Answer",
+            "DismissRule": "Dismiss",
+            "CopyAnswer": "Copy Answer",
+            "SearchingRules": "Searching rules...",
+            "NoAnswerFound": "No answer found in SRD sources",
+            "ConfidenceHigh": "High confidence",
+            "ConfidenceMedium": "Medium confidence",
+            "ConfidenceLow": "Low confidence",
+            "FromCompendium": "From Compendium",
+            "PageReference": "Page {page}",
+            "MultipleAnswers": "{count} answers found",
+            "QuestionType": "Type",
+            "QuestionTypeCombat": "Combat",
+            "QuestionTypeSpell": "Spell",
+            "QuestionTypeCondition": "Condition",
+            "QuestionTypeAbility": "Ability",
+            "QuestionTypeMovement": "Movement",
+            "QuestionTypeRest": "Rest",
+            "QuestionTypeGeneral": "General",
+            "DetectedQuestion": "Question: {question}",
+            "AnswerFrom": "Answer from {source}",
+            "ClearAllRules": "Clear All Rules",
+            "RulesCleared": "All rules answers have been cleared",
+            "RuleAnswerCopied": "Answer copied to clipboard"
         }
     }
 }

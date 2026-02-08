@@ -11,6 +11,7 @@ import { runTests as runSettingsTests } from './settings.test.js';
 import { runTests as runValidationTests } from './validation.test.js';
 import { runTests as runSessionAnalyticsTests } from './session-analytics.test.js';
 import { runTests as runSceneDetectorTests } from './scene-detector.test.js';
+import { runTests as runRulesReferenceTests } from './rules-reference.test.js';
 
 /**
  * Runs all test suites and reports aggregate results
@@ -32,6 +33,7 @@ async function runAllTests() {
         results.push(await runValidationTests());
         results.push(await runSessionAnalyticsTests());
         results.push(await runSceneDetectorTests());
+        results.push(await runRulesReferenceTests());
     } catch (error) {
         console.error('\n❌ Test execution error:', error.message);
         return { success: false, error: error.message };

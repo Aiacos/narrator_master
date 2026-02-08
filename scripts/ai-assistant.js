@@ -38,6 +38,16 @@ const MAX_CONTEXT_TOKENS = 8000;
  */
 
 /**
+ * Represents a detected rules question
+ * @typedef {Object} RulesQuestion
+ * @property {string} text - The question text or matched phrase
+ * @property {number} confidence - Confidence score 0-1
+ * @property {string} type - Question type ('mechanic', 'action', 'spell', 'condition', 'general', etc.)
+ * @property {string} [extractedTopic] - Extracted topic from the question
+ * @property {string[]} detectedTerms - Array of detected D&D mechanic terms
+ */
+
+/**
  * Represents the context analysis result
  * @typedef {Object} ContextAnalysis
  * @property {Suggestion[]} suggestions - Array of contextual suggestions
@@ -48,6 +58,7 @@ const MAX_CONTEXT_TOKENS = 8000;
  * @property {string} sceneInfo.type - The current scene type (exploration, combat, social, rest, unknown)
  * @property {boolean} sceneInfo.isTransition - Whether a scene transition was detected
  * @property {number} sceneInfo.timestamp - Timestamp of the analysis
+ * @property {RulesQuestion[]} rulesQuestions - Array of detected rules questions
  */
 
 /**
@@ -249,6 +260,7 @@ export class AIAssistant {
      * @param {Object} [options={}] - Analysis options
      * @param {boolean} [options.includeSuggestions=true] - Generate suggestions
      * @param {boolean} [options.checkOffTrack=true] - Check if off-track
+     * @param {boolean} [options.detectRules=true] - Detect rules questions
      * @returns {Promise<ContextAnalysis>} The analysis result
      */
     async analyzeContext(transcription, options = {}) {
@@ -262,11 +274,21 @@ export class AIAssistant {
 
         const includeSuggestions = options.includeSuggestions !== false;
         const checkOffTrack = options.checkOffTrack !== false;
+        const detectRules = options.detectRules !== false;
 
         console.log(`${MODULE_ID} | Analyzing context, transcription length: ${transcription.length}`);
 
         // Detect languages in transcription
         const detectedLanguages = this._detectLanguagesInTranscription(transcription);
+
+        // Detect rules questions if enabled
+        let rulesDetection = null;
+        if (detectRules) {
+            rulesDetection = this._detectRulesQuestions(transcription);
+            if (rulesDetection.hasRulesQuestions) {
+                console.log(`${MODULE_ID} | Detected ${rulesDetection.questions.length} rules question(s)`);
+            }
+        }
 
         try {
             // Build the analysis prompt
@@ -280,6 +302,9 @@ export class AIAssistant {
 
             // Detect scene transitions if scene detector is available
             const sceneInfo = this._detectSceneInfo(transcription);
+
+            // Add rules questions to analysis if detected
+            analysis.rulesQuestions = rulesDetection?.questions || [];
 
             // Update conversation history
             this._addToHistory('user', transcription);
@@ -498,6 +523,142 @@ export class AIAssistant {
         console.log(`${MODULE_ID} | Found ${mentionedNPCs.length} NPC mentions: ${mentionedNPCs.join(', ')}`);
 
         return mentionedNPCs;
+    }
+
+    /**
+     * Detects rules questions in a transcription
+     * @param {string} transcription - The transcription text to analyze
+     * @returns {Object} Detection result with hasRulesQuestions flag and question details
+     * @property {boolean} hasRulesQuestions - Whether rules questions were detected
+     * @property {Array<Object>} questions - Array of detected questions with details
+     * @private
+     */
+    _detectRulesQuestions(transcription) {
+        if (!transcription || typeof transcription !== 'string') {
+            return {
+                hasRulesQuestions: false,
+                questions: []
+            };
+        }
+
+        const normalizedText = transcription.toLowerCase();
+        const questions = [];
+
+        // Question patterns (both English and Italian)
+        const questionPatterns = [
+            // English patterns
+            { regex: /(?:how does|how do|what is the rule for|what are the rules for)\s+([a-z\s]+?)(?:\s+work|\?|$)/gi, confidence: 0.9, type: 'mechanic' },
+            { regex: /(?:can i|can you|am i able to|is it possible to)\s+([a-z\s]+?)(?:\?|$)/gi, confidence: 0.7, type: 'action' },
+            { regex: /(?:what happens when|what happens if)\s+([a-z\s]+?)(?:\?|$)/gi, confidence: 0.8, type: 'mechanic' },
+
+            // Italian patterns
+            { regex: /(?:come funziona|come funzionano|qual è la regola per|quali sono le regole per)\s+([a-z\s]+?)(?:\?|$)/gi, confidence: 0.9, type: 'mechanic' },
+            { regex: /(?:posso|possiamo|è possibile|si può)\s+([a-z\s]+?)(?:\?|$)/gi, confidence: 0.7, type: 'action' },
+            { regex: /(?:cosa succede quando|cosa succede se|che succede se)\s+([a-z\s]+?)(?:\?|$)/gi, confidence: 0.8, type: 'mechanic' },
+            { regex: /(?:quanto costa|quanti slot|quante azioni)\s+([a-z\s]+?)(?:\?|$)/gi, confidence: 0.8, type: 'spell' },
+            { regex: /\b(?:regola|regole|meccanica|meccaniche|rule|rules|mechanic|mechanics)\b/gi, confidence: 0.6, type: 'general' }
+        ];
+
+        // Known D&D mechanic terms
+        const mechanicTerms = {
+            'grappling': 'combat',
+            'lotta': 'combat',
+            'opportunity attack': 'combat',
+            'attacco di opportunità': 'combat',
+            'advantage': 'combat',
+            'vantaggio': 'combat',
+            'disadvantage': 'combat',
+            'svantaggio': 'combat',
+            'concentration': 'spell',
+            'concentrazione': 'spell',
+            'spell slot': 'spell',
+            'slot incantesimo': 'spell',
+            'prone': 'condition',
+            'prono': 'condition',
+            'stunned': 'condition',
+            'stordito': 'condition',
+            'saving throw': 'ability',
+            'tiro salvezza': 'ability',
+            'short rest': 'rest',
+            'riposo breve': 'rest',
+            'long rest': 'rest',
+            'riposo lungo': 'rest'
+        };
+
+        // Check for question patterns
+        for (const pattern of questionPatterns) {
+            const matches = normalizedText.matchAll(pattern.regex);
+            for (const match of matches) {
+                const extractedTopic = match[1] ? match[1].trim() : null;
+                const detectedTerms = [];
+
+                // Check if any mechanic terms are in the matched text
+                let category = pattern.type;
+                if (extractedTopic) {
+                    for (const [term, termCategory] of Object.entries(mechanicTerms)) {
+                        if (extractedTopic.includes(term) || normalizedText.includes(term)) {
+                            detectedTerms.push(term);
+                            category = termCategory;
+                        }
+                    }
+                }
+
+                // Only add if confidence threshold is met or mechanic terms detected
+                if (pattern.confidence > 0.5 || detectedTerms.length > 0) {
+                    questions.push({
+                        text: match[0],
+                        confidence: Math.min(pattern.confidence + (detectedTerms.length * 0.1), 1.0),
+                        type: category,
+                        extractedTopic,
+                        detectedTerms
+                    });
+                }
+            }
+        }
+
+        // Also check for mechanic terms even without explicit question patterns
+        for (const [term, category] of Object.entries(mechanicTerms)) {
+            if (normalizedText.includes(term) && this._hasQuestionWord(normalizedText)) {
+                // Check if we already detected this
+                const alreadyDetected = questions.some(q =>
+                    q.extractedTopic && q.extractedTopic.includes(term)
+                );
+
+                if (!alreadyDetected) {
+                    questions.push({
+                        text: term,
+                        confidence: 0.6,
+                        type: category,
+                        extractedTopic: term,
+                        detectedTerms: [term]
+                    });
+                }
+            }
+        }
+
+        return {
+            hasRulesQuestions: questions.length > 0,
+            questions
+        };
+    }
+
+    /**
+     * Checks if text contains a question word
+     * @param {string} text - The normalized text
+     * @returns {boolean}
+     * @private
+     */
+    _hasQuestionWord(text) {
+        const questionWords = [
+            // English
+            'how', 'what', 'when', 'where', 'why', 'who', 'can', 'does', 'do', 'is', 'are',
+            // Italian
+            'come', 'cosa', 'quando', 'dove', 'perché', 'chi', 'posso', 'può', 'puoi',
+            'è', 'sono', 'qual', 'quale', 'quanti', 'quante', 'quanto'
+        ];
+
+        const words = text.split(/\s+/);
+        return words.some(word => questionWords.includes(word));
     }
 
     /**
@@ -930,7 +1091,8 @@ Rispondi in formato JSON:
                 suggestions: validatedSuggestions,
                 offTrackStatus: offTrackStatus,
                 relevantPages: this._validateArray(parsed.relevantPages, 20, 'relevantPages'),
-                summary: this._validateString(parsed.summary || '', 2000, 'summary')
+                summary: this._validateString(parsed.summary || '', 2000, 'summary'),
+                rulesQuestions: [] // Will be populated by analyzeContext
             };
 
         } catch (error) {
@@ -952,7 +1114,8 @@ Rispondi in formato JSON:
                     reason: ''
                 },
                 relevantPages: [],
-                summary: sanitizedSummary
+                summary: sanitizedSummary,
+                rulesQuestions: [] // Will be populated by analyzeContext
             };
         }
     }

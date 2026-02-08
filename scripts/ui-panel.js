@@ -156,6 +156,12 @@ export class NarratorPanel extends Application {
          * @type {Function|null}
          */
         this.onMarkSceneBreak = null;
+
+        /**
+         * Rules Q&A answers
+         * @type {Array<{question: string, answer: string, citation: string, source: string, expanded: boolean, confidence: string, type: string, timestamp: number}>}
+         */
+        this.rulesAnswers = [];
     }
 
     /**
@@ -235,6 +241,10 @@ export class NarratorPanel extends Application {
             })),
             hasNPCDialogue: Object.keys(this.npcDialogue).length > 0,
 
+            // Rules Q&A
+            rulesAnswers: this.rulesAnswers,
+            hasRules: this.rulesAnswers.length > 0,
+
             // Recording state
             recordingState: this.recordingState,
             isRecording: this.recordingState === RECORDING_STATE.RECORDING,
@@ -277,7 +287,18 @@ export class NarratorPanel extends Application {
                 exportTranscript: game.i18n.localize('NARRATOR.Panel.ExportTranscript'),
                 markSceneBreak: game.i18n.localize('NARRATOR.Scenes.MarkSceneBreak'),
                 npcDialogueTitle: game.i18n.localize('NARRATOR.Panel.NPCDialogueTitle'),
-                copyDialogue: game.i18n.localize('NARRATOR.Panel.CopyDialogue')
+                copyDialogue: game.i18n.localize('NARRATOR.Panel.CopyDialogue'),
+                // Rules
+                noRulesDetected: game.i18n.localize('NARRATOR.Rules.NoRulesDetected'),
+                questionDetected: game.i18n.localize('NARRATOR.Rules.QuestionDetected'),
+                answer: game.i18n.localize('NARRATOR.Rules.Answer'),
+                source: game.i18n.localize('NARRATOR.Rules.Source'),
+                citation: game.i18n.localize('NARRATOR.Rules.Citation'),
+                expandAnswer: game.i18n.localize('NARRATOR.Rules.ExpandAnswer'),
+                collapseAnswer: game.i18n.localize('NARRATOR.Rules.CollapseAnswer'),
+                dismissRule: game.i18n.localize('NARRATOR.Rules.DismissRule'),
+                copyAnswer: game.i18n.localize('NARRATOR.Rules.CopyAnswer'),
+                clearAllRules: game.i18n.localize('NARRATOR.Rules.ClearAllRules')
             }
         };
     }
@@ -351,6 +372,12 @@ export class NarratorPanel extends Application {
 
         // Scene break controls
         html.find('.mark-scene-break').click(this._onMarkSceneBreak.bind(this));
+
+        // Rules controls
+        html.find('.expand-rule').click(this._onExpandRule.bind(this));
+        html.find('.dismiss-rule').click(this._onDismissRule.bind(this));
+        html.find('.copy-rule-answer').click(this._onCopyRuleAnswer.bind(this));
+        html.find('.clear-rules').click(this._onClearRules.bind(this));
     }
 
     /**
@@ -781,6 +808,63 @@ export class NarratorPanel extends Application {
     }
 
     /**
+     * Handles expand/collapse rule answer button click
+     * @param {Event} event - Click event
+     * @private
+     */
+    _onExpandRule(event) {
+        event.preventDefault();
+        const index = parseInt($(event.currentTarget).data('index'));
+
+        if (index >= 0 && index < this.rulesAnswers.length) {
+            this.rulesAnswers[index].expanded = !this.rulesAnswers[index].expanded;
+            this.render(false);
+        }
+    }
+
+    /**
+     * Handles dismiss rule button click
+     * @param {Event} event - Click event
+     * @private
+     */
+    _onDismissRule(event) {
+        event.preventDefault();
+        const index = parseInt($(event.currentTarget).data('index'));
+
+        if (index >= 0 && index < this.rulesAnswers.length) {
+            this.rulesAnswers.splice(index, 1);
+            this.render(false);
+        }
+    }
+
+    /**
+     * Handles copy rule answer button click
+     * @param {Event} event - Click event
+     * @private
+     */
+    async _onCopyRuleAnswer(event) {
+        event.preventDefault();
+        const index = parseInt($(event.currentTarget).data('index'));
+
+        if (index >= 0 && index < this.rulesAnswers.length) {
+            const rule = this.rulesAnswers[index];
+            const text = `${game.i18n.localize('NARRATOR.Rules.QuestionDetected')}: ${rule.question}\n\n${game.i18n.localize('NARRATOR.Rules.Answer')}: ${rule.answer}\n\n${game.i18n.localize('NARRATOR.Rules.Source')}: ${rule.citation}`;
+            await this._copyToClipboard(text);
+            ui.notifications.info(game.i18n.localize('NARRATOR.Rules.RuleAnswerCopied'));
+        }
+    }
+
+    /**
+     * Handles clear all rules button click
+     * @param {Event} event - Click event
+     * @private
+     */
+    _onClearRules(event) {
+        event.preventDefault();
+        this.clearRules();
+    }
+
+    /**
      * Updates the panel with new content data
      * @param {Object} data - Content data to update
      * @param {Array<string>} [data.suggestions] - New AI suggestions
@@ -788,6 +872,7 @@ export class NarratorPanel extends Application {
      * @param {string} [data.offTrackMessage] - Off-track warning message
      * @param {string} [data.narrativeBridge] - Narrative bridge suggestion
      * @param {number} [data.journalCount] - Number of journals loaded
+     * @param {Array<Object>} [data.rulesAnswers] - Rules Q&A answers
      */
     updateContent(data) {
         if (data.suggestions !== undefined) {
@@ -804,6 +889,9 @@ export class NarratorPanel extends Application {
         }
         if (data.journalCount !== undefined) {
             this.journalCount = data.journalCount;
+        }
+        if (data.rulesAnswers !== undefined) {
+            this.rulesAnswers = data.rulesAnswers;
         }
 
         this.render(false);
@@ -916,6 +1004,7 @@ export class NarratorPanel extends Application {
         this.clearSuggestions();
         this.clearImages();
         this.clearTranscript();
+        this.rulesAnswers = [];
         this._lastTranscription = '';
         this.render(false);
     }
@@ -1015,6 +1104,60 @@ export class NarratorPanel extends Application {
      */
     setSpeakerLabelService(service) {
         this.speakerLabelService = service;
+    }
+
+    /**
+     * Updates rules answers with new data
+     * @param {Array<{question: string, answer: string, citation: string, source: string, confidence: string, type: string}>} rulesAnswers - Rules Q&A answers
+     */
+    updateRules(rulesAnswers) {
+        if (!Array.isArray(rulesAnswers)) {
+            return;
+        }
+
+        // Add expanded flag and timestamp to each rule if not present
+        this.rulesAnswers = rulesAnswers.map(rule => ({
+            ...rule,
+            expanded: rule.expanded !== undefined ? rule.expanded : false,
+            timestamp: rule.timestamp || Date.now()
+        }));
+
+        this.render(false);
+    }
+
+    /**
+     * Adds a single rule answer to existing ones
+     * @param {Object} ruleAnswer - Single rule answer to add
+     * @param {string} ruleAnswer.question - The detected question
+     * @param {string} ruleAnswer.answer - The answer from SRD/compendium
+     * @param {string} ruleAnswer.citation - Citation (source, page)
+     * @param {string} [ruleAnswer.source] - Source name
+     * @param {string} [ruleAnswer.confidence] - Confidence level
+     * @param {string} [ruleAnswer.type] - Question type
+     */
+    addRuleAnswer(ruleAnswer) {
+        if (!ruleAnswer || typeof ruleAnswer !== 'object') {
+            return;
+        }
+
+        // Add expanded flag and timestamp
+        const newRule = {
+            ...ruleAnswer,
+            expanded: false,
+            timestamp: Date.now()
+        };
+
+        this.rulesAnswers.push(newRule);
+        this.render(false);
+    }
+
+    /**
+     * Clears all rules answers
+     */
+    clearRules() {
+        this.rulesAnswers = [];
+        this.render(false);
+        ui.notifications.info(game.i18n.localize('NARRATOR.Rules.RulesCleared'));
     }
 
     /**
