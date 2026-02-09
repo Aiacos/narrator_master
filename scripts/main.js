@@ -10,6 +10,7 @@ import { TranscriptionService } from './transcription.js';
 import { AIAssistant } from './ai-assistant.js';
 import { ImageGenerator } from './image-generator.js';
 import { JournalParser } from './journal-parser.js';
+import { CompendiumParser } from './compendium-parser.js';
 import { ChapterTracker } from './chapter-tracker.js';
 import { NarratorPanel, RECORDING_STATE } from './ui-panel.js';
 import { SpeakerLabelService } from './speaker-labels.js';
@@ -192,6 +193,12 @@ class NarratorMaster {
         this.journalParser = null;
 
         /**
+         * Compendium parser service
+         * @type {CompendiumParser|null}
+         */
+        this.compendiumParser = null;
+
+        /**
          * Speaker label service
          * @type {SpeakerLabelService|null}
          */
@@ -325,6 +332,9 @@ class NarratorMaster {
         // Initialize Journal Parser (no API key needed)
         this.journalParser = new JournalParser();
 
+        // Initialize Compendium Parser (no API key needed)
+        this.compendiumParser = new CompendiumParser();
+
         // Initialize Speaker Label Service (no API key needed)
         this.speakerLabelService = new SpeakerLabelService();
 
@@ -413,16 +423,34 @@ class NarratorMaster {
     }
 
     /**
-     * Loads all available journals and sets AI context
+     * Loads all available journals and compendiums, then sets AI context
      * @private
      */
     async _loadAllJournals() {
         try {
+            // Parse journals
             const parsedJournals = await this.journalParser.parseAllJournals();
-            const context = this.journalParser.getAllContentForAI();
+            const journalContext = this.journalParser.getAllContentForAI();
 
-            // Set context in AI assistant
-            this.aiAssistant.setAdventureContext(context);
+            // Parse compendiums (adventure content and rules)
+            let compendiumContext = '';
+            let compendiumStats = { journalCompendiums: 0, rulesCompendiums: 0, totalEntries: 0 };
+
+            if (this.compendiumParser) {
+                await this.compendiumParser.parseJournalCompendiums();
+                await this.compendiumParser.parseRulesCompendiums();
+
+                // Get compendium content for AI context
+                compendiumContext = this.compendiumParser.getContentForAI();
+                compendiumStats = this.compendiumParser.getCacheStats();
+            }
+
+            // Combine journal and compendium context for AI
+            const combinedContext = journalContext +
+                (compendiumContext ? '\n\n' + compendiumContext : '');
+
+            // Set combined context in AI assistant
+            this.aiAssistant.setAdventureContext(combinedContext);
 
             // Update panel with journal count
             if (this.panel) {
@@ -431,10 +459,13 @@ class NarratorMaster {
                 });
             }
 
-            Logger.info(`Loaded ${parsedJournals.length} journals, ${context.length} chars context`, 'JournalLoader');
+            Logger.info(
+                `Loaded ${parsedJournals.length} journals, ${compendiumStats.totalEntries} compendium entries, ${combinedContext.length} chars total context`,
+                'JournalLoader'
+            );
 
         } catch (error) {
-            Logger.warn('Failed to load journals', 'JournalLoader', error);
+            Logger.warn('Failed to load journals and compendiums', 'JournalLoader', error);
         }
     }
 
@@ -1039,6 +1070,7 @@ class NarratorMaster {
                 aiAssistant: this.aiAssistant?.isConfigured() ?? false,
                 imageGenerator: this.imageGenerator?.isConfigured() ?? false,
                 journalParser: !!this.journalParser,
+                compendiumParser: !!this.compendiumParser,
                 chapterTracker: this.chapterTracker?.isConfigured() ?? false
             }
         };
