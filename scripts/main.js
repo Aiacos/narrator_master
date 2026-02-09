@@ -10,6 +10,7 @@ import { TranscriptionService } from './transcription.js';
 import { AIAssistant } from './ai-assistant.js';
 import { ImageGenerator } from './image-generator.js';
 import { JournalParser } from './journal-parser.js';
+import { ChapterTracker } from './chapter-tracker.js';
 import { NarratorPanel, RECORDING_STATE } from './ui-panel.js';
 import { SpeakerLabelService } from './speaker-labels.js';
 import { Logger } from './logger.js';
@@ -197,6 +198,12 @@ class NarratorMaster {
         this.speakerLabelService = null;
 
         /**
+         * Chapter tracker service
+         * @type {ChapterTracker|null}
+         */
+        this.chapterTracker = null;
+
+        /**
          * Audio level update interval ID
          * @type {number|null}
          * @private
@@ -282,6 +289,14 @@ class NarratorMaster {
             // Register journal update hooks
             this._registerJournalHooks();
 
+            // Register scene tracking hooks for chapter detection
+            this._registerSceneHooks();
+
+            // Update chapter tracker from current active scene (if any)
+            if (game.scenes?.active) {
+                this.chapterTracker.updateFromScene(game.scenes.active);
+            }
+
             // Validate configuration
             const validation = this.settings.validateConfiguration();
             if (!validation.valid) {
@@ -312,6 +327,11 @@ class NarratorMaster {
 
         // Initialize Speaker Label Service (no API key needed)
         this.speakerLabelService = new SpeakerLabelService();
+
+        // Initialize Chapter Tracker (no API key needed)
+        this.chapterTracker = new ChapterTracker({
+            journalParser: this.journalParser
+        });
 
         // Initialize Audio Capture
         this.audioCapture = new AudioCapture({
@@ -428,6 +448,49 @@ class NarratorMaster {
         Hooks.on('updateJournalEntry', reloadJournals);
         Hooks.on('createJournalEntry', reloadJournals);
         Hooks.on('deleteJournalEntry', reloadJournals);
+    }
+
+    /**
+     * Registers hooks for scene tracking and chapter detection
+     * Updates ChapterTracker when the active scene changes
+     * @private
+     */
+    _registerSceneHooks() {
+        // Hook into canvas ready event to detect scene changes
+        Hooks.on('canvasReady', (canvas) => {
+            this._onSceneChange(canvas.scene);
+        });
+
+        Logger.debug('Scene tracking hooks registered', 'NarratorMaster');
+    }
+
+    /**
+     * Handles scene change events
+     * Updates chapter tracker based on the new active scene
+     * @param {Object} scene - The newly active Foundry VTT scene
+     * @private
+     */
+    _onSceneChange(scene) {
+        if (!scene) {
+            Logger.debug('Scene change event with no scene', 'SceneTracking');
+            return;
+        }
+
+        Logger.debug(`Scene changed to: ${scene.name} (${scene.id})`, 'SceneTracking');
+
+        // Update chapter tracker from scene
+        if (this.chapterTracker) {
+            const chapter = this.chapterTracker.updateFromScene(scene);
+
+            if (chapter) {
+                Logger.info(`Chapter detected from scene: ${chapter.title}`, 'SceneTracking');
+
+                // Update panel with chapter info if panel is open
+                if (this.panel?.rendered) {
+                    this.panel.render(false);
+                }
+            }
+        }
     }
 
     /**
@@ -975,7 +1038,8 @@ class NarratorMaster {
                 transcription: this.transcriptionService?.isConfigured() ?? false,
                 aiAssistant: this.aiAssistant?.isConfigured() ?? false,
                 imageGenerator: this.imageGenerator?.isConfigured() ?? false,
-                journalParser: !!this.journalParser
+                journalParser: !!this.journalParser,
+                chapterTracker: this.chapterTracker?.isConfigured() ?? false
             }
         };
     }
