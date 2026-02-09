@@ -455,8 +455,11 @@ export class NarratorPanel extends Application {
         html.find('.clear-rules').click(this._onClearRules.bind(this));
 
         // Chapter navigation controls
-        html.find('.subchapter-item').click(this._onSubchapterItemClick.bind(this));
-        html.find('.dismiss-silence-recovery').click(this._onDismissSilenceRecovery.bind(this));
+        html.find('.subchapter-btn').click(this._onSubchapterItemClick.bind(this));
+        html.find('.chapter-back-btn').click(this._onChapterBackClick.bind(this));
+        html.find('.dismiss-recovery').click(this._onDismissSilenceRecovery.bind(this));
+        html.find('.recovery-option-btn').click(this._onRecoveryOptionClick.bind(this));
+        html.find('.continue-listening-btn').click(this._onDismissSilenceRecovery.bind(this));
     }
 
     /**
@@ -975,6 +978,46 @@ export class NarratorPanel extends Application {
      */
     _onDismissSilenceRecovery(event) {
         event.preventDefault();
+        this.hideSilenceRecovery();
+    }
+
+    /**
+     * Handles chapter back button click
+     * @param {Event} event - Click event
+     * @private
+     */
+    _onChapterBackClick(event) {
+        event.preventDefault();
+        const chapterId = event.currentTarget.dataset.chapterId;
+        if (chapterId) {
+            this._handleSubchapterClick(chapterId);
+        }
+    }
+
+    /**
+     * Handles recovery option button click
+     * @param {Event} event - Click event
+     * @private
+     */
+    _onRecoveryOptionClick(event) {
+        event.preventDefault();
+        const optionId = event.currentTarget.dataset.optionId;
+        const optionType = event.currentTarget.dataset.optionType;
+        const pageId = event.currentTarget.dataset.pageId;
+
+        // Log for debugging
+        if (typeof console !== 'undefined') {
+            console.warn(`[Narrator Master] Recovery option selected: ${optionId} (type: ${optionType})`);
+        }
+
+        // Navigate to chapter based on selection
+        if (pageId) {
+            this._handleSubchapterClick(pageId);
+        } else if (optionId) {
+            this._handleSubchapterClick(optionId);
+        }
+
+        // Hide recovery UI
         this.hideSilenceRecovery();
     }
 
