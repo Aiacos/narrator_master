@@ -1100,4 +1100,241 @@ export class JournalParser {
 
         return findAtPosition(pageChapter.children) || pageChapter;
     }
+
+    /**
+     * Finds a chapter/section by matching against a scene name
+     * Uses pattern matching to handle various naming conventions:
+     * - "Chapter 1: The Tavern" → matches "The Tavern" or "Chapter 1"
+     * - "Scene - The Dark Forest" → matches "The Dark Forest"
+     * - "Act 2 - The Betrayal" → matches "Act 2" or "The Betrayal"
+     *
+     * @param {string} journalId - The journal ID to search in
+     * @param {string} sceneName - The scene name to match (e.g., "Chapter 1: The Tavern")
+     * @returns {ChapterNode|null} The best matching chapter node or null if no match found
+     */
+    getChapterBySceneName(journalId, sceneName) {
+        if (!sceneName || typeof sceneName !== 'string') {
+            Logger.warn('Invalid scene name provided', 'JournalParser.getChapterBySceneName');
+            return null;
+        }
+
+        const structure = this.extractChapterStructure(journalId);
+        if (!structure) {
+            Logger.warn(`Could not extract chapter structure for journal: ${journalId}`, 'JournalParser.getChapterBySceneName');
+            return null;
+        }
+
+        // Extract searchable terms from scene name
+        const searchTerms = this._extractSearchTermsFromSceneName(sceneName);
+
+        if (searchTerms.length === 0) {
+            Logger.warn(`No valid search terms extracted from scene name: ${sceneName}`, 'JournalParser.getChapterBySceneName');
+            return null;
+        }
+
+        // Find best matching chapter
+        const flatList = this.getFlatChapterList(journalId);
+        let bestMatch = null;
+        let bestScore = 0;
+
+        for (const chapter of flatList) {
+            const score = this._calculateChapterMatchScore(chapter.title, searchTerms, sceneName);
+            if (score > bestScore) {
+                bestScore = score;
+                bestMatch = chapter;
+            }
+        }
+
+        // Require a minimum match score to avoid false positives
+        const MIN_MATCH_SCORE = 0.3;
+        if (bestScore < MIN_MATCH_SCORE) {
+            Logger.debug(
+                `No chapter found matching scene "${sceneName}" (best score: ${bestScore.toFixed(2)})`,
+                'JournalParser.getChapterBySceneName'
+            );
+            return null;
+        }
+
+        // Get the full ChapterNode from the structure
+        const fullNode = this._findChapterNodeById(structure.chapters, bestMatch.id);
+
+        Logger.debug(
+            `Matched scene "${sceneName}" to chapter "${bestMatch.title}" (score: ${bestScore.toFixed(2)})`,
+            'JournalParser.getChapterBySceneName'
+        );
+
+        return fullNode;
+    }
+
+    /**
+     * Extracts searchable terms from a scene name
+     * Handles common patterns like "Chapter X:", "Scene -", "Act N:", numbered prefixes, etc.
+     * @param {string} sceneName - The scene name to parse
+     * @returns {string[]} Array of normalized search terms
+     * @private
+     */
+    _extractSearchTermsFromSceneName(sceneName) {
+        const terms = [];
+
+        // Normalize the scene name
+        let normalized = sceneName.trim();
+
+        // Common separators in scene names
+        const separators = [':', '-', '–', '—', '|', '/'];
+
+        // Common prefixes to handle (Italian and English)
+        const prefixPatterns = [
+            /^(chapter|capitolo|cap\.?)\s*(\d+|[ivxlcdm]+)/i,      // Chapter 1, Capitolo 2, Cap. 3, Chapter IV
+            /^(scene|scena)\s*(\d+|[ivxlcdm]+)?/i,                  // Scene 1, Scena 2
+            /^(act|atto)\s*(\d+|[ivxlcdm]+)/i,                      // Act 1, Atto 2
+            /^(part|parte)\s*(\d+|[ivxlcdm]+)/i,                    // Part 1, Parte 2
+            /^(episode|episodio)\s*(\d+|[ivxlcdm]+)/i,              // Episode 1, Episodio 2
+            /^(section|sezione)\s*(\d+|[ivxlcdm]+)?/i,              // Section 1, Sezione 2
+            /^(\d+)\s*[-.:)]/,                                       // "1. ", "1: ", "1 - "
+            /^([ivxlcdm]+)\s*[-.:)]/i                                // "I. ", "IV: "
+        ];
+
+        // Check for prefix patterns and extract both prefix and remainder
+        for (const pattern of prefixPatterns) {
+            const match = normalized.match(pattern);
+            if (match) {
+                // Add the prefix as a term (e.g., "Chapter 1", "Act 2")
+                const prefixTerm = match[0].replace(/[-.:)\s]+$/, '').trim();
+                if (prefixTerm.length >= 2) {
+                    terms.push(prefixTerm.toLowerCase());
+                }
+                break;
+            }
+        }
+
+        // Split by separators and extract meaningful parts
+        let parts = [normalized];
+        for (const sep of separators) {
+            const newParts = [];
+            for (const part of parts) {
+                newParts.push(...part.split(sep).map(p => p.trim()).filter(p => p.length > 0));
+            }
+            parts = newParts;
+        }
+
+        // Process each part
+        for (const part of parts) {
+            // Skip if it's just a prefix pattern we already captured
+            const isJustPrefix = prefixPatterns.some(pattern => {
+                const match = part.match(pattern);
+                return match && match[0].length === part.length;
+            });
+
+            if (!isJustPrefix && part.length >= 2) {
+                // Remove leading/trailing punctuation and normalize
+                const cleanPart = part.replace(/^[^\w\s]+|[^\w\s]+$/g, '').trim().toLowerCase();
+                if (cleanPart.length >= 2 && !terms.includes(cleanPart)) {
+                    terms.push(cleanPart);
+                }
+            }
+        }
+
+        // Also add the full scene name (normalized) for exact matching
+        const fullNormalized = normalized.toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+        if (fullNormalized.length >= 2 && !terms.includes(fullNormalized)) {
+            terms.push(fullNormalized);
+        }
+
+        return terms;
+    }
+
+    /**
+     * Calculates a match score between a chapter title and search terms
+     * @param {string} chapterTitle - The chapter title to match against
+     * @param {string[]} searchTerms - The search terms to look for
+     * @param {string} originalSceneName - The original scene name for exact matching
+     * @returns {number} Match score between 0 and 1
+     * @private
+     */
+    _calculateChapterMatchScore(chapterTitle, searchTerms, originalSceneName) {
+        if (!chapterTitle || !searchTerms || searchTerms.length === 0) {
+            return 0;
+        }
+
+        const normalizedTitle = chapterTitle.toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+        const titleWords = normalizedTitle.split(/\s+/).filter(w => w.length >= 2);
+
+        let totalScore = 0;
+        let matchedTerms = 0;
+
+        // Check for exact match (highest priority)
+        const normalizedSceneName = originalSceneName.toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+        if (normalizedTitle === normalizedSceneName) {
+            return 1.0; // Perfect match
+        }
+
+        // Check each search term
+        for (const term of searchTerms) {
+            const termWords = term.split(/\s+/).filter(w => w.length >= 2);
+
+            // Check for exact term match in title
+            if (normalizedTitle.includes(term)) {
+                // Weight by term length relative to title length (longer matches = better)
+                const matchWeight = Math.min(1.0, term.length / normalizedTitle.length * 2);
+                totalScore += 0.8 * matchWeight;
+                matchedTerms++;
+                continue;
+            }
+
+            // Check for word-by-word matching
+            let wordMatches = 0;
+            for (const termWord of termWords) {
+                // Check for exact word match
+                if (titleWords.includes(termWord)) {
+                    wordMatches++;
+                } else {
+                    // Check for partial match (word starts with term or vice versa)
+                    for (const titleWord of titleWords) {
+                        if (titleWord.startsWith(termWord) || termWord.startsWith(titleWord)) {
+                            wordMatches += 0.5;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (termWords.length > 0 && wordMatches > 0) {
+                const wordMatchScore = wordMatches / termWords.length;
+                totalScore += 0.5 * wordMatchScore;
+                if (wordMatchScore > 0.5) {
+                    matchedTerms++;
+                }
+            }
+        }
+
+        // Calculate final score
+        const termCoverage = matchedTerms / searchTerms.length;
+        const finalScore = (totalScore / searchTerms.length) * 0.7 + termCoverage * 0.3;
+
+        return Math.min(1.0, finalScore);
+    }
+
+    /**
+     * Finds a ChapterNode by its ID in the hierarchical structure
+     * @param {ChapterNode[]} chapters - Array of chapter nodes to search
+     * @param {string} nodeId - The node ID to find
+     * @returns {ChapterNode|null} The found node or null
+     * @private
+     */
+    _findChapterNodeById(chapters, nodeId) {
+        for (const chapter of chapters) {
+            if (chapter.id === nodeId) {
+                return chapter;
+            }
+
+            if (chapter.children && chapter.children.length > 0) {
+                const found = this._findChapterNodeById(chapter.children, nodeId);
+                if (found) {
+                    return found;
+                }
+            }
+        }
+
+        return null;
+    }
 }
