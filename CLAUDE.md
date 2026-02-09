@@ -27,35 +27,74 @@ When running audits or code reviews, cross-reference findings against TODO.md to
 
 ## Architecture
 
+Narrator Master follows a service-oriented architecture with a central controller orchestrating independent service classes. The following diagrams illustrate the system's design from two perspectives: **data flow** (how information moves through the system at runtime) and **component relationships** (how classes are organized and depend on each other).
+
+### Data Flow Architecture
+
+The following diagram shows the runtime data flow from audio capture through AI processing to UI updates:
+
+```mermaid
+flowchart TD
+    %% Input sources
+    Browser[Browser Audio Input<br/>Microphone] --> AudioCapture
+    Journal[Foundry Journal Entries] --> JournalParser
+
+    %% Core processing pipeline
+    AudioCapture[AudioCapture Class<br/>MediaRecorder API] -->|Audio Blob| TranscriptionService
+    TranscriptionService[TranscriptionService Class] -->|HTTPS POST| WhisperAPI[OpenAI Whisper API<br/>gpt-4o-transcribe-diarize]
+    WhisperAPI -->|Transcription + Segments| TranscriptionService
+    TranscriptionService -->|Speaker Segments| SpeakerLabelService[SpeakerLabelService<br/>Apply Labels]
+    SpeakerLabelService -->|Labeled Transcript| NarratorPanel
+
+    %% Context gathering
+    JournalParser[JournalParser Class<br/>Parse Journal Pages] -->|Adventure Context| AIAssistant
+    SpeakerLabelService -->|Current Conversation| AIAssistant
+
+    %% AI analysis pipeline
+    AIAssistant[AIAssistant Class] -->|Context Analysis Request| ChatAPI[OpenAI Chat API<br/>gpt-4o-mini]
+    ChatAPI -->|Suggestions| AIAssistant
+    AIAssistant -->|Contextual Suggestions| NarratorPanel
+    AIAssistant -->|Off-Track Detection| NarratorPanel
+
+    %% Image generation flow
+    NarratorPanel -->|Generate Image Request| ImageGenerator[ImageGenerator Class]
+    ImageGenerator -->|HTTPS POST| ImageAPI[OpenAI Image API<br/>gpt-image-1]
+    ImageAPI -->|Image URL| ImageGenerator
+    ImageGenerator -->|Base64 Cached Image| NarratorPanel
+
+    %% UI output
+    NarratorPanel[NarratorPanel UI<br/>Foundry Application] -->|Display| DMPanel[DM Panel<br/>3 Tabs: Transcript, Suggestions, Images]
+
+    %% Settings flow
+    SettingsManager[SettingsManager Class<br/>game.settings API] -.->|API Key| TranscriptionService
+    SettingsManager -.->|API Key| AIAssistant
+    SettingsManager -.->|API Key| ImageGenerator
+    SettingsManager -.->|Configuration| AudioCapture
+
+    %% Styling
+    classDef apiNode fill:#ff9,stroke:#333,stroke-width:2px
+    classDef serviceNode fill:#9cf,stroke:#333,stroke-width:2px
+    classDef uiNode fill:#9f9,stroke:#333,stroke-width:2px
+    classDef inputNode fill:#f9f,stroke:#333,stroke-width:2px
+
+    class WhisperAPI,ChatAPI,ImageAPI apiNode
+    class AudioCapture,TranscriptionService,JournalParser,AIAssistant,ImageGenerator,SpeakerLabelService serviceNode
+    class NarratorPanel,DMPanel uiNode
+    class Browser,Journal,SettingsManager inputNode
 ```
-./
-├── module.json              # Foundry VTT manifest
-├── TODO.md                  # Known issues tracker (read before every session)
-├── scripts/
-│   ├── main.js             # Entry point, NarratorMaster controller, Hooks
-│   ├── settings.js         # Settings registration, SettingsManager class
-│   ├── audio-capture.js    # AudioCapture class, MediaRecorder, Web Audio API
-│   ├── transcription.js    # TranscriptionService class, OpenAI Whisper
-│   ├── journal-parser.js   # JournalParser class, Foundry Journal API
-│   ├── ai-assistant.js     # AIAssistant class, OpenAI GPT chat
-│   ├── image-generator.js  # ImageGenerator class, OpenAI image generation
-│   ├── speaker-labels.js   # SpeakerLabelService, persistent speaker mappings
-│   └── ui-panel.js         # NarratorPanel Application class
-├── styles/
-│   └── narrator-master.css # All styling, including off-track warnings (red)
-├── templates/
-│   └── panel.hbs           # Handlebars template for DM panel (3 tabs)
-├── lang/
-│   ├── it.json             # Italian localization (primary, most complete)
-│   ├── en.json             # English localization
-│   ├── de.json             # German localization
-│   ├── es.json             # Spanish localization
-│   ├── fr.json             # French localization
-│   ├── ja.json             # Japanese localization
-│   ├── pt.json             # Portuguese localization
-│   └── template.json       # Template for translators
-└── docs/                   # User documentation (wiki)
-```
+
+**Key Data Flows:**
+
+1. **Audio Pipeline**: Browser microphone → AudioCapture → TranscriptionService → OpenAI Whisper API → Speaker-labeled segments → NarratorPanel
+2. **Context Pipeline**: Foundry Journal → JournalParser → AIAssistant → OpenAI Chat API → Contextual suggestions → NarratorPanel
+3. **Analysis Pipeline**: Transcribed conversation + Journal context → AIAssistant → Off-track detection + Narrative bridges → NarratorPanel
+4. **Image Pipeline**: User request → ImageGenerator → OpenAI Image API → Cached base64 images → NarratorPanel
+5. **Configuration Flow**: SettingsManager provides API keys and settings to all services
+
+**External API Calls:**
+- TranscriptionService → `POST /v1/audio/transcriptions` (Whisper)
+- AIAssistant → `POST /v1/chat/completions` (GPT-4o-mini)
+- ImageGenerator → `POST /v1/images/generations` (gpt-image-1)
 
 ### Component Architecture
 
@@ -133,72 +172,37 @@ graph TD
 - SettingsManager acts as a configuration hub, providing API keys to OpenAI-dependent services
 - Services are loosely coupled - they don't directly depend on each other, only on NarratorMaster's coordination
 
-### Data Flow Architecture
+### File Structure
 
-The following diagram shows the runtime data flow from audio capture through AI processing to UI updates:
-
-```mermaid
-flowchart TD
-    %% Input sources
-    Browser[Browser Audio Input<br/>Microphone] --> AudioCapture
-    Journal[Foundry Journal Entries] --> JournalParser
-
-    %% Core processing pipeline
-    AudioCapture[AudioCapture Class<br/>MediaRecorder API] -->|Audio Blob| TranscriptionService
-    TranscriptionService[TranscriptionService Class] -->|HTTPS POST| WhisperAPI[OpenAI Whisper API<br/>gpt-4o-transcribe-diarize]
-    WhisperAPI -->|Transcription + Segments| TranscriptionService
-    TranscriptionService -->|Speaker Segments| SpeakerLabelService[SpeakerLabelService<br/>Apply Labels]
-    SpeakerLabelService -->|Labeled Transcript| NarratorPanel
-
-    %% Context gathering
-    JournalParser[JournalParser Class<br/>Parse Journal Pages] -->|Adventure Context| AIAssistant
-    SpeakerLabelService -->|Current Conversation| AIAssistant
-
-    %% AI analysis pipeline
-    AIAssistant[AIAssistant Class] -->|Context Analysis Request| ChatAPI[OpenAI Chat API<br/>gpt-4o-mini]
-    ChatAPI -->|Suggestions| AIAssistant
-    AIAssistant -->|Contextual Suggestions| NarratorPanel
-    AIAssistant -->|Off-Track Detection| NarratorPanel
-
-    %% Image generation flow
-    NarratorPanel -->|Generate Image Request| ImageGenerator[ImageGenerator Class]
-    ImageGenerator -->|HTTPS POST| ImageAPI[OpenAI Image API<br/>gpt-image-1]
-    ImageAPI -->|Image URL| ImageGenerator
-    ImageGenerator -->|Base64 Cached Image| NarratorPanel
-
-    %% UI output
-    NarratorPanel[NarratorPanel UI<br/>Foundry Application] -->|Display| DMPanel[DM Panel<br/>3 Tabs: Transcript, Suggestions, Images]
-
-    %% Settings flow
-    SettingsManager[SettingsManager Class<br/>game.settings API] -.->|API Key| TranscriptionService
-    SettingsManager -.->|API Key| AIAssistant
-    SettingsManager -.->|API Key| ImageGenerator
-    SettingsManager -.->|Configuration| AudioCapture
-
-    %% Styling
-    classDef apiNode fill:#ff9,stroke:#333,stroke-width:2px
-    classDef serviceNode fill:#9cf,stroke:#333,stroke-width:2px
-    classDef uiNode fill:#9f9,stroke:#333,stroke-width:2px
-    classDef inputNode fill:#f9f,stroke:#333,stroke-width:2px
-
-    class WhisperAPI,ChatAPI,ImageAPI apiNode
-    class AudioCapture,TranscriptionService,JournalParser,AIAssistant,ImageGenerator,SpeakerLabelService serviceNode
-    class NarratorPanel,DMPanel uiNode
-    class Browser,Journal,SettingsManager inputNode
 ```
-
-**Key Data Flows:**
-
-1. **Audio Pipeline**: Browser microphone → AudioCapture → TranscriptionService → OpenAI Whisper API → Speaker-labeled segments → NarratorPanel
-2. **Context Pipeline**: Foundry Journal → JournalParser → AIAssistant → OpenAI Chat API → Contextual suggestions → NarratorPanel
-3. **Analysis Pipeline**: Transcribed conversation + Journal context → AIAssistant → Off-track detection + Narrative bridges → NarratorPanel
-4. **Image Pipeline**: User request → ImageGenerator → OpenAI Image API → Cached base64 images → NarratorPanel
-5. **Configuration Flow**: SettingsManager provides API keys and settings to all services
-
-**External API Calls:**
-- TranscriptionService → `POST /v1/audio/transcriptions` (Whisper)
-- AIAssistant → `POST /v1/chat/completions` (GPT-4o-mini)
-- ImageGenerator → `POST /v1/images/generations` (gpt-image-1)
+./
+├── module.json              # Foundry VTT manifest
+├── TODO.md                  # Known issues tracker (read before every session)
+├── scripts/
+│   ├── main.js             # Entry point, NarratorMaster controller, Hooks
+│   ├── settings.js         # Settings registration, SettingsManager class
+│   ├── audio-capture.js    # AudioCapture class, MediaRecorder, Web Audio API
+│   ├── transcription.js    # TranscriptionService class, OpenAI Whisper
+│   ├── journal-parser.js   # JournalParser class, Foundry Journal API
+│   ├── ai-assistant.js     # AIAssistant class, OpenAI GPT chat
+│   ├── image-generator.js  # ImageGenerator class, OpenAI image generation
+│   ├── speaker-labels.js   # SpeakerLabelService, persistent speaker mappings
+│   └── ui-panel.js         # NarratorPanel Application class
+├── styles/
+│   └── narrator-master.css # All styling, including off-track warnings (red)
+├── templates/
+│   └── panel.hbs           # Handlebars template for DM panel (3 tabs)
+├── lang/
+│   ├── it.json             # Italian localization (primary, most complete)
+│   ├── en.json             # English localization
+│   ├── de.json             # German localization
+│   ├── es.json             # Spanish localization
+│   ├── fr.json             # French localization
+│   ├── ja.json             # Japanese localization
+│   ├── pt.json             # Portuguese localization
+│   └── template.json       # Template for translators
+└── docs/                   # User documentation (wiki)
+```
 
 ## Key Components
 
