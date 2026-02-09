@@ -144,6 +144,13 @@ export class AIAssistant extends OpenAIServiceBase {
          * @private
          */
         this._previousTranscription = '';
+
+        /**
+         * Current chapter/scene context for focused analysis
+         * @type {Object|null}
+         * @private
+         */
+        this._chapterContext = null;
     }
 
     /**
@@ -226,6 +233,89 @@ export class AIAssistant extends OpenAIServiceBase {
      */
     getSceneDetector() {
         return this._sceneDetector;
+    }
+
+    /**
+     * Sets the current chapter/scene context for focused analysis
+     * This provides the AI with specific information about the current chapter,
+     * its subsections, and page references to improve suggestion relevance
+     * @param {Object|null} chapterInfo - The chapter context information
+     * @param {string} [chapterInfo.chapterName] - Name of the current chapter
+     * @param {string[]} [chapterInfo.subsections] - Array of subsection names within the chapter
+     * @param {Object[]} [chapterInfo.pageReferences] - Array of page reference objects
+     * @param {string} [chapterInfo.pageReferences[].pageId] - The page ID
+     * @param {string} [chapterInfo.pageReferences[].pageName] - The page name
+     * @param {string} [chapterInfo.pageReferences[].journalName] - The parent journal name
+     * @param {string} [chapterInfo.summary] - Brief summary of the chapter content
+     */
+    setChapterContext(chapterInfo) {
+        if (chapterInfo === null || chapterInfo === undefined) {
+            this._chapterContext = null;
+            return;
+        }
+
+        // Validate and sanitize the chapter context
+        this._chapterContext = {
+            chapterName: this._validateString(chapterInfo.chapterName || '', 200, 'chapterContext.chapterName'),
+            subsections: this._validateArray(chapterInfo.subsections || [], 50, 'chapterContext.subsections')
+                .map(s => this._validateString(s, 200, 'chapterContext.subsection')),
+            pageReferences: this._validateArray(chapterInfo.pageReferences || [], 50, 'chapterContext.pageReferences')
+                .map(ref => ({
+                    pageId: this._validateString(ref.pageId || '', 100, 'pageReference.pageId'),
+                    pageName: this._validateString(ref.pageName || '', 200, 'pageReference.pageName'),
+                    journalName: this._validateString(ref.journalName || '', 200, 'pageReference.journalName')
+                })),
+            summary: this._validateString(chapterInfo.summary || '', 2000, 'chapterContext.summary')
+        };
+    }
+
+    /**
+     * Gets the current chapter context
+     * @returns {Object|null} The chapter context or null if not set
+     */
+    getChapterContext() {
+        return this._chapterContext;
+    }
+
+    /**
+     * Formats the chapter context for inclusion in AI prompts
+     * @returns {string} Formatted chapter context string or empty string if not set
+     * @private
+     */
+    _formatChapterContext() {
+        if (!this._chapterContext) {
+            return '';
+        }
+
+        const parts = [];
+
+        if (this._chapterContext.chapterName) {
+            parts.push(`CAPITOLO CORRENTE: ${this._chapterContext.chapterName}`);
+        }
+
+        if (this._chapterContext.subsections && this._chapterContext.subsections.length > 0) {
+            parts.push(`SEZIONI: ${this._chapterContext.subsections.join(', ')}`);
+        }
+
+        if (this._chapterContext.pageReferences && this._chapterContext.pageReferences.length > 0) {
+            const refs = this._chapterContext.pageReferences
+                .filter(ref => ref.pageName)
+                .map(ref => {
+                    if (ref.journalName) {
+                        return `"${ref.pageName}" (${ref.journalName})`;
+                    }
+                    return `"${ref.pageName}"`;
+                });
+            if (refs.length > 0) {
+                parts.push(`PAGINE DI RIFERIMENTO: ${refs.join(', ')}`);
+            }
+        }
+
+        if (this._chapterContext.summary) {
+            parts.push(`RIEPILOGO: ${this._chapterContext.summary}`);
+        }
+
+        return parts.join('\n');
     }
 
     /**
@@ -638,12 +728,13 @@ export class AIAssistant extends OpenAIServiceBase {
     /**
      * Builds the system prompt for the AI assistant
      * @param {Object} [options={}] - Options for customizing the prompt
-     * @param {string} [options.chapterContext] - Current chapter/scene context from the adventure
+     * @param {string} [options.chapterContext] - Current chapter/scene context from the adventure (overrides stored context)
      * @returns {string} The system prompt
      * @private
      */
     _buildSystemPrompt(options = {}) {
-        const { chapterContext } = options;
+        // Use provided chapterContext or format from stored _chapterContext
+        const chapterContext = options.chapterContext || this._formatChapterContext();
 
         const sensitivityGuide = {
             low: 'Sii tollerante con le deviazioni minori, segnala solo quando i giocatori si allontanano completamente dalla storia.',
