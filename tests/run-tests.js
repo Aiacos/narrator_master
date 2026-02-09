@@ -12,6 +12,9 @@ import { runTests as runValidationTests } from './validation.test.js';
 import { runTests as runSessionAnalyticsTests } from './session-analytics.test.js';
 import { runTests as runSceneDetectorTests } from './scene-detector.test.js';
 import { runTests as runRulesReferenceTests } from './rules-reference.test.js';
+import { runTests as runAudioCaptureTests } from './audio-capture.test.js';
+import { runTests as runImageGeneratorTests } from './image-generator.test.js';
+import { runTests as runUIPanelTests } from './ui-panel.test.js';
 
 /**
  * Runs all test suites and reports aggregate results
@@ -34,6 +37,9 @@ async function runAllTests() {
         results.push(await runSessionAnalyticsTests());
         results.push(await runSceneDetectorTests());
         results.push(await runRulesReferenceTests());
+        results.push(await runAudioCaptureTests());
+        results.push(await runImageGeneratorTests());
+        results.push(await runUIPanelTests());
     } catch (error) {
         console.error('\n❌ Test execution error:', error.message);
         return { success: false, error: error.message };

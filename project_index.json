@@ -1,0 +1,50 @@
+{
+  "project_type": "single",
+  "services": {
+    "foundry-module": {
+      "path": ".",
+      "tech_stack": ["javascript", "es6-modules", "foundry-vtt"],
+      "test_command": "npm test",
+      "test_watch": "npm run test:watch",
+      "test_coverage": "npm run test:coverage",
+      "test_custom": "npm run test:custom",
+      "lint_command": "npm run lint",
+      "format_command": "npm run format"
+    }
+  },
+  "infrastructure": {
+    "docker": false,
+    "ci_cd": false,
+    "database": null
+  },
+  "conventions": {
+    "testing": "jest",
+    "test_helper": "tests/test-helper.js",
+    "test_pattern": "*.test.js in tests/ directory",
+    "test_naming": "kebab-case matching source file name",
+    "linter": "eslint",
+    "formatter": "prettier",
+    "module_system": "es6"
+  },
+  "browser_apis_used": [
+    "MediaRecorder",
+    "getUserMedia",
+    "AudioContext",
+    "AnalyserNode",
+    "MediaStream",
+    "Blob",
+    "FormData",
+    "FileReader",
+    "fetch"
+  ],
+  "foundry_apis_used": [
+    "Application",
+    "Dialog",
+    "ImagePopout",
+    "game.settings",
+    "game.journal",
+    "game.i18n",
+    "ui.notifications",
+    "foundry.utils"
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "files_to_create": {
+    "foundry-module": [
+      "tests/audio-capture.test.js",
+      "tests/image-generator.test.js",
+      "tests/ui-panel.test.js"
+    ]
+  },
+  "files_to_reference": [
+    "tests/test-helper.js",
+    "tests/transcription.test.js",
+    "tests/settings.test.js",
+    "tests/ai-assistant.test.js"
+  ],
+  "patterns": {
+    "test_structure": "Each test file exports a runTests() function that creates a TestRunner instance and defines test cases",
+    "mock_setup": "Use setup() function to initialize mocks via setupMockGame(), setupMockUI() before importing source modules",
+    "teardown": "Use teardown() function to call cleanupMocks() after each test",
+    "dynamic_import": "Import source modules dynamically after mocks are set up to ensure proper isolation",
+    "assertions": "Use custom assert helpers from test-helper.js (assert.equal, assert.ok, assert.throws, etc.)",
+    "mock_apis": "Use createMockFetch, createMockBlob, createMockFormData from test-helper.js for API mocking"
+  },
+  "existing_implementations": {
+    "description": "Test helper module provides comprehensive mocking infrastructure for Foundry VTT APIs and browser APIs",
+    "relevant_files": [
+      "tests/test-helper.js",
+      "tests/transcription.test.js"
+    ],
+    "mock_utilities": {
+      "foundry_mocks": "setupMockGame(), setupMockUI(), MockSettings, MockJournalEntry, MockJournalCollection, mockNotifications",
+      "browser_mocks": "createMockFetch(), createMockFetchError(), createMockBlob(), createMockFormData(), setupMockDocument()",
+      "cleanup": "cleanupMocks() removes all global mocks",
+      "assertions": "assert object with equal, deepEqual, ok, throws, notThrows, includes, contains",
+      "test_runner": "TestRunner class for organizing and running test suites"
+    }
+  },
+  "special_considerations": {
+    "audio_capture": "Requires mocking MediaRecorder, getUserMedia, AudioContext, MediaStream, AnalyserNode",
+    "image_generator": "Requires mocking fetch for OpenAI API, Blob for image data, game.settings for gallery storage",
+    "ui_panel": "Requires mocking Foundry Application class, Dialog, ImagePopout, jQuery selectors, DOM manipulation"
+  }
+}
