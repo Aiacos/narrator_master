@@ -65,7 +65,12 @@
             "NPCDialogueTitle": "NPC Dialogue Suggestions",
             "NoNPCDialogue": "No NPC dialogue suggestions available. Dialogues will be generated when NPCs are mentioned in conversations.",
             "CopyDialogue": "Copy Dialogue",
-            "DialogueFor": "Dialogue for {npc}"
+            "DialogueFor": "Dialogue for {npc}",
+            "Subchapters": "Subchapters",
+            "SelectChapterHint": "Select an adventure journal or change scene",
+            "BackToParent": "Go back",
+            "NavigateToChapter": "Go to",
+            "ContinueListening": "Continue listening"
         },
         "Errors": {
             "NotInitialized": "Narrator Master is not yet initialized. Wait for complete loading.",

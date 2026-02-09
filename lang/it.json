@@ -67,7 +67,12 @@
             "NPCDialogueTitle": "Suggerimenti Dialoghi PNG",
             "NoNPCDialogue": "Nessun suggerimento di dialogo PNG disponibile. I dialoghi verranno generati quando i PNG verranno menzionati nelle conversazioni.",
             "CopyDialogue": "Copia Dialogo",
-            "DialogueFor": "Dialogo per {npc}"
+            "DialogueFor": "Dialogo per {npc}",
+            "Subchapters": "Sottocapitoli",
+            "SelectChapterHint": "Seleziona un journal dell'avventura o cambia scena",
+            "BackToParent": "Torna indietro",
+            "NavigateToChapter": "Vai a",
+            "ContinueListening": "Continua ad ascoltare"
         },
 
         "Errors": {

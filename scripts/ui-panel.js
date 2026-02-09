@@ -185,6 +185,12 @@ export class NarratorPanel extends Application {
         this.silenceRecoveryActive = false;
 
         /**
+         * Recovery options for silence recovery
+         * @type {Array<{id: string, label: string, type: string, pageId?: string, journalName?: string, description?: string, isSuggested?: boolean}>}
+         */
+        this.recoveryOptions = [];
+
+        /**
          * Callback for subchapter click events
          * @type {Function|null}
          */
@@ -295,10 +301,12 @@ export class NarratorPanel extends Application {
 
             // Chapter navigation
             currentChapter: this.currentChapter,
-            hasCurrentChapter: this.currentChapter !== null,
+            hasChapter: this.currentChapter !== null,
             subchapters: this.subchapters,
             hasSubchapters: this.subchapters.length > 0,
             silenceRecoveryActive: this.silenceRecoveryActive,
+            recoveryOptions: this.recoveryOptions,
+            hasRecoveryOptions: this.recoveryOptions.length > 0,
 
             // Localization keys for template
             i18n: {
@@ -350,12 +358,22 @@ export class NarratorPanel extends Application {
                 dismissRule: game.i18n.localize('NARRATOR.Rules.DismissRule'),
                 copyAnswer: game.i18n.localize('NARRATOR.Rules.CopyAnswer'),
                 clearAllRules: game.i18n.localize('NARRATOR.Rules.ClearAllRules'),
-                // Chapter navigation
-                currentChapterTitle: game.i18n.localize('NARRATOR.Chapter.CurrentChapter'),
-                subchaptersTitle: game.i18n.localize('NARRATOR.Chapter.Subchapters'),
-                silenceRecoveryMessage: game.i18n.localize('NARRATOR.Chapter.SilenceRecoveryMessage'),
-                dismissSilenceRecovery: game.i18n.localize('NARRATOR.Chapter.DismissSilenceRecovery'),
-                noChapterSelected: game.i18n.localize('NARRATOR.Chapter.NoChapterSelected')
+                // Chapter navigation - keys must match template exactly
+                currentChapter: game.i18n.localize('NARRATOR.Chapter.CurrentChapter'),
+                subchapters: game.i18n.localize('NARRATOR.Panel.Subchapters') || 'Sottocapitoli',
+                noChapterDetected: game.i18n.localize('NARRATOR.Chapter.NoChapterDetected'),
+                selectChapterHint:
+                    game.i18n.localize('NARRATOR.Panel.SelectChapterHint') ||
+                    'Seleziona un journal o cambia scena',
+                backToParent: game.i18n.localize('NARRATOR.Panel.BackToParent') || 'Torna indietro',
+                navigateToChapter: game.i18n.localize('NARRATOR.Panel.NavigateToChapter') || 'Vai a',
+                // Silence recovery
+                silenceRecoveryTitle: game.i18n.localize('NARRATOR.Silence.RecoveryTitle'),
+                whereToResume: game.i18n.localize('NARRATOR.Silence.WhereToResume'),
+                noChapterContext: game.i18n.localize('NARRATOR.Silence.NoChapterContext'),
+                continueListening:
+                    game.i18n.localize('NARRATOR.Panel.ContinueListening') || 'Continua ad ascoltare',
+                dismissRecovery: game.i18n.localize('NARRATOR.Silence.DismissRecovery') || 'Chiudi'
             }
         };
     }
@@ -1326,6 +1344,16 @@ export class NarratorPanel extends Application {
         this.currentChapter = null;
         this.subchapters = [];
         this.silenceRecoveryActive = false;
+        this.recoveryOptions = [];
+        this.render(false);
+    }
+
+    /**
+     * Sets the recovery options for silence recovery
+     * @param {Array<{id: string, label: string, type: string, pageId?: string, journalName?: string, description?: string, isSuggested?: boolean}>} options
+     */
+    setRecoveryOptions(options) {
+        this.recoveryOptions = Array.isArray(options) ? options : [];
         this.render(false);
     }
 
