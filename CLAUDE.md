@@ -27,6 +27,153 @@ When running audits or code reviews, cross-reference findings against TODO.md to
 
 ## Architecture
 
+Narrator Master follows a service-oriented architecture with a central controller orchestrating independent service classes. The following diagrams illustrate the system's design from two perspectives: **data flow** (how information moves through the system at runtime) and **component relationships** (how classes are organized and depend on each other).
+
+### Data Flow Architecture
+
+The following diagram shows the runtime data flow from audio capture through AI processing to UI updates:
+
+```mermaid
+flowchart TD
+    %% Input sources
+    Browser[Browser Audio Input<br/>Microphone] --> AudioCapture
+    Journal[Foundry Journal Entries] --> JournalParser
+
+    %% Core processing pipeline
+    AudioCapture[AudioCapture Class<br/>MediaRecorder API] -->|Audio Blob| TranscriptionService
+    TranscriptionService[TranscriptionService Class] -->|HTTPS POST| WhisperAPI[OpenAI Whisper API<br/>gpt-4o-transcribe-diarize]
+    WhisperAPI -->|Transcription + Segments| TranscriptionService
+    TranscriptionService -->|Speaker Segments| SpeakerLabelService[SpeakerLabelService<br/>Apply Labels]
+    SpeakerLabelService -->|Labeled Transcript| NarratorPanel
+
+    %% Context gathering
+    JournalParser[JournalParser Class<br/>Parse Journal Pages] -->|Adventure Context| AIAssistant
+    SpeakerLabelService -->|Current Conversation| AIAssistant
+
+    %% AI analysis pipeline
+    AIAssistant[AIAssistant Class] -->|Context Analysis Request| ChatAPI[OpenAI Chat API<br/>gpt-4o-mini]
+    ChatAPI -->|Suggestions| AIAssistant
+    AIAssistant -->|Contextual Suggestions| NarratorPanel
+    AIAssistant -->|Off-Track Detection| NarratorPanel
+
+    %% Image generation flow
+    NarratorPanel -->|Generate Image Request| ImageGenerator[ImageGenerator Class]
+    ImageGenerator -->|HTTPS POST| ImageAPI[OpenAI Image API<br/>gpt-image-1]
+    ImageAPI -->|Image URL| ImageGenerator
+    ImageGenerator -->|Base64 Cached Image| NarratorPanel
+
+    %% UI output
+    NarratorPanel[NarratorPanel UI<br/>Foundry Application] -->|Display| DMPanel[DM Panel<br/>3 Tabs: Transcript, Suggestions, Images]
+
+    %% Settings flow
+    SettingsManager[SettingsManager Class<br/>game.settings API] -.->|API Key| TranscriptionService
+    SettingsManager -.->|API Key| AIAssistant
+    SettingsManager -.->|API Key| ImageGenerator
+    SettingsManager -.->|Configuration| AudioCapture
+
+    %% Styling
+    classDef apiNode fill:#ff9,stroke:#333,stroke-width:2px
+    classDef serviceNode fill:#9cf,stroke:#333,stroke-width:2px
+    classDef uiNode fill:#9f9,stroke:#333,stroke-width:2px
+    classDef inputNode fill:#f9f,stroke:#333,stroke-width:2px
+
+    class WhisperAPI,ChatAPI,ImageAPI apiNode
+    class AudioCapture,TranscriptionService,JournalParser,AIAssistant,ImageGenerator,SpeakerLabelService serviceNode
+    class NarratorPanel,DMPanel uiNode
+    class Browser,Journal,SettingsManager inputNode
+```
+
+**Key Data Flows:**
+
+1. **Audio Pipeline**: Browser microphone → AudioCapture → TranscriptionService → OpenAI Whisper API → Speaker-labeled segments → NarratorPanel
+2. **Context Pipeline**: Foundry Journal → JournalParser → AIAssistant → OpenAI Chat API → Contextual suggestions → NarratorPanel
+3. **Analysis Pipeline**: Transcribed conversation + Journal context → AIAssistant → Off-track detection + Narrative bridges → NarratorPanel
+4. **Image Pipeline**: User request → ImageGenerator → OpenAI Image API → Cached base64 images → NarratorPanel
+5. **Configuration Flow**: SettingsManager provides API keys and settings to all services
+
+**External API Calls:**
+- TranscriptionService → `POST /v1/audio/transcriptions` (Whisper)
+- AIAssistant → `POST /v1/chat/completions` (GPT-4o-mini)
+- ImageGenerator → `POST /v1/images/generations` (gpt-image-1)
+
+### Component Architecture
+
+The following diagram shows the static relationships between service classes and the central NarratorMaster controller:
+
+```mermaid
+graph TD
+    %% Central controller
+    NarratorMaster[NarratorMaster<br/>main.js<br/>Central Controller]
+
+    %% Service classes
+    SettingsManager[SettingsManager<br/>settings.js<br/>Configuration Access]
+    AudioCapture[AudioCapture<br/>audio-capture.js<br/>Browser Audio Recording]
+    TranscriptionService[TranscriptionService<br/>transcription.js<br/>Whisper API Client]
+    JournalParser[JournalParser<br/>journal-parser.js<br/>Journal Content Extraction]
+    AIAssistant[AIAssistant<br/>ai-assistant.js<br/>GPT Chat Client]
+    ImageGenerator[ImageGenerator<br/>image-generator.js<br/>Image API Client]
+    SpeakerLabelService[SpeakerLabelService<br/>speaker-labels.js<br/>Speaker Name Mappings]
+    NarratorPanel[NarratorPanel<br/>ui-panel.js<br/>DM Panel UI]
+
+    %% Foundry VTT APIs
+    FoundrySettings[Foundry VTT<br/>game.settings API]
+    FoundryJournal[Foundry VTT<br/>game.journal API]
+
+    %% Controller connections (NarratorMaster orchestrates all services)
+    NarratorMaster -->|initializes & coordinates| SettingsManager
+    NarratorMaster -->|initializes & coordinates| AudioCapture
+    NarratorMaster -->|initializes & coordinates| TranscriptionService
+    NarratorMaster -->|initializes & coordinates| JournalParser
+    NarratorMaster -->|initializes & coordinates| AIAssistant
+    NarratorMaster -->|initializes & coordinates| ImageGenerator
+    NarratorMaster -->|initializes & coordinates| SpeakerLabelService
+    NarratorMaster -->|initializes & coordinates| NarratorPanel
+
+    %% Service dependencies
+    SettingsManager -.->|provides API keys| TranscriptionService
+    SettingsManager -.->|provides API keys| AIAssistant
+    SettingsManager -.->|provides API keys| ImageGenerator
+    SettingsManager -.->|provides config| AudioCapture
+    SettingsManager -->|reads/writes| FoundrySettings
+
+    JournalParser -->|reads| FoundryJournal
+
+    AudioCapture -.->|audio data| TranscriptionService
+    TranscriptionService -.->|segments| SpeakerLabelService
+    SpeakerLabelService -.->|labeled transcript| NarratorPanel
+
+    JournalParser -.->|adventure context| AIAssistant
+    AIAssistant -.->|suggestions| NarratorPanel
+
+    ImageGenerator -.->|cached images| NarratorPanel
+
+    %% Styling
+    classDef controllerNode fill:#f96,stroke:#333,stroke-width:3px
+    classDef serviceNode fill:#9cf,stroke:#333,stroke-width:2px
+    classDef foundryNode fill:#fcf,stroke:#333,stroke-width:2px
+    classDef uiNode fill:#9f9,stroke:#333,stroke-width:2px
+
+    class NarratorMaster controllerNode
+    class SettingsManager,AudioCapture,TranscriptionService,JournalParser,AIAssistant,ImageGenerator,SpeakerLabelService serviceNode
+    class FoundrySettings,FoundryJournal foundryNode
+    class NarratorPanel uiNode
+```
+
+**Key Relationships:**
+
+- **NarratorMaster** (red) - Central controller that initializes and coordinates all services during Foundry's 'ready' hook (GM-only)
+- **Service Classes** (blue) - Independent, reusable components following consistent OOP patterns
+- **Foundry APIs** (pink) - Native Foundry VTT systems that services interact with
+- **NarratorPanel** (green) - UI layer that displays aggregated data from all services
+
+**Dependency Patterns:**
+- Solid arrows (→) indicate initialization/orchestration by NarratorMaster
+- Dashed arrows (-.→) indicate runtime data flow or configuration dependencies
+- SettingsManager acts as a configuration hub, providing API keys to OpenAI-dependent services
+- Services are loosely coupled - they don't directly depend on each other, only on NarratorMaster's coordination
+
+### File Structure
+
 ```
 ./
 ├── module.json              # Foundry VTT manifest
