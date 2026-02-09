@@ -332,7 +332,11 @@ class NarratorMaster {
 
             // Update chapter tracker from current active scene (if any)
             if (game.scenes?.active) {
-                this.chapterTracker.updateFromScene(game.scenes.active);
+                const chapter = this.chapterTracker.updateFromScene(game.scenes.active);
+                // Also update AI context if a chapter was detected
+                if (chapter) {
+                    this._updateAIChapterContext(chapter);
+                }
             }
 
             // Validate configuration
@@ -547,12 +551,118 @@ class NarratorMaster {
             if (chapter) {
                 Logger.info(`Chapter detected from scene: ${chapter.title}`, 'SceneTracking');
 
+                // Update AI assistant with chapter context
+                this._updateAIChapterContext(chapter);
+
                 // Update panel with chapter info if panel is open
                 if (this.panel?.rendered) {
                     this.panel.render(false);
                 }
             }
         }
+    }
+
+    /**
+     * Updates the AI Assistant's chapter context based on current chapter info
+     * Transforms ChapterInfo from ChapterTracker to the format expected by AIAssistant
+     * @param {Object} chapter - The ChapterInfo object from ChapterTracker
+     * @private
+     */
+    _updateAIChapterContext(chapter) {
+        if (!this.aiAssistant) {
+            Logger.debug('AI Assistant not initialized, skipping chapter context update', 'ChapterContext');
+            return;
+        }
+
+        if (!chapter) {
+            // Clear chapter context if no chapter
+            this.aiAssistant.setChapterContext(null);
+            Logger.debug('Chapter context cleared', 'ChapterContext');
+            return;
+        }
+
+        // Get subchapters from ChapterTracker for navigation context
+        const subchapters = this.chapterTracker?.getSubchapters() || [];
+        const subsectionNames = subchapters.map(sub => sub.title);
+
+        // Build page references from the chapter info
+        const pageReferences = [];
+        if (chapter.pageId && chapter.pageName) {
+            pageReferences.push({
+                pageId: chapter.pageId,
+                pageName: chapter.pageName,
+                journalName: chapter.journalName || ''
+            });
+        }
+
+        // Get chapter content for summary (truncate if too long)
+        let summary = '';
+        if (chapter.content) {
+            summary = chapter.content.length > 500
+                ? chapter.content.substring(0, 500) + '...'
+                : chapter.content;
+        }
+
+        // Build the chapter context object
+        const chapterContext = {
+            chapterName: chapter.title || chapter.path || '',
+            subsections: subsectionNames,
+            pageReferences: pageReferences,
+            summary: summary
+        };
+
+        // Update AI assistant
+        this.aiAssistant.setChapterContext(chapterContext);
+        Logger.info(`AI chapter context updated: ${chapterContext.chapterName}`, 'ChapterContext');
+    }
+
+    /**
+     * Manually sets the current chapter by ID
+     * Updates both the ChapterTracker and AI Assistant context
+     * @param {string} chapterId - The chapter ID to set
+     * @returns {boolean} True if the chapter was found and set
+     */
+    setCurrentChapter(chapterId) {
+        if (!this.chapterTracker) {
+            Logger.warn('ChapterTracker not initialized', 'NarratorMaster.setCurrentChapter');
+            return false;
+        }
+
+        // Set the chapter in ChapterTracker
+        const success = this.chapterTracker.setManualChapter(chapterId);
+
+        if (success) {
+            // Get the updated chapter and update AI context
+            const chapter = this.chapterTracker.getCurrentChapter();
+            if (chapter) {
+                this._updateAIChapterContext(chapter);
+
+                // Update panel display
+                if (this.panel?.rendered) {
+                    this.panel.render(false);
+                }
+
+                Logger.info(`Chapter manually set to: ${chapter.title}`, 'NarratorMaster.setCurrentChapter');
+            }
+        }
+
+        return success;
+    }
+
+    /**
+     * Gets the current chapter information
+     * @returns {Object|null} The current chapter info or null
+     */
+    getCurrentChapter() {
+        return this.chapterTracker?.getCurrentChapter() || null;
+    }
+
+    /**
+     * Gets all available chapters for navigation
+     * @returns {Array} Array of chapter objects with id, title, level, path
+     */
+    getAllChapters() {
+        return this.chapterTracker?.getAllChapters() || [];
     }
 
     /**
