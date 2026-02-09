@@ -57,6 +57,82 @@ When running audits or code reviews, cross-reference findings against TODO.md to
 └── docs/                   # User documentation (wiki)
 ```
 
+### Component Architecture
+
+The following diagram shows the static relationships between service classes and the central NarratorMaster controller:
+
+```mermaid
+graph TD
+    %% Central controller
+    NarratorMaster[NarratorMaster<br/>main.js<br/>Central Controller]
+
+    %% Service classes
+    SettingsManager[SettingsManager<br/>settings.js<br/>Configuration Access]
+    AudioCapture[AudioCapture<br/>audio-capture.js<br/>Browser Audio Recording]
+    TranscriptionService[TranscriptionService<br/>transcription.js<br/>Whisper API Client]
+    JournalParser[JournalParser<br/>journal-parser.js<br/>Journal Content Extraction]
+    AIAssistant[AIAssistant<br/>ai-assistant.js<br/>GPT Chat Client]
+    ImageGenerator[ImageGenerator<br/>image-generator.js<br/>Image API Client]
+    SpeakerLabelService[SpeakerLabelService<br/>speaker-labels.js<br/>Speaker Name Mappings]
+    NarratorPanel[NarratorPanel<br/>ui-panel.js<br/>DM Panel UI]
+
+    %% Foundry VTT APIs
+    FoundrySettings[Foundry VTT<br/>game.settings API]
+    FoundryJournal[Foundry VTT<br/>game.journal API]
+
+    %% Controller connections (NarratorMaster orchestrates all services)
+    NarratorMaster -->|initializes & coordinates| SettingsManager
+    NarratorMaster -->|initializes & coordinates| AudioCapture
+    NarratorMaster -->|initializes & coordinates| TranscriptionService
+    NarratorMaster -->|initializes & coordinates| JournalParser
+    NarratorMaster -->|initializes & coordinates| AIAssistant
+    NarratorMaster -->|initializes & coordinates| ImageGenerator
+    NarratorMaster -->|initializes & coordinates| SpeakerLabelService
+    NarratorMaster -->|initializes & coordinates| NarratorPanel
+
+    %% Service dependencies
+    SettingsManager -.->|provides API keys| TranscriptionService
+    SettingsManager -.->|provides API keys| AIAssistant
+    SettingsManager -.->|provides API keys| ImageGenerator
+    SettingsManager -.->|provides config| AudioCapture
+    SettingsManager -->|reads/writes| FoundrySettings
+
+    JournalParser -->|reads| FoundryJournal
+
+    AudioCapture -.->|audio data| TranscriptionService
+    TranscriptionService -.->|segments| SpeakerLabelService
+    SpeakerLabelService -.->|labeled transcript| NarratorPanel
+
+    JournalParser -.->|adventure context| AIAssistant
+    AIAssistant -.->|suggestions| NarratorPanel
+
+    ImageGenerator -.->|cached images| NarratorPanel
+
+    %% Styling
+    classDef controllerNode fill:#f96,stroke:#333,stroke-width:3px
+    classDef serviceNode fill:#9cf,stroke:#333,stroke-width:2px
+    classDef foundryNode fill:#fcf,stroke:#333,stroke-width:2px
+    classDef uiNode fill:#9f9,stroke:#333,stroke-width:2px
+
+    class NarratorMaster controllerNode
+    class SettingsManager,AudioCapture,TranscriptionService,JournalParser,AIAssistant,ImageGenerator,SpeakerLabelService serviceNode
+    class FoundrySettings,FoundryJournal foundryNode
+    class NarratorPanel uiNode
+```
+
+**Key Relationships:**
+
+- **NarratorMaster** (red) - Central controller that initializes and coordinates all services during Foundry's 'ready' hook (GM-only)
+- **Service Classes** (blue) - Independent, reusable components following consistent OOP patterns
+- **Foundry APIs** (pink) - Native Foundry VTT systems that services interact with
+- **NarratorPanel** (green) - UI layer that displays aggregated data from all services
+
+**Dependency Patterns:**
+- Solid arrows (→) indicate initialization/orchestration by NarratorMaster
+- Dashed arrows (-.→) indicate runtime data flow or configuration dependencies
+- SettingsManager acts as a configuration hub, providing API keys to OpenAI-dependent services
+- Services are loosely coupled - they don't directly depend on each other, only on NarratorMaster's coordination
+
 ### Data Flow Architecture
 
 The following diagram shows the runtime data flow from audio capture through AI processing to UI updates:
