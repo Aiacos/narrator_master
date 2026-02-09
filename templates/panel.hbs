@@ -154,6 +154,105 @@
             </div>
             {{/if}}
 
+            {{!-- Chapter Navigation Section --}}
+            <div class="chapter-navigation-section">
+                {{!-- Current Chapter Display --}}
+                {{#if hasChapter}}
+                <div class="current-chapter">
+                    <div class="current-chapter-header">
+                        <i class="fas fa-bookmark"></i>
+                        <span class="chapter-label">{{i18n.currentChapter}}</span>
+                    </div>
+                    <div class="current-chapter-name">
+                        {{#if currentChapter.parentName}}
+                        <button type="button" class="chapter-back-btn" data-chapter-id="{{currentChapter.parentId}}" title="{{i18n.backToParent}}">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        {{/if}}
+                        <span class="chapter-title">{{currentChapter.name}}</span>
+                        {{#if currentChapter.pageReference}}
+                        <span class="chapter-reference">({{currentChapter.pageReference}})</span>
+                        {{/if}}
+                    </div>
+
+                    {{!-- Sub-chapters Navigation --}}
+                    {{#if hasSubchapters}}
+                    <div class="subchapters-navigation">
+                        <div class="subchapters-header">
+                            <i class="fas fa-list"></i>
+                            <span>{{i18n.subchapters}}</span>
+                        </div>
+                        <div class="subchapters-list">
+                            {{#each subchapters}}
+                            <button type="button" class="subchapter-btn" data-chapter-id="{{this.id}}" data-chapter-name="{{this.name}}" title="{{../i18n.navigateToChapter}}: {{this.name}}">
+                                <i class="fas fa-angle-right"></i>
+                                <span class="subchapter-name">{{this.name}}</span>
+                                {{#if this.hasChildren}}
+                                <i class="fas fa-chevron-down subchapter-indicator"></i>
+                                {{/if}}
+                            </button>
+                            {{/each}}
+                        </div>
+                    </div>
+                    {{/if}}
+                </div>
+                {{else}}
+                {{!-- No Chapter Detected State --}}
+                <div class="no-chapter-detected">
+                    <div class="no-chapter-header">
+                        <i class="fas fa-map-marked-alt"></i>
+                        <span>{{i18n.noChapterDetected}}</span>
+                    </div>
+                    <p class="no-chapter-hint">{{i18n.selectChapterHint}}</p>
+                </div>
+                {{/if}}
+
+                {{!-- Silence Recovery Section --}}
+                {{#if silenceRecoveryActive}}
+                <div class="silence-recovery">
+                    <div class="silence-recovery-header">
+                        <i class="fas fa-pause-circle"></i>
+                        <span>{{i18n.silenceRecoveryTitle}}</span>
+                        <button type="button" class="dismiss-recovery" title="{{i18n.dismissRecovery}}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <p class="silence-recovery-message">{{i18n.whereToResume}}</p>
+
+                    {{#if hasRecoveryOptions}}
+                    <div class="recovery-options-list">
+                        {{#each recoveryOptions}}
+                        <button type="button" class="recovery-option-btn {{#if this.isSuggested}}suggested{{/if}}"
+                                data-option-id="{{this.id}}"
+                                data-option-type="{{this.type}}"
+                                data-page-id="{{this.pageId}}"
+                                title="{{this.description}}">
+                            {{#if this.isSuggested}}
+                            <i class="fas fa-star"></i>
+                            {{else}}
+                            <i class="fas fa-map-pin"></i>
+                            {{/if}}
+                            <span class="option-label">{{this.label}}</span>
+                            {{#if this.journalName}}
+                            <span class="option-source">({{this.journalName}})</span>
+                            {{/if}}
+                        </button>
+                        {{/each}}
+                    </div>
+                    {{else}}
+                    <p class="no-recovery-options">{{i18n.noChapterContext}}</p>
+                    {{/if}}
+
+                    <div class="recovery-actions">
+                        <button type="button" class="continue-listening-btn" title="{{i18n.continueListening}}">
+                            <i class="fas fa-headphones"></i>
+                            {{i18n.continueListening}}
+                        </button>
+                    </div>
+                </div>
+                {{/if}}
+            </div>
+
             <div class="suggestions-content">
                 {{#if hasSuggestions}}
                 <ul class="suggestions-list">
