@@ -198,6 +198,8 @@ The adventure Journal provides context to the AI for generating relevant suggest
 
 ### Recommended Journal Structure
 
+> **📖 Complete Guide Available**: For a detailed guide on how to structure your adventure Journal to get the most out of Narrator Master, consult the dedicated **[Journal Structure Guide](journal-guide.md)**, which includes complete examples, best practices, and recommended structures for different types of adventures.
+
 For optimal results, organize the Journal like this:
 
 ```

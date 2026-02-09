@@ -31,7 +31,7 @@ To enable contextual suggestions:
 2. Select from the dropdown menu the Journal containing your adventure details
 3. The module will automatically analyze the Journal's text pages
 
-> **Tip**: Organize your adventure Journal into logical pages (e.g., "Chapter 1", "Important NPCs", "Locations"). The module will index all text content.
+> **Tip**: Organize your adventure Journal into logical pages (e.g., "Chapter 1", "Important NPCs", "Locations"). The module will index all text content. For a complete guide on how to structure your Journal, consult the **[Journal Structure Guide](journal-guide.md)**.
 
 ## Settings Overview
 

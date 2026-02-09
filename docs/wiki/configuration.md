@@ -31,7 +31,7 @@ Per abilitare i suggerimenti contestuali:
 2. Seleziona dal menu a tendina il Journal che contiene i dettagli della tua avventura
 3. Il modulo analizzera automaticamente le pagine di testo del Journal
 
-> **Consiglio**: Organizza il Journal dell'avventura in pagine logiche (es. "Capitolo 1", "NPG Importanti", "Luoghi"). Il modulo indicizzera tutto il contenuto testuale.
+> **Consiglio**: Organizza il Journal dell'avventura in pagine logiche (es. "Capitolo 1", "NPG Importanti", "Luoghi"). Il modulo indicizzera tutto il contenuto testuale. Per una guida completa su come strutturare il Journal, consulta la **[Guida alla Struttura del Journal](journal-guide.md)**.
 
 ## Panoramica delle Impostazioni
 
