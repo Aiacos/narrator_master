@@ -6,6 +6,7 @@
 
 import { MODULE_ID, SETTINGS } from './settings.js';
 import { OpenAIServiceBase } from './openai-service-base.js';
+import { Logger } from './logger.js';
 
 /**
  * Default model for image generation (gpt-image-1 is recommended for long-term support)
@@ -29,8 +30,8 @@ const IMAGE_SIZES = {
     SMALL: '256x256',
     MEDIUM: '512x512',
     LARGE: '1024x1024',
-    WIDE: '1792x1024',
-    TALL: '1024x1792'
+    WIDE: '1536x1024',
+    TALL: '1024x1536'
 };
 
 /**
@@ -38,8 +39,6 @@ const IMAGE_SIZES = {
  * @constant {Object}
  */
 const IMAGE_QUALITY = {
-    STANDARD: 'standard',
-    HD: 'hd',
     LOW: 'low',
     MEDIUM: 'medium',
     HIGH: 'high'
@@ -151,7 +150,7 @@ export class ImageGenerator extends OpenAIServiceBase {
          * @type {string}
          * @private
          */
-        this._defaultQuality = options.defaultQuality || IMAGE_QUALITY.STANDARD;
+        this._defaultQuality = options.defaultQuality || IMAGE_QUALITY.MEDIUM;
 
         /**
          * Whether to automatically download and cache images
@@ -181,7 +180,7 @@ export class ImageGenerator extends OpenAIServiceBase {
      */
     setModel(model) {
         if (model === 'dall-e-3') {
-            console.warn(`${MODULE_ID} | Warning: dall-e-3 is deprecated and loses support on May 12, 2026. Consider using gpt-image-1.`);
+            Logger.warn('dall-e-3 is deprecated and loses support on May 12, 2026. Consider using gpt-image-1.', 'ImageGenerator');
         }
         this._model = model || DEFAULT_MODEL;
     }
@@ -215,7 +214,7 @@ export class ImageGenerator extends OpenAIServiceBase {
      * @param {string} quality - The quality setting
      */
     setDefaultQuality(quality) {
-        this._defaultQuality = quality || IMAGE_QUALITY.STANDARD;
+        this._defaultQuality = quality || IMAGE_QUALITY.MEDIUM;
     }
 
     /**
@@ -255,7 +254,7 @@ export class ImageGenerator extends OpenAIServiceBase {
         const returnBase64 = Boolean(options.returnBase64);
         const cacheImage = options.cacheImage !== false && this._autoCacheImages;
 
-        console.log(`${MODULE_ID} | Generating image: "${prompt.substring(0, 50)}...", size: ${size}, quality: ${quality}`);
+        Logger.info(`Generating image: "${prompt.substring(0, 50)}...", size: ${size}, quality: ${quality}`, 'ImageGenerator');
 
         try {
             // Build request body
@@ -275,7 +274,7 @@ export class ImageGenerator extends OpenAIServiceBase {
             // Add to history
             this._addToHistory(result);
 
-            console.log(`${MODULE_ID} | Image generated successfully`);
+            Logger.info('Image generated successfully', 'ImageGenerator');
 
             return result;
 
@@ -311,11 +310,11 @@ export class ImageGenerator extends OpenAIServiceBase {
         // Build a specialized prompt for RPG infographics
         const prompt = this._buildInfographicPrompt(eventDescription, artStyle, mood, elements, sceneType);
 
-        console.log(`${MODULE_ID} | Generating infographic for: "${eventDescription.substring(0, 50)}..."`);
+        Logger.info(`Generating infographic for: "${eventDescription.substring(0, 50)}..."`, 'ImageGenerator');
 
         return this.generate(prompt, {
             size: options.size || IMAGE_SIZES.LARGE,
-            quality: options.quality || IMAGE_QUALITY.STANDARD,
+            quality: options.quality || IMAGE_QUALITY.MEDIUM,
             style: IMAGE_STYLES.VIVID,
             cacheImage: true
         });
@@ -344,11 +343,11 @@ export class ImageGenerator extends OpenAIServiceBase {
         // Build scene-specific prompt
         const prompt = this._buildScenePrompt(sceneDescription, location, lighting, characters, sceneType);
 
-        console.log(`${MODULE_ID} | Generating scene illustration: "${sceneDescription.substring(0, 50)}..."`);
+        Logger.info(`Generating scene illustration: "${sceneDescription.substring(0, 50)}..."`, 'ImageGenerator');
 
         return this.generate(prompt, {
             size: options.size || IMAGE_SIZES.WIDE,
-            quality: options.quality || IMAGE_QUALITY.STANDARD,
+            quality: options.quality || IMAGE_QUALITY.MEDIUM,
             style: IMAGE_STYLES.VIVID,
             cacheImage: true
         });
@@ -368,19 +367,21 @@ export class ImageGenerator extends OpenAIServiceBase {
         const body = {
             model: this._model,
             prompt: prompt,
-            n: 1, // Note: DALL-E 3 only supports n=1
-            size: size,
-            response_format: returnBase64 ? 'b64_json' : 'url'
+            n: 1,
+            size: size
         };
 
-        // Quality parameter supported by both models
-        if (quality) {
-            body.quality = quality;
+        // gpt-image-1: no response_format (always returns b64_json), uses output_format
+        // dall-e-3: uses response_format
+        if (this._model === 'dall-e-3') {
+            body.response_format = returnBase64 ? 'b64_json' : 'url';
+            if (style) {
+                body.style = style;
+            }
         }
 
-        // Style parameter only for dall-e-3
-        if (this._model === 'dall-e-3' && style) {
-            body.style = style;
+        if (quality) {
+            body.quality = quality;
         }
 
         return body;
@@ -406,7 +407,7 @@ export class ImageGenerator extends OpenAIServiceBase {
             });
         } catch (networkError) {
             // Handle network errors (no connection, timeout, etc.)
-            console.error(`${MODULE_ID} | Network error during image generation:`, networkError);
+            Logger.error('Network error during image generation', 'ImageGenerator', networkError);
             throw this._createNetworkError(networkError);
         }
 
@@ -561,7 +562,7 @@ export class ImageGenerator extends OpenAIServiceBase {
             // Download the image
             const response = await fetch(result.url);
             if (!response.ok) {
-                console.warn(`${MODULE_ID} | Failed to cache image: ${response.status}`);
+                Logger.warn(`Failed to cache image: ${response.status}`, 'ImageGenerator');
                 return;
             }
 
@@ -593,10 +594,10 @@ export class ImageGenerator extends OpenAIServiceBase {
             // Trim cache if needed
             this._trimCache();
 
-            console.log(`${MODULE_ID} | Image cached successfully`);
+            Logger.debug('Image cached successfully', 'ImageGenerator');
 
         } catch (error) {
-            console.warn(`${MODULE_ID} | Failed to cache image:`, error);
+            Logger.warn('Failed to cache image', 'ImageGenerator', error);
         }
     }
 
@@ -711,7 +712,7 @@ export class ImageGenerator extends OpenAIServiceBase {
             this._imageCache.delete(key);
         }
 
-        console.log(`${MODULE_ID} | Cleared ${expiredKeys.length} expired cache entries`);
+        Logger.info(`Cleared ${expiredKeys.length} expired cache entries`, 'ImageGenerator');
     }
 
     /**
@@ -760,12 +761,12 @@ export class ImageGenerator extends OpenAIServiceBase {
                 const removedCount = gallery.length - 50;
                 gallery = gallery.slice(-50);
 
-                console.warn(`${MODULE_ID} | Gallery limit reached. Removed ${removedCount} oldest image(s) to maintain 50 image limit.`);
+                Logger.warn(`Gallery limit reached. Removed ${removedCount} oldest image(s) to maintain 50 image limit.`, 'ImageGenerator');
             }
 
             await game.settings.set(MODULE_ID, SETTINGS.IMAGE_GALLERY, gallery);
         } catch (error) {
-            console.error(`${MODULE_ID} | Failed to save image to gallery:`, error);
+            Logger.error('Failed to save image to gallery', 'ImageGenerator', error);
             throw error;
         }
     }
@@ -779,7 +780,7 @@ export class ImageGenerator extends OpenAIServiceBase {
             const gallery = await game.settings.get(MODULE_ID, SETTINGS.IMAGE_GALLERY);
             return gallery || [];
         } catch (error) {
-            console.error(`${MODULE_ID} | Failed to load gallery:`, error);
+            Logger.error('Failed to load gallery', 'ImageGenerator', error);
             return [];
         }
     }
@@ -794,7 +795,7 @@ export class ImageGenerator extends OpenAIServiceBase {
         try {
             await game.settings.set(MODULE_ID, SETTINGS.IMAGE_GALLERY, gallery);
         } catch (error) {
-            console.error(`${MODULE_ID} | Failed to sync gallery with settings:`, error);
+            Logger.error('Failed to sync gallery with settings', 'ImageGenerator', error);
             throw error;
         }
     }
@@ -807,7 +808,7 @@ export class ImageGenerator extends OpenAIServiceBase {
      */
     async addTag(imageId, tag) {
         if (!imageId || !tag) {
-            console.warn(`${MODULE_ID} | Invalid imageId or tag provided`);
+            Logger.warn('Invalid imageId or tag provided', 'ImageGenerator');
             return false;
         }
 
@@ -816,7 +817,7 @@ export class ImageGenerator extends OpenAIServiceBase {
             const image = gallery.find(img => img.id === imageId);
 
             if (!image) {
-                console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
+                Logger.warn(`Image not found: ${imageId}`, 'ImageGenerator');
                 return false;
             }
 
@@ -830,13 +831,13 @@ export class ImageGenerator extends OpenAIServiceBase {
             if (!image.tags.includes(normalizedTag)) {
                 image.tags.push(normalizedTag);
                 await this._syncWithSettings(gallery);
-                console.log(`${MODULE_ID} | Added tag "${normalizedTag}" to image ${imageId}`);
+                Logger.debug(`Added tag "${normalizedTag}" to image ${imageId}`, 'ImageGenerator');
                 return true;
             }
 
             return false;
         } catch (error) {
-            console.error(`${MODULE_ID} | Failed to add tag:`, error);
+            Logger.error('Failed to add tag', 'ImageGenerator', error);
             throw error;
         }
     }
@@ -849,7 +850,7 @@ export class ImageGenerator extends OpenAIServiceBase {
      */
     async removeTag(imageId, tag) {
         if (!imageId || !tag) {
-            console.warn(`${MODULE_ID} | Invalid imageId or tag provided`);
+            Logger.warn('Invalid imageId or tag provided', 'ImageGenerator');
             return false;
         }
 
@@ -858,7 +859,7 @@ export class ImageGenerator extends OpenAIServiceBase {
             const image = gallery.find(img => img.id === imageId);
 
             if (!image) {
-                console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
+                Logger.warn(`Image not found: ${imageId}`, 'ImageGenerator');
                 return false;
             }
 
@@ -872,13 +873,13 @@ export class ImageGenerator extends OpenAIServiceBase {
             if (index !== -1) {
                 image.tags.splice(index, 1);
                 await this._syncWithSettings(gallery);
-                console.log(`${MODULE_ID} | Removed tag "${normalizedTag}" from image ${imageId}`);
+                Logger.debug(`Removed tag "${normalizedTag}" from image ${imageId}`, 'ImageGenerator');
                 return true;
             }
 
             return false;
         } catch (error) {
-            console.error(`${MODULE_ID} | Failed to remove tag:`, error);
+            Logger.error('Failed to remove tag', 'ImageGenerator', error);
             throw error;
         }
     }
@@ -890,7 +891,7 @@ export class ImageGenerator extends OpenAIServiceBase {
      */
     async toggleFavorite(imageId) {
         if (!imageId) {
-            console.warn(`${MODULE_ID} | Invalid imageId provided`);
+            Logger.warn('Invalid imageId provided', 'ImageGenerator');
             return null;
         }
 
@@ -899,16 +900,16 @@ export class ImageGenerator extends OpenAIServiceBase {
             const image = gallery.find(img => img.id === imageId);
 
             if (!image) {
-                console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
+                Logger.warn(`Image not found: ${imageId}`, 'ImageGenerator');
                 return null;
             }
 
             image.isFavorite = !image.isFavorite;
             await this._syncWithSettings(gallery);
-            console.log(`${MODULE_ID} | Toggled favorite for image ${imageId}: ${image.isFavorite}`);
+            Logger.debug(`Toggled favorite for image ${imageId}: ${image.isFavorite}`, 'ImageGenerator');
             return image.isFavorite;
         } catch (error) {
-            console.error(`${MODULE_ID} | Failed to toggle favorite:`, error);
+            Logger.error('Failed to toggle favorite', 'ImageGenerator', error);
             throw error;
         }
     }
@@ -921,7 +922,7 @@ export class ImageGenerator extends OpenAIServiceBase {
      */
     async setCategory(imageId, category) {
         if (!imageId) {
-            console.warn(`${MODULE_ID} | Invalid imageId provided`);
+            Logger.warn('Invalid imageId provided', 'ImageGenerator');
             return false;
         }
 
@@ -930,16 +931,16 @@ export class ImageGenerator extends OpenAIServiceBase {
             const image = gallery.find(img => img.id === imageId);
 
             if (!image) {
-                console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
+                Logger.warn(`Image not found: ${imageId}`, 'ImageGenerator');
                 return false;
             }
 
             image.category = category || '';
             await this._syncWithSettings(gallery);
-            console.log(`${MODULE_ID} | Set category for image ${imageId}: ${category}`);
+            Logger.debug(`Set category for image ${imageId}: ${category}`, 'ImageGenerator');
             return true;
         } catch (error) {
-            console.error(`${MODULE_ID} | Failed to set category:`, error);
+            Logger.error('Failed to set category', 'ImageGenerator', error);
             throw error;
         }
     }
@@ -951,7 +952,7 @@ export class ImageGenerator extends OpenAIServiceBase {
      */
     async deleteImage(imageId) {
         if (!imageId) {
-            console.warn(`${MODULE_ID} | Invalid imageId provided`);
+            Logger.warn('Invalid imageId provided', 'ImageGenerator');
             return false;
         }
 
@@ -960,16 +961,16 @@ export class ImageGenerator extends OpenAIServiceBase {
             const index = gallery.findIndex(img => img.id === imageId);
 
             if (index === -1) {
-                console.warn(`${MODULE_ID} | Image not found: ${imageId}`);
+                Logger.warn(`Image not found: ${imageId}`, 'ImageGenerator');
                 return false;
             }
 
             gallery.splice(index, 1);
             await this._syncWithSettings(gallery);
-            console.log(`${MODULE_ID} | Deleted image ${imageId} from gallery`);
+            Logger.debug(`Deleted image ${imageId} from gallery`, 'ImageGenerator');
             return true;
         } catch (error) {
-            console.error(`${MODULE_ID} | Failed to delete image:`, error);
+            Logger.error('Failed to delete image', 'ImageGenerator', error);
             throw error;
         }
     }
@@ -1007,7 +1008,7 @@ export class ImageGenerator extends OpenAIServiceBase {
 
             return gallery;
         } catch (error) {
-            console.error(`${MODULE_ID} | Failed to get gallery images:`, error);
+            Logger.error('Failed to get gallery images', 'ImageGenerator', error);
             return [];
         }
     }
@@ -1026,7 +1027,7 @@ export class ImageGenerator extends OpenAIServiceBase {
             const gallery = await this.loadGallery();
             return gallery.find(img => img.id === imageId) || null;
         } catch (error) {
-            console.error(`${MODULE_ID} | Failed to get gallery image:`, error);
+            Logger.error('Failed to get gallery image', 'ImageGenerator', error);
             return null;
         }
     }
@@ -1038,9 +1039,9 @@ export class ImageGenerator extends OpenAIServiceBase {
     async clearGallery() {
         try {
             await this._syncWithSettings([]);
-            console.log(`${MODULE_ID} | Gallery cleared`);
+            Logger.info('Gallery cleared', 'ImageGenerator');
         } catch (error) {
-            console.error(`${MODULE_ID} | Failed to clear gallery:`, error);
+            Logger.error('Failed to clear gallery', 'ImageGenerator', error);
             throw error;
         }
     }

@@ -75,6 +75,7 @@
             "InvalidApiKey": "Invalid API key. Check your OpenAI API key in settings.",
             "RateLimited": "Rate limit reached. Wait a moment before trying again.",
             "BadRequest": "Invalid request: {details}",
+            "AudioTooShort": "Audio too short for transcription.",
             "ServerError": "OpenAI server error. Try again later.",
             "TranscriptionFailed": "Transcription failed (Error {status}): {message}",
             "NoTranscription": "No transcription available for analysis.",
@@ -114,7 +115,8 @@
             "CompendiumAccessDenied": "Compendium access denied"
         },
         "Warnings": {
-            "ConfigIncomplete": "Configuration incomplete"
+            "ConfigIncomplete": "Configuration incomplete",
+            "TranscriptionCircuitBreaker": "Transcription paused due to repeated errors. Try stopping and restarting recording."
         },
         "Notifications": {
             "CopiedToClipboard": "Copied to clipboard!",

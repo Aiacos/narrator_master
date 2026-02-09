@@ -15,6 +15,32 @@ import { SpeakerLabelService } from './speaker-labels.js';
 import { Logger } from './logger.js';
 
 /**
+ * Interval between transcription cycles in milliseconds
+ * The recorder stops/restarts to produce valid WebM blobs with headers
+ * @constant {number}
+ */
+const TRANSCRIPTION_CYCLE_MS = 15000;
+
+/**
+ * Minimum audio blob size in bytes required for transcription (~1.5s at 128kbps)
+ * Blobs smaller than this are too short for Whisper and will be rejected
+ * @constant {number}
+ */
+const MIN_AUDIO_SIZE = 15000;
+
+/**
+ * Maximum consecutive transcription errors before circuit breaker activates
+ * @constant {number}
+ */
+const MAX_CONSECUTIVE_ERRORS = 5;
+
+/**
+ * Cooldown period between duplicate error notifications in milliseconds
+ * @constant {number}
+ */
+const ERROR_NOTIFICATION_COOLDOWN_MS = 30000;
+
+/**
  * Error notification types for different severity levels
  * @constant {Object}
  */
@@ -178,18 +204,46 @@ class NarratorMaster {
         this._audioLevelInterval = null;
 
         /**
-         * Pending transcription timeout ID for debouncing
+         * Periodic transcription cycle interval ID
          * @type {number|null}
          * @private
          */
-        this._transcriptionTimeout = null;
+        this._transcriptionCycleInterval = null;
 
         /**
-         * Collected audio chunks waiting to be processed
-         * @type {Blob[]}
+         * Whether a transcription cycle is currently being processed
+         * @type {boolean}
          * @private
          */
-        this._pendingAudioChunks = [];
+        this._isProcessingCycle = false;
+
+        /**
+         * Whether a cyclic stop/restart is in progress (suppresses UI state changes)
+         * @type {boolean}
+         * @private
+         */
+        this._isCyclicRestart = false;
+
+        /**
+         * Count of consecutive transcription errors for circuit breaker
+         * @type {number}
+         * @private
+         */
+        this._consecutiveTranscriptionErrors = 0;
+
+        /**
+         * Timestamp of last error notification shown
+         * @type {number}
+         * @private
+         */
+        this._lastErrorNotificationTime = 0;
+
+        /**
+         * Last error message shown (for deduplication)
+         * @type {string}
+         * @private
+         */
+        this._lastErrorMessage = '';
     }
 
     /**
@@ -299,10 +353,8 @@ class NarratorMaster {
             this._onAudioStateChange(state);
         });
 
-        // Handle audio data available
-        this.audioCapture.on(AudioCaptureEvent.DATA_AVAILABLE, (chunk) => {
-            this._onAudioDataAvailable(chunk);
-        });
+        // Audio data available - no action needed, periodic cycles handle processing
+        // DATA_AVAILABLE events still fire during normal recording
 
         // Handle errors
         this.audioCapture.on(AudioCaptureEvent.ERROR, (error) => {
@@ -384,6 +436,9 @@ class NarratorMaster {
      * @private
      */
     _onAudioStateChange(state) {
+        // Suppress UI state changes during cyclic stop/restart
+        if (this._isCyclicRestart) return;
+
         Logger.debug(`Audio state changed: ${state}`, 'AudioCapture');
 
         if (!this.panel) return;
@@ -392,11 +447,14 @@ class NarratorMaster {
             case RecordingState.RECORDING:
                 this.panel.setRecordingState(RECORDING_STATE.RECORDING);
                 this._startAudioLevelUpdates();
+                this._startTranscriptionCycles();
+                this._consecutiveTranscriptionErrors = 0;
                 break;
 
             case RecordingState.PAUSED:
                 this.panel.setRecordingState(RECORDING_STATE.PAUSED);
                 this._stopAudioLevelUpdates();
+                this._stopTranscriptionCycles();
                 break;
 
             case RecordingState.STOPPING:
@@ -407,76 +465,140 @@ class NarratorMaster {
             case RecordingState.INACTIVE:
                 this.panel.setRecordingState(RECORDING_STATE.INACTIVE);
                 this._stopAudioLevelUpdates();
+                this._stopTranscriptionCycles();
                 break;
         }
     }
 
     /**
-     * Handles audio data availability
-     * @param {Blob} chunk - Audio data chunk
+     * Starts periodic transcription cycles
+     * Each cycle stops/restarts the recorder to produce valid WebM blobs with headers
      * @private
      */
-    _onAudioDataAvailable(chunk) {
-        this._pendingAudioChunks.push(chunk);
-
-        // Debounce transcription - wait for 2 seconds of silence
-        if (this._transcriptionTimeout) {
-            clearTimeout(this._transcriptionTimeout);
-        }
-
-        this._transcriptionTimeout = setTimeout(() => {
-            this._processAudioChunks();
-        }, 2000);
+    _startTranscriptionCycles() {
+        this._stopTranscriptionCycles();
+        this._transcriptionCycleInterval = setInterval(() => {
+            this._runTranscriptionCycle();
+        }, TRANSCRIPTION_CYCLE_MS);
+        Logger.debug(`Transcription cycles started (${TRANSCRIPTION_CYCLE_MS}ms interval)`, 'TranscriptionCycle');
     }
 
     /**
-     * Processes accumulated audio chunks through transcription
-     * Transcription is internal - only AI analysis results are shown to the user
+     * Stops periodic transcription cycles
      * @private
      */
-    async _processAudioChunks() {
-        if (this._pendingAudioChunks.length === 0) return;
+    _stopTranscriptionCycles() {
+        if (this._transcriptionCycleInterval) {
+            clearInterval(this._transcriptionCycleInterval);
+            this._transcriptionCycleInterval = null;
+        }
+    }
 
-        // Combine chunks into a single blob
-        const audioBlob = new Blob(this._pendingAudioChunks, { type: 'audio/webm' });
-        this._pendingAudioChunks = [];
+    /**
+     * Runs a single transcription cycle:
+     * 1. Stops recorder to finalize current WebM container (complete with headers)
+     * 2. Immediately restarts recorder for next segment
+     * 3. Processes the completed audio blob
+     * @private
+     */
+    async _runTranscriptionCycle() {
+        // Skip if not recording or already processing
+        if (!this.audioCapture?.isRecording || this._isProcessingCycle) return;
 
-        // Skip if too small (likely silence)
-        if (audioBlob.size < 1000) {
-            Logger.debug('Audio chunk too small, skipping', 'AudioProcessor');
+        // Circuit breaker: stop trying after too many consecutive errors
+        if (this._consecutiveTranscriptionErrors >= MAX_CONSECUTIVE_ERRORS) {
+            Logger.warn(
+                `Circuit breaker active (${this._consecutiveTranscriptionErrors} errors), skipping transcription`,
+                'TranscriptionCycle'
+            );
             return;
         }
 
+        this._isProcessingCycle = true;
+
         try {
+            // Suppress UI state changes during the brief stop/restart
+            this._isCyclicRestart = true;
+
+            // Stop recorder to finalize the WebM container (produces valid blob with headers)
+            const audioBlob = await this.audioCapture.stop();
+
+            // Immediately restart recording (gap is ~10-50ms, imperceptible)
+            await this.audioCapture.start();
+
+            this._isCyclicRestart = false;
+
+            // Process the blob if large enough
+            if (!audioBlob || audioBlob.size < MIN_AUDIO_SIZE) {
+                Logger.debug(`Audio too small (${audioBlob?.size || 0}B), skipping`, 'TranscriptionCycle');
+                return;
+            }
+
             // Transcribe audio
             const transcription = await this.transcriptionService.transcribe(audioBlob);
 
-            // Skip if no text was transcribed
-            if (!transcription.text || transcription.text.trim().length === 0) {
-                Logger.debug('No text transcribed', 'TranscriptionProcessor');
+            // Reset error counter on success
+            this._consecutiveTranscriptionErrors = 0;
+
+            // Skip empty transcriptions
+            if (!transcription.text?.trim()) {
+                Logger.debug('No text transcribed', 'TranscriptionCycle');
                 return;
             }
 
             // Store transcription internally for image generation context
-            if (this.panel) {
-                this.panel.setLastTranscription(transcription.text);
-            }
+            this.panel?.setLastTranscription(transcription.text);
 
-            // Update transcript display in panel (using addTranscriptSegments for incremental updates)
-            // panel.updateTranscript() would replace all segments, addTranscriptSegments() appends
-            if (this.panel && transcription.segments && transcription.segments.length > 0) {
+            // Add segments to transcript panel
+            if (this.panel && transcription.segments?.length > 0) {
                 this.panel.addTranscriptSegments(transcription.segments);
             }
 
-            // Apply speaker labels and format for AI analysis
+            // Format with speaker labels and analyze with AI
             const labeledText = this._formatTranscriptionWithLabels(transcription);
-
-            // Analyze transcription with AI (results shown to user)
             await this._analyzeTranscription(labeledText);
 
         } catch (error) {
-            this._handleServiceError(error, 'Transcription');
+            this._consecutiveTranscriptionErrors++;
+            this._handleThrottledError(error, 'Transcription');
+
+            // Ensure recording restarts even on error
+            if (this._isCyclicRestart) {
+                this._isCyclicRestart = false;
+                try {
+                    if (!this.audioCapture.isRecording) {
+                        await this.audioCapture.start();
+                    }
+                } catch (restartError) {
+                    Logger.error(restartError, 'TranscriptionCycle.restart');
+                }
+            }
+        } finally {
+            this._isProcessingCycle = false;
         }
+    }
+
+    /**
+     * Shows an error notification with throttling to prevent flood
+     * Same error message won't be shown more than once per cooldown period
+     * @param {Error} error - The error
+     * @param {string} operation - What operation failed
+     * @private
+     */
+    _handleThrottledError(error, operation) {
+        const now = Date.now();
+        const message = error.message || String(error);
+
+        // Throttle: don't show the same error within the cooldown period
+        if (message === this._lastErrorMessage &&
+            (now - this._lastErrorNotificationTime) < ERROR_NOTIFICATION_COOLDOWN_MS) {
+            Logger.debug(`Throttled duplicate error: ${message}`, operation);
+            return;
+        }
+
+        this._lastErrorMessage = message;
+        this._lastErrorNotificationTime = now;
+        ErrorNotificationHelper.handleApiError(error, operation);
     }
 
     /**
@@ -575,8 +697,9 @@ class NarratorMaster {
                     break;
 
                 case 'stop':
+                    this._stopTranscriptionCycles();
                     const audioBlob = await this.audioCapture.stop();
-                    if (audioBlob && audioBlob.size > 1000) {
+                    if (audioBlob && audioBlob.size >= MIN_AUDIO_SIZE) {
                         // Process final audio
                         this.panel?.setRecordingState(RECORDING_STATE.PROCESSING);
                         await this._processFinalAudio(audioBlob);
@@ -745,7 +868,7 @@ class NarratorMaster {
      * @private
      */
     _handleServiceError(error, operation) {
-        ErrorNotificationHelper.handleApiError(error, operation);
+        this._handleThrottledError(error, operation);
     }
 
     /**
@@ -868,11 +991,9 @@ class NarratorMaster {
             this.audioCapture.destroy();
         }
 
-        // Clear intervals
+        // Clear intervals and cycles
         this._stopAudioLevelUpdates();
-        if (this._transcriptionTimeout) {
-            clearTimeout(this._transcriptionTimeout);
-        }
+        this._stopTranscriptionCycles();
 
         // Close panel
         this.closePanel();

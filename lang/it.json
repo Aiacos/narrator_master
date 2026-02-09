@@ -64,6 +64,7 @@
             "InvalidApiKey": "Chiave API non valida. Verifica la tua chiave API OpenAI nelle impostazioni.",
             "RateLimited": "Limite di richieste raggiunto. Attendi qualche momento prima di riprovare.",
             "BadRequest": "Richiesta non valida: {details}",
+            "AudioTooShort": "Audio troppo breve per la trascrizione.",
             "ServerError": "Errore del server OpenAI. Riprova piu tardi.",
             "TranscriptionFailed": "Trascrizione fallita (Errore {status}): {message}",
             "NoTranscription": "Nessuna trascrizione disponibile per l'analisi.",
@@ -99,7 +100,8 @@
         },
 
         "Warnings": {
-            "ConfigIncomplete": "Configurazione incompleta"
+            "ConfigIncomplete": "Configurazione incompleta",
+            "TranscriptionCircuitBreaker": "Trascrizione in pausa per errori ripetuti. Riprova fermando e riavviando la registrazione."
         },
 
         "Notifications": {

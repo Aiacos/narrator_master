@@ -6,12 +6,20 @@
 
 import { MODULE_ID } from './settings.js';
 import { OpenAIServiceBase } from './openai-service-base.js';
+import { Logger } from './logger.js';
 
 /**
  * Maximum file size for OpenAI Whisper API (25MB)
  * @constant {number}
  */
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
+
+/**
+ * Minimum file size for valid audio (~1s at 128kbps)
+ * Files smaller than this are rejected by Whisper as corrupt
+ * @constant {number}
+ */
+const MIN_FILE_SIZE = 10000;
 
 /**
  * Default audio duration threshold for chunking (30 seconds)
@@ -172,7 +180,12 @@ export class TranscriptionService extends OpenAIServiceBase {
             throw new Error(game.i18n.localize('NARRATOR.Errors.InvalidAudio'));
         }
 
-        // Check file size
+        // Check file size limits
+        if (audioBlob.size < MIN_FILE_SIZE) {
+            Logger.debug(`Audio too small (${audioBlob.size}B), skipping`, 'TranscriptionService');
+            return { text: '', segments: [], language: this._language, duration: 0, speakers: [] };
+        }
+
         if (audioBlob.size > MAX_FILE_SIZE) {
             throw new Error(game.i18n.format('NARRATOR.Errors.FileTooLarge', {
                 size: Math.round(audioBlob.size / (1024 * 1024)),
@@ -184,7 +197,7 @@ export class TranscriptionService extends OpenAIServiceBase {
         const language = options.language || this._language;
         const speakerNames = options.speakerNames || this._knownSpeakerNames;
 
-        console.log(`${MODULE_ID} | Starting transcription, language: ${language}`);
+        Logger.debug(`Starting transcription, language: ${language}, size: ${audioBlob.size}B`, 'TranscriptionService');
 
         try {
             // Build form data for API request
@@ -199,7 +212,7 @@ export class TranscriptionService extends OpenAIServiceBase {
             // Add to history
             this._addToHistory(result);
 
-            console.log(`${MODULE_ID} | Transcription complete, ${result.segments.length} segments`);
+            Logger.info(`Transcription complete, ${result.segments.length} segments`, 'TranscriptionService');
 
             return result;
 
@@ -238,7 +251,7 @@ export class TranscriptionService extends OpenAIServiceBase {
 
         const language = options.language || this._language;
 
-        console.log(`${MODULE_ID} | Starting simple transcription, language: ${language}`);
+        Logger.debug(`Starting simple transcription, language: ${language}`, 'TranscriptionService');
 
         try {
             const formData = new FormData();
@@ -354,7 +367,7 @@ export class TranscriptionService extends OpenAIServiceBase {
             });
         } catch (networkError) {
             // Handle network errors (no connection, timeout, etc.)
-            console.error(`${MODULE_ID} | Network error during transcription:`, networkError);
+            Logger.error('Network error during transcription', 'TranscriptionService', networkError);
             throw this._createNetworkError(networkError);
         }
 
@@ -468,7 +481,7 @@ export class TranscriptionService extends OpenAIServiceBase {
      */
     applyCustomLabels(labelMappings) {
         if (!labelMappings || typeof labelMappings !== 'object') {
-            console.warn(`${MODULE_ID} | Invalid label mappings provided to applyCustomLabels`);
+            Logger.warn('Invalid label mappings provided to applyCustomLabels', 'TranscriptionService');
             return 0;
         }
 
@@ -494,7 +507,7 @@ export class TranscriptionService extends OpenAIServiceBase {
             result.speakers = uniqueSpeakers;
         }
 
-        console.log(`${MODULE_ID} | Applied custom labels to ${totalUpdated} segments`);
+        Logger.info(`Applied custom labels to ${totalUpdated} segments`, 'TranscriptionService');
 
         return totalUpdated;
     }
