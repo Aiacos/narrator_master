@@ -265,6 +265,19 @@
             "ClearAllRules": "Clear All Rules",
             "RulesCleared": "All rules answers have been cleared",
             "RuleAnswerCopied": "Answer copied to clipboard"
+        },
+        "Silence": {
+            "Detected": "Silence detected - Check the panel for narrative recovery options",
+            "RecoveryTitle": "Where to resume?",
+            "WhereToResume": "Select a point to resume the narration",
+            "SelectSubchapter": "Select subchapter",
+            "TimeSinceLast": "Time since last transcription: {seconds}s",
+            "NoChapterContext": "No active chapter. Select an adventure journal.",
+            "ResumeFromHere": "Resume from here",
+            "SuggestedResume": "Suggested Resume",
+            "ManualResume": "Manual Resume",
+            "DismissRecovery": "Dismiss",
+            "ContinueListening": "Continue listening"
         }
     }
 }

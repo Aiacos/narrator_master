@@ -43,6 +43,14 @@ const MAX_CONSECUTIVE_ERRORS = 5;
 const ERROR_NOTIFICATION_COOLDOWN_MS = 30000;
 
 /**
+ * Default silence timeout in milliseconds before triggering chapter recovery UI
+ * When no transcription is received for this duration, the system will offer
+ * chapter navigation options to help the GM resume the narrative
+ * @constant {number}
+ */
+const DEFAULT_SILENCE_TIMEOUT_MS = 30000;
+
+/**
  * Error notification types for different severity levels
  * @constant {Object}
  */
@@ -258,6 +266,29 @@ class NarratorMaster {
          * @private
          */
         this._lastErrorMessage = '';
+
+        /**
+         * Timestamp of the last successful transcription
+         * Used for silence detection to determine when to show chapter recovery UI
+         * @type {number}
+         * @private
+         */
+        this._lastTranscriptionTime = 0;
+
+        /**
+         * Timeout ID for the silence detection timer
+         * @type {number|null}
+         * @private
+         */
+        this._silenceTimeoutId = null;
+
+        /**
+         * Whether silence recovery mode is currently active
+         * When true, the panel shows chapter navigation options
+         * @type {boolean}
+         * @private
+         */
+        this._isSilenceRecoveryActive = false;
     }
 
     /**
@@ -543,23 +574,32 @@ class NarratorMaster {
                 this._startAudioLevelUpdates();
                 this._startTranscriptionCycles();
                 this._consecutiveTranscriptionErrors = 0;
+                // Start silence detection timer
+                this._resetSilenceTimer();
                 break;
 
             case RecordingState.PAUSED:
                 this.panel.setRecordingState(RECORDING_STATE.PAUSED);
                 this._stopAudioLevelUpdates();
                 this._stopTranscriptionCycles();
+                // Pause silence detection (don't trigger during pause)
+                this._clearSilenceTimer();
                 break;
 
             case RecordingState.STOPPING:
                 this.panel.setRecordingState(RECORDING_STATE.PROCESSING);
                 this._stopAudioLevelUpdates();
+                // Clear silence detection during stop
+                this._clearSilenceTimer();
                 break;
 
             case RecordingState.INACTIVE:
                 this.panel.setRecordingState(RECORDING_STATE.INACTIVE);
                 this._stopAudioLevelUpdates();
                 this._stopTranscriptionCycles();
+                // Clear silence detection and recovery state
+                this._clearSilenceTimer();
+                this._isSilenceRecoveryActive = false;
                 break;
         }
     }
@@ -639,6 +679,9 @@ class NarratorMaster {
                 Logger.debug('No text transcribed', 'TranscriptionCycle');
                 return;
             }
+
+            // Reset silence timer - we received valid transcription
+            this._resetSilenceTimer();
 
             // Store transcription internally for image generation context
             this.panel?.setLastTranscription(transcription.text);
@@ -774,6 +817,105 @@ class NarratorMaster {
             clearInterval(this._audioLevelInterval);
             this._audioLevelInterval = null;
         }
+    }
+
+    /**
+     * Resets the silence detection timer
+     * Called when a new transcription is received successfully
+     * Clears any active silence recovery UI and restarts the timer
+     * @private
+     */
+    _resetSilenceTimer() {
+        // Clear existing timeout
+        this._clearSilenceTimer();
+
+        // Update last transcription timestamp
+        this._lastTranscriptionTime = Date.now();
+
+        // Deactivate silence recovery mode if it was active
+        if (this._isSilenceRecoveryActive) {
+            this._isSilenceRecoveryActive = false;
+            if (this.panel) {
+                this.panel.hideSilenceRecovery?.();
+            }
+            Logger.debug('Silence recovery deactivated due to new transcription', 'SilenceDetection');
+        }
+
+        // Start new silence timer only if recording is active
+        if (this.audioCapture?.isRecording) {
+            this._silenceTimeoutId = setTimeout(() => {
+                this._onSilenceTimeout();
+            }, DEFAULT_SILENCE_TIMEOUT_MS);
+            Logger.debug(`Silence timer started (${DEFAULT_SILENCE_TIMEOUT_MS}ms)`, 'SilenceDetection');
+        }
+    }
+
+    /**
+     * Clears the silence detection timer without triggering recovery
+     * Used when stopping recording or cleaning up
+     * @private
+     */
+    _clearSilenceTimer() {
+        if (this._silenceTimeoutId) {
+            clearTimeout(this._silenceTimeoutId);
+            this._silenceTimeoutId = null;
+        }
+    }
+
+    /**
+     * Handles silence timeout - triggers chapter recovery UI
+     * Called when no transcription has been received for the configured timeout period
+     * @private
+     */
+    _onSilenceTimeout() {
+        // Only trigger if we're still recording
+        if (!this.audioCapture?.isRecording) {
+            Logger.debug('Silence timeout ignored - not recording', 'SilenceDetection');
+            return;
+        }
+
+        Logger.info('Silence detected - triggering chapter recovery UI', 'SilenceDetection');
+        this._isSilenceRecoveryActive = true;
+
+        // Get current chapter info from ChapterTracker
+        const currentChapter = this.chapterTracker?.getCurrentChapter();
+
+        // Generate recovery options from AIAssistant
+        let recoveryOptions = [];
+        if (this.aiAssistant && currentChapter) {
+            recoveryOptions = this.aiAssistant.generateChapterRecoveryOptions?.(currentChapter) || [];
+        }
+
+        // Notify panel to show silence recovery UI
+        if (this.panel) {
+            this.panel.showSilenceRecovery?.({
+                currentChapter,
+                recoveryOptions,
+                timeSinceLastTranscription: Date.now() - this._lastTranscriptionTime
+            });
+        }
+
+        // Show notification to GM
+        ui.notifications.info(game.i18n.localize('NARRATOR.Silence.Detected'));
+    }
+
+    /**
+     * Checks if silence recovery mode is currently active
+     * @returns {boolean} True if silence recovery UI is being shown
+     */
+    isSilenceRecoveryActive() {
+        return this._isSilenceRecoveryActive;
+    }
+
+    /**
+     * Gets the time elapsed since the last transcription
+     * @returns {number} Milliseconds since last transcription, or 0 if never recorded
+     */
+    getTimeSinceLastTranscription() {
+        if (this._lastTranscriptionTime === 0) {
+            return 0;
+        }
+        return Date.now() - this._lastTranscriptionTime;
     }
 
     /**
@@ -1090,6 +1232,8 @@ class NarratorMaster {
         // Clear intervals and cycles
         this._stopAudioLevelUpdates();
         this._stopTranscriptionCycles();
+        this._clearSilenceTimer();
+        this._isSilenceRecoveryActive = false;
 
         // Close panel
         this.closePanel();

@@ -222,6 +222,20 @@
             "ColorCode": "Codice Colore",
             "SpeakerColor": "Colore Parlante {number}",
             "TranscriptionWithSpeakers": "Trascrizione con Parlanti"
+        },
+
+        "Silence": {
+            "Detected": "Silenzio rilevato - Consulta il pannello per opzioni di ripresa narrativa",
+            "RecoveryTitle": "Dove riprendere?",
+            "WhereToResume": "Seleziona un punto da cui riprendere la narrazione",
+            "SelectSubchapter": "Seleziona sottocapitolo",
+            "TimeSinceLast": "Tempo dall'ultima trascrizione: {seconds}s",
+            "NoChapterContext": "Nessun capitolo attivo. Seleziona un journal dell'avventura.",
+            "ResumeFromHere": "Riprendi da qui",
+            "SuggestedResume": "Ripresa Suggerita",
+            "ManualResume": "Ripresa Manuale",
+            "DismissRecovery": "Chiudi",
+            "ContinueListening": "Continua ad ascoltare"
         }
     }
 }
