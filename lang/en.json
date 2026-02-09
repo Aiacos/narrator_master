@@ -167,6 +167,15 @@
             "ChapterStructure": "Chapter Structure",
             "NoChaptersFound": "No chapters found"
         },
+        "Chapter": {
+            "CurrentChapter": "Current Chapter",
+            "NoChapterDetected": "No chapter detected",
+            "SelectChapter": "Select Chapter"
+        },
+        "Grounding": {
+            "SourceNotFound": "Source not found in journal",
+            "CitationRequired": "Citation required"
+        },
         "Images": {
             "Generating": "Generating...",
             "CacheExpired": "Image URL expired, using local cache",
