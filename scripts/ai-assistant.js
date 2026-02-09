@@ -319,6 +319,100 @@ export class AIAssistant extends OpenAIServiceBase {
     }
 
     /**
+     * Represents a chapter recovery option for silence scenarios
+     * @typedef {Object} ChapterRecoveryOption
+     * @property {string} id - Unique identifier for the option
+     * @property {string} label - Display label for the option (subsection/page name)
+     * @property {string} type - Type of option ('subsection', 'page', 'summary')
+     * @property {string} [pageId] - Associated page ID if type is 'page'
+     * @property {string} [journalName] - Parent journal name if type is 'page'
+     * @property {string} description - Brief description or context for this option
+     */
+
+    /**
+     * Generates clickable sub-chapter recovery options for silence scenarios
+     * When players are silent or stuck, this method provides quick navigation options
+     * based on the current chapter's structure (subsections and page references)
+     * @param {Object} currentChapter - The current chapter context
+     * @param {string} [currentChapter.chapterName] - Name of the current chapter
+     * @param {string[]} [currentChapter.subsections] - Array of subsection names within the chapter
+     * @param {Object[]} [currentChapter.pageReferences] - Array of page reference objects
+     * @param {string} [currentChapter.pageReferences[].pageId] - The page ID
+     * @param {string} [currentChapter.pageReferences[].pageName] - The page name
+     * @param {string} [currentChapter.pageReferences[].journalName] - The parent journal name
+     * @param {string} [currentChapter.summary] - Brief summary of the chapter content
+     * @returns {ChapterRecoveryOption[]} Array of recovery options for UI display
+     */
+    generateChapterRecoveryOptions(currentChapter) {
+        const options = [];
+
+        // Return empty array if no chapter provided
+        if (!currentChapter || typeof currentChapter !== 'object') {
+            console.warn(`${MODULE_ID} | No chapter context provided for recovery options`);
+            return options;
+        }
+
+        const chapterName = this._validateString(currentChapter.chapterName || '', 200, 'recovery.chapterName');
+
+        // Add subsection options
+        const subsections = this._validateArray(currentChapter.subsections || [], 50, 'recovery.subsections');
+        for (let i = 0; i < subsections.length; i++) {
+            const subsectionName = this._validateString(subsections[i] || '', 200, 'recovery.subsection');
+            if (subsectionName) {
+                options.push({
+                    id: `subsection-${i}`,
+                    label: subsectionName,
+                    type: 'subsection',
+                    description: chapterName
+                        ? game.i18n.format('NARRATOR.Recovery.SubsectionOf', { chapter: chapterName })
+                        : game.i18n.localize('NARRATOR.Recovery.Subsection')
+                });
+            }
+        }
+
+        // Add page reference options
+        const pageReferences = this._validateArray(currentChapter.pageReferences || [], 50, 'recovery.pageReferences');
+        for (let i = 0; i < pageReferences.length; i++) {
+            const ref = pageReferences[i];
+            if (!ref || typeof ref !== 'object') {
+                continue;
+            }
+
+            const pageName = this._validateString(ref.pageName || '', 200, 'recovery.pageName');
+            const pageId = this._validateString(ref.pageId || '', 100, 'recovery.pageId');
+            const journalName = this._validateString(ref.journalName || '', 200, 'recovery.journalName');
+
+            if (pageName) {
+                options.push({
+                    id: `page-${pageId || i}`,
+                    label: pageName,
+                    type: 'page',
+                    pageId: pageId || undefined,
+                    journalName: journalName || undefined,
+                    description: journalName
+                        ? game.i18n.format('NARRATOR.Recovery.PageIn', { journal: journalName })
+                        : game.i18n.localize('NARRATOR.Recovery.Page')
+                });
+            }
+        }
+
+        // Add summary option if available and there are other options
+        const summary = this._validateString(currentChapter.summary || '', 2000, 'recovery.summary');
+        if (summary && options.length > 0) {
+            options.unshift({
+                id: 'summary',
+                label: chapterName || game.i18n.localize('NARRATOR.Recovery.ChapterSummary'),
+                type: 'summary',
+                description: summary.length > 100 ? summary.substring(0, 100) + '...' : summary
+            });
+        }
+
+        console.log(`${MODULE_ID} | Generated ${options.length} chapter recovery options`);
+
+        return options;
+    }
+
+    /**
      * Analyzes the current game context and generates suggestions
      * @param {string} transcription - Recent transcribed conversation
      * @param {Object} [options={}] - Analysis options
