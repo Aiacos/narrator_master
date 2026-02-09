@@ -144,6 +144,13 @@ export class AIAssistant extends OpenAIServiceBase {
          * @private
          */
         this._previousTranscription = '';
+
+        /**
+         * Current chapter/scene context for focused analysis
+         * @type {Object|null}
+         * @private
+         */
+        this._chapterContext = null;
     }
 
     /**
@@ -226,6 +233,183 @@ export class AIAssistant extends OpenAIServiceBase {
      */
     getSceneDetector() {
         return this._sceneDetector;
+    }
+
+    /**
+     * Sets the current chapter/scene context for focused analysis
+     * This provides the AI with specific information about the current chapter,
+     * its subsections, and page references to improve suggestion relevance
+     * @param {Object|null} chapterInfo - The chapter context information
+     * @param {string} [chapterInfo.chapterName] - Name of the current chapter
+     * @param {string[]} [chapterInfo.subsections] - Array of subsection names within the chapter
+     * @param {Object[]} [chapterInfo.pageReferences] - Array of page reference objects
+     * @param {string} [chapterInfo.pageReferences[].pageId] - The page ID
+     * @param {string} [chapterInfo.pageReferences[].pageName] - The page name
+     * @param {string} [chapterInfo.pageReferences[].journalName] - The parent journal name
+     * @param {string} [chapterInfo.summary] - Brief summary of the chapter content
+     */
+    setChapterContext(chapterInfo) {
+        if (chapterInfo === null || chapterInfo === undefined) {
+            this._chapterContext = null;
+            return;
+        }
+
+        // Validate and sanitize the chapter context
+        this._chapterContext = {
+            chapterName: this._validateString(chapterInfo.chapterName || '', 200, 'chapterContext.chapterName'),
+            subsections: this._validateArray(chapterInfo.subsections || [], 50, 'chapterContext.subsections')
+                .map(s => this._validateString(s, 200, 'chapterContext.subsection')),
+            pageReferences: this._validateArray(chapterInfo.pageReferences || [], 50, 'chapterContext.pageReferences')
+                .map(ref => ({
+                    pageId: this._validateString(ref.pageId || '', 100, 'pageReference.pageId'),
+                    pageName: this._validateString(ref.pageName || '', 200, 'pageReference.pageName'),
+                    journalName: this._validateString(ref.journalName || '', 200, 'pageReference.journalName')
+                })),
+            summary: this._validateString(chapterInfo.summary || '', 2000, 'chapterContext.summary')
+        };
+    }
+
+    /**
+     * Gets the current chapter context
+     * @returns {Object|null} The chapter context or null if not set
+     */
+    getChapterContext() {
+        return this._chapterContext;
+    }
+
+    /**
+     * Formats the chapter context for inclusion in AI prompts
+     * @returns {string} Formatted chapter context string or empty string if not set
+     * @private
+     */
+    _formatChapterContext() {
+        if (!this._chapterContext) {
+            return '';
+        }
+
+        const parts = [];
+
+        if (this._chapterContext.chapterName) {
+            parts.push(`CAPITOLO CORRENTE: ${this._chapterContext.chapterName}`);
+        }
+
+        if (this._chapterContext.subsections && this._chapterContext.subsections.length > 0) {
+            parts.push(`SEZIONI: ${this._chapterContext.subsections.join(', ')}`);
+        }
+
+        if (this._chapterContext.pageReferences && this._chapterContext.pageReferences.length > 0) {
+            const refs = this._chapterContext.pageReferences
+                .filter(ref => ref.pageName)
+                .map(ref => {
+                    if (ref.journalName) {
+                        return `"${ref.pageName}" (${ref.journalName})`;
+                    }
+                    return `"${ref.pageName}"`;
+                });
+            if (refs.length > 0) {
+                parts.push(`PAGINE DI RIFERIMENTO: ${refs.join(', ')}`);
+            }
+        }
+
+        if (this._chapterContext.summary) {
+            parts.push(`RIEPILOGO: ${this._chapterContext.summary}`);
+        }
+
+        return parts.join('\n');
+    }
+
+    /**
+     * Represents a chapter recovery option for silence scenarios
+     * @typedef {Object} ChapterRecoveryOption
+     * @property {string} id - Unique identifier for the option
+     * @property {string} label - Display label for the option (subsection/page name)
+     * @property {string} type - Type of option ('subsection', 'page', 'summary')
+     * @property {string} [pageId] - Associated page ID if type is 'page'
+     * @property {string} [journalName] - Parent journal name if type is 'page'
+     * @property {string} description - Brief description or context for this option
+     */
+
+    /**
+     * Generates clickable sub-chapter recovery options for silence scenarios
+     * When players are silent or stuck, this method provides quick navigation options
+     * based on the current chapter's structure (subsections and page references)
+     * @param {Object} currentChapter - The current chapter context
+     * @param {string} [currentChapter.chapterName] - Name of the current chapter
+     * @param {string[]} [currentChapter.subsections] - Array of subsection names within the chapter
+     * @param {Object[]} [currentChapter.pageReferences] - Array of page reference objects
+     * @param {string} [currentChapter.pageReferences[].pageId] - The page ID
+     * @param {string} [currentChapter.pageReferences[].pageName] - The page name
+     * @param {string} [currentChapter.pageReferences[].journalName] - The parent journal name
+     * @param {string} [currentChapter.summary] - Brief summary of the chapter content
+     * @returns {ChapterRecoveryOption[]} Array of recovery options for UI display
+     */
+    generateChapterRecoveryOptions(currentChapter) {
+        const options = [];
+
+        // Return empty array if no chapter provided
+        if (!currentChapter || typeof currentChapter !== 'object') {
+            console.warn(`${MODULE_ID} | No chapter context provided for recovery options`);
+            return options;
+        }
+
+        const chapterName = this._validateString(currentChapter.chapterName || '', 200, 'recovery.chapterName');
+
+        // Add subsection options
+        const subsections = this._validateArray(currentChapter.subsections || [], 50, 'recovery.subsections');
+        for (let i = 0; i < subsections.length; i++) {
+            const subsectionName = this._validateString(subsections[i] || '', 200, 'recovery.subsection');
+            if (subsectionName) {
+                options.push({
+                    id: `subsection-${i}`,
+                    label: subsectionName,
+                    type: 'subsection',
+                    description: chapterName
+                        ? game.i18n.format('NARRATOR.Recovery.SubsectionOf', { chapter: chapterName })
+                        : game.i18n.localize('NARRATOR.Recovery.Subsection')
+                });
+            }
+        }
+
+        // Add page reference options
+        const pageReferences = this._validateArray(currentChapter.pageReferences || [], 50, 'recovery.pageReferences');
+        for (let i = 0; i < pageReferences.length; i++) {
+            const ref = pageReferences[i];
+            if (!ref || typeof ref !== 'object') {
+                continue;
+            }
+
+            const pageName = this._validateString(ref.pageName || '', 200, 'recovery.pageName');
+            const pageId = this._validateString(ref.pageId || '', 100, 'recovery.pageId');
+            const journalName = this._validateString(ref.journalName || '', 200, 'recovery.journalName');
+
+            if (pageName) {
+                options.push({
+                    id: `page-${pageId || i}`,
+                    label: pageName,
+                    type: 'page',
+                    pageId: pageId || undefined,
+                    journalName: journalName || undefined,
+                    description: journalName
+                        ? game.i18n.format('NARRATOR.Recovery.PageIn', { journal: journalName })
+                        : game.i18n.localize('NARRATOR.Recovery.Page')
+                });
+            }
+        }
+
+        // Add summary option if available and there are other options
+        const summary = this._validateString(currentChapter.summary || '', 2000, 'recovery.summary');
+        if (summary && options.length > 0) {
+            options.unshift({
+                id: 'summary',
+                label: chapterName || game.i18n.localize('NARRATOR.Recovery.ChapterSummary'),
+                type: 'summary',
+                description: summary.length > 100 ? summary.substring(0, 100) + '...' : summary
+            });
+        }
+
+        console.log(`${MODULE_ID} | Generated ${options.length} chapter recovery options`);
+
+        return options;
     }
 
     /**
@@ -637,10 +821,15 @@ export class AIAssistant extends OpenAIServiceBase {
 
     /**
      * Builds the system prompt for the AI assistant
+     * @param {Object} [options={}] - Options for customizing the prompt
+     * @param {string} [options.chapterContext] - Current chapter/scene context from the adventure (overrides stored context)
      * @returns {string} The system prompt
      * @private
      */
-    _buildSystemPrompt() {
+    _buildSystemPrompt(options = {}) {
+        // Use provided chapterContext or format from stored _chapterContext
+        const chapterContext = options.chapterContext || this._formatChapterContext();
+
         const sensitivityGuide = {
             low: 'Sii tollerante con le deviazioni minori, segnala solo quando i giocatori si allontanano completamente dalla storia.',
             medium: 'Bilancia la tolleranza per l\'improvvisazione con l\'aderenza alla trama principale.',
@@ -674,17 +863,48 @@ export class AIAssistant extends OpenAIServiceBase {
 
         const responseLang = languageNames[this._primaryLanguage] || languageNames['it'];
 
-        return `Sei un assistente per Dungeon Master esperto in giochi di ruolo fantasy.
-Il tuo compito è aiutare il DM durante le sessioni di gioco fornendo:
-1. Suggerimenti contestuali basati sulla conversazione dei giocatori
-2. Riferimenti alle parti rilevanti dell'avventura
-3. Rilevamento di quando i giocatori escono dal tema dell'avventura
-4. Suggerimenti per riportare delicatamente i giocatori nella storia
+        // Build chapter context section if provided
+        const chapterSection = chapterContext
+            ? `\n\nCONTESTO CAPITOLO/SCENA CORRENTE:\n${chapterContext}`
+            : '';
 
-Rispondi nella stessa lingua della trascrizione (${responseLang}).
+        return `Sei un assistente per Dungeon Master (GM) esperto in giochi di ruolo fantasy.
+Il tuo UNICO scopo è aiutare il GM durante le sessioni di gioco.
+
+## REGOLE FONDAMENTALI (ANTI-ALLUCINAZIONE)
+
+1. **USA SOLO IL MATERIALE FORNITO**: Basa TUTTE le tue risposte esclusivamente sul contenuto del Journal/Compendium fornito nel contesto. NON inventare dettagli, PNG, luoghi, eventi o informazioni non presenti nel materiale.
+
+2. **CITA SEMPRE LE FONTI**: Ogni suggerimento DEVE includere il riferimento alla pagina/sezione del Journal da cui proviene l'informazione (es. "[Fonte: Capitolo 2 - La Taverna]").
+
+3. **AMMETTI QUANDO NON SAI**: Se un'informazione non è presente nel materiale fornito, rispondi esplicitamente: "Informazione non trovata nel materiale dell'avventura" oppure "Non presente nel Journal/Compendium".
+
+4. **NON COMPLETARE CON SUPPOSIZIONI**: Se il materiale è incompleto o vago, NON colmare le lacune con contenuto inventato. Segnala invece cosa manca.
+
+## IL TUO COMPITO
+
+Aiuta il GM fornendo:
+1. **Suggerimenti contestuali** basati sulla conversazione dei giocatori, con riferimento preciso al materiale
+2. **Riferimenti diretti** alle parti rilevanti dell'avventura (cita pagina/sezione)
+3. **Rilevamento off-track** quando i giocatori escono dal tema dell'avventura
+4. **Ponti narrativi** per riportare delicatamente i giocatori nella storia (basati solo su elementi già presenti nel materiale)
+${chapterSection}
+
+## FORMATO RISPOSTE
+
+- Rispondi nella stessa lingua della trascrizione (${responseLang})
+- Includi SEMPRE il campo "pageReference" con la fonte nel materiale
+- Se non trovi informazioni rilevanti, imposta confidence a 0 e indica "Non trovato nel materiale"
+
+## SENSIBILITÀ OFF-TRACK
+
 ${sensitivityGuide[this._sensitivity]}
 
-Quando i giocatori sono fuori tema, suggerisci modi creativi per riportarli nella storia senza forzarli.`;
+## IMPORTANTE
+
+- NON sei un narratore che inventa storie
+- SEI un assistente che recupera e organizza informazioni dal materiale esistente
+- Quando i giocatori sono fuori tema, suggerisci modi per riportarli nella storia usando SOLO elementi già presenti nel materiale`;
     }
 
     /**

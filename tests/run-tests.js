@@ -15,6 +15,8 @@ import { runTests as runRulesReferenceTests } from './rules-reference.test.js';
 import { runTests as runAudioCaptureTests } from './audio-capture.test.js';
 import { runTests as runImageGeneratorTests } from './image-generator.test.js';
 import { runTests as runUIPanelTests } from './ui-panel.test.js';
+import { runTests as runCompendiumParserTests } from './compendium-parser.test.js';
+import { runTests as runChapterTrackerTests } from './chapter-tracker.test.js';
 
 /**
  * Runs all test suites and reports aggregate results
@@ -40,6 +42,8 @@ async function runAllTests() {
         results.push(await runAudioCaptureTests());
         results.push(await runImageGeneratorTests());
         results.push(await runUIPanelTests());
+        results.push(await runCompendiumParserTests());
+        results.push(await runChapterTrackerTests());
     } catch (error) {
         console.error('\n❌ Test execution error:', error.message);
         return { success: false, error: error.message };

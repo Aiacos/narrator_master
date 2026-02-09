@@ -1195,6 +1195,30 @@
     .rule-citation {
         font-size: 0.75em;
     }
+
+    /* Chapter Navigation Responsive */
+    .chapter-navigation {
+        padding: var(--narrator-spacing-sm);
+    }
+
+    .current-chapter-name {
+        font-size: 0.9em;
+    }
+
+    .subchapter-btn {
+        padding: var(--narrator-spacing-xs);
+        font-size: 0.8em;
+    }
+
+    /* Silence Recovery Responsive */
+    .silence-recovery {
+        padding: var(--narrator-spacing-sm);
+    }
+
+    .silence-recovery-chapter-btn {
+        padding: var(--narrator-spacing-xs) var(--narrator-spacing-sm);
+        font-size: 0.8em;
+    }
 }
 
 /* ============================================
@@ -1298,6 +1322,321 @@
 }
 
 /* ============================================
+   Chapter Navigation
+   ============================================ */
+.chapter-navigation {
+    display: flex;
+    flex-direction: column;
+    gap: var(--narrator-spacing-sm);
+    padding: var(--narrator-spacing-md);
+    background: var(--narrator-bg-secondary);
+    border-radius: var(--narrator-radius-md);
+    margin-bottom: var(--narrator-spacing-md);
+}
+
+.chapter-navigation-header {
+    display: flex;
+    align-items: center;
+    gap: var(--narrator-spacing-sm);
+    padding-bottom: var(--narrator-spacing-sm);
+    border-bottom: 1px solid var(--narrator-border);
+}
+
+.chapter-navigation-header i {
+    color: var(--narrator-primary);
+    font-size: 1.1em;
+}
+
+.chapter-navigation-header span {
+    font-weight: 600;
+    font-size: 0.9em;
+    color: var(--narrator-text-primary);
+}
+
+/* Current Chapter Display */
+.current-chapter {
+    display: flex;
+    flex-direction: column;
+    gap: var(--narrator-spacing-xs);
+    padding: var(--narrator-spacing-sm);
+    background: var(--narrator-primary-light);
+    border: 1px solid rgba(123, 104, 238, 0.3);
+    border-radius: var(--narrator-radius-sm);
+    border-left: 3px solid var(--narrator-primary);
+}
+
+.current-chapter-label {
+    font-size: 0.75em;
+    font-weight: 600;
+    color: var(--narrator-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.current-chapter-name {
+    font-size: 1em;
+    font-weight: 600;
+    color: var(--narrator-text-primary);
+    line-height: 1.4;
+}
+
+.current-chapter-path {
+    font-size: 0.8em;
+    color: var(--narrator-text-secondary);
+    font-style: italic;
+}
+
+/* Sub-Chapter Buttons */
+.subchapter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--narrator-spacing-xs);
+    margin-top: var(--narrator-spacing-sm);
+}
+
+.subchapter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--narrator-spacing-xs);
+    padding: var(--narrator-spacing-xs) var(--narrator-spacing-sm);
+    background: var(--narrator-bg-tertiary);
+    border: 1px solid var(--narrator-border);
+    border-radius: var(--narrator-radius-sm);
+    color: var(--narrator-text-secondary);
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: all var(--narrator-transition);
+    text-decoration: none;
+}
+
+.subchapter-btn:hover {
+    background: var(--narrator-primary);
+    border-color: var(--narrator-primary);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.subchapter-btn:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+.subchapter-btn.active {
+    background: var(--narrator-primary);
+    border-color: var(--narrator-primary);
+    color: white;
+}
+
+.subchapter-btn i {
+    font-size: 0.9em;
+}
+
+/* Sub-Chapter Button Variants */
+.subchapter-btn.subchapter-next {
+    background: var(--narrator-success);
+    border-color: var(--narrator-success);
+    color: white;
+}
+
+.subchapter-btn.subchapter-next:hover {
+    background: #27ae60;
+    border-color: #27ae60;
+}
+
+.subchapter-btn.subchapter-prev {
+    background: var(--narrator-bg-tertiary);
+    border-color: var(--narrator-border);
+    color: var(--narrator-text-secondary);
+}
+
+.subchapter-btn.subchapter-prev:hover {
+    background: var(--narrator-border-light);
+    color: var(--narrator-text-primary);
+}
+
+/* Chapter Navigation Empty State */
+.chapter-navigation-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--narrator-spacing-sm);
+    padding: var(--narrator-spacing-md);
+    color: var(--narrator-text-muted);
+    text-align: center;
+    font-size: 0.85em;
+}
+
+.chapter-navigation-empty i {
+    font-size: 1.5em;
+    opacity: 0.5;
+}
+
+/* ============================================
+   Silence Recovery Section
+   ============================================ */
+.silence-recovery {
+    display: flex;
+    flex-direction: column;
+    gap: var(--narrator-spacing-sm);
+    padding: var(--narrator-spacing-md);
+    background: var(--narrator-paused);
+    background: linear-gradient(135deg, rgba(243, 156, 18, 0.15), rgba(243, 156, 18, 0.05));
+    border: 1px solid rgba(243, 156, 18, 0.4);
+    border-radius: var(--narrator-radius-md);
+    margin-bottom: var(--narrator-spacing-md);
+    animation: fadeIn 0.3s ease;
+}
+
+.silence-recovery-header {
+    display: flex;
+    align-items: center;
+    gap: var(--narrator-spacing-sm);
+}
+
+.silence-recovery-header i {
+    color: var(--narrator-paused);
+    font-size: 1.2em;
+    animation: pulse 2s infinite;
+}
+
+.silence-recovery-header span {
+    font-weight: 600;
+    font-size: 0.95em;
+    color: var(--narrator-paused);
+}
+
+.silence-recovery-message {
+    color: var(--narrator-text-primary);
+    font-size: 0.9em;
+    line-height: 1.5;
+    padding: var(--narrator-spacing-sm);
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: var(--narrator-radius-sm);
+}
+
+/* Silence Recovery Chapter Options */
+.silence-recovery-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--narrator-spacing-xs);
+}
+
+.silence-recovery-options-label {
+    font-size: 0.8em;
+    font-weight: 600;
+    color: var(--narrator-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.silence-recovery-chapters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--narrator-spacing-xs);
+}
+
+.silence-recovery-chapter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--narrator-spacing-xs);
+    padding: var(--narrator-spacing-sm) var(--narrator-spacing-md);
+    background: white;
+    border: 1px solid rgba(243, 156, 18, 0.5);
+    border-radius: var(--narrator-radius-sm);
+    color: #1a1a1a;
+    font-size: 0.85em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--narrator-transition);
+}
+
+.silence-recovery-chapter-btn:hover {
+    background: var(--narrator-paused);
+    border-color: var(--narrator-paused);
+    color: #1a1a1a;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(243, 156, 18, 0.3);
+}
+
+.silence-recovery-chapter-btn:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+.silence-recovery-chapter-btn i {
+    font-size: 0.9em;
+}
+
+/* Silence Recovery Dismiss Button */
+.silence-recovery-dismiss {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--narrator-spacing-xs);
+    padding: var(--narrator-spacing-xs) var(--narrator-spacing-sm);
+    background: transparent;
+    border: 1px solid var(--narrator-border);
+    border-radius: var(--narrator-radius-sm);
+    color: var(--narrator-text-muted);
+    font-size: 0.8em;
+    cursor: pointer;
+    transition: all var(--narrator-transition);
+    margin-top: var(--narrator-spacing-xs);
+    align-self: flex-start;
+}
+
+.silence-recovery-dismiss:hover {
+    background: var(--narrator-bg-tertiary);
+    color: var(--narrator-text-secondary);
+}
+
+/* Silence Recovery Timer */
+.silence-timer {
+    display: flex;
+    align-items: center;
+    gap: var(--narrator-spacing-xs);
+    font-family: monospace;
+    font-size: 0.8em;
+    color: var(--narrator-text-muted);
+}
+
+.silence-timer i {
+    font-size: 0.9em;
+}
+
+/* ============================================
+   Chapter Progress Indicator
+   ============================================ */
+.chapter-progress {
+    display: flex;
+    flex-direction: column;
+    gap: var(--narrator-spacing-xs);
+    margin-top: var(--narrator-spacing-sm);
+}
+
+.chapter-progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75em;
+    color: var(--narrator-text-muted);
+}
+
+.chapter-progress-bar {
+    height: 4px;
+    background: var(--narrator-bg-tertiary);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.chapter-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--narrator-primary), var(--narrator-success));
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+/* ============================================
    Print Styles
    ============================================ */
 @media print {
@@ -1329,5 +1668,19 @@
     .rule-citation {
         background: #f0f0f0;
         color: black !important;
+    }
+
+    /* Chapter Navigation Print */
+    .chapter-navigation {
+        border: 1px solid #333;
+        page-break-inside: avoid;
+    }
+
+    .subchapter-btn {
+        display: none; /* Hide interactive buttons in print */
+    }
+
+    .silence-recovery {
+        display: none; /* Hide silence recovery in print */
     }
 }

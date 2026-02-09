@@ -57,6 +57,7 @@
             "NoTranscript": "No transcript available",
             "ClearTranscript": "Clear Transcript",
             "ExportTranscript": "Export Transcript",
+            "KeyboardShortcutsHelp": "Available shortcuts: Ctrl+Shift+R (start recording), Ctrl+Shift+S (stop recording), Ctrl+Shift+P (pause/resume recording)",
             "ConfirmClearTranscript": "Are you sure you want to clear the transcript?",
             "ConfirmClearImages": "Are you sure you want to clear all images?",
             "ConfirmDeleteImage": "Are you sure you want to delete this image?",
@@ -64,7 +65,12 @@
             "NPCDialogueTitle": "NPC Dialogue Suggestions",
             "NoNPCDialogue": "No NPC dialogue suggestions available. Dialogues will be generated when NPCs are mentioned in conversations.",
             "CopyDialogue": "Copy Dialogue",
-            "DialogueFor": "Dialogue for {npc}"
+            "DialogueFor": "Dialogue for {npc}",
+            "Subchapters": "Subchapters",
+            "SelectChapterHint": "Select an adventure journal or change scene",
+            "BackToParent": "Go back",
+            "NavigateToChapter": "Go to",
+            "ContinueListening": "Continue listening"
         },
         "Errors": {
             "NotInitialized": "Narrator Master is not yet initialized. Wait for complete loading.",
@@ -130,7 +136,12 @@
             "ApiKeyUpdated": "API key updated",
             "MicrophoneReady": "Microphone ready for recording",
             "PlayersOffTrack": "Warning: Players are drifting from the plot!",
-            "TranscriptExported": "Transcript exported"
+            "TranscriptExported": "Transcript exported",
+            "KeyboardShortcutsEnabled": "Keyboard shortcuts enabled",
+            "RecordingStartedViaShortcut": "Recording started via keyboard shortcut",
+            "RecordingStoppedViaShortcut": "Recording stopped via keyboard shortcut",
+            "RecordingPausedViaShortcut": "Recording paused via keyboard shortcut",
+            "RecordingResumedViaShortcut": "Recording resumed via keyboard shortcut"
         },
         "OffTrack": {
             "NoContext": "No adventure context set for off-track detection.",
@@ -162,7 +173,19 @@
             "ParsingJournal": "Parsing Journal...",
             "JournalEmpty": "The selected Journal is empty.",
             "PageCount": "{count} pages found",
-            "UnnamedPage": "Unnamed page"
+            "UnnamedPage": "Unnamed page",
+            "SectionBreak": "--- Section ---",
+            "ChapterStructure": "Chapter Structure",
+            "NoChaptersFound": "No chapters found"
+        },
+        "Chapter": {
+            "CurrentChapter": "Current Chapter",
+            "NoChapterDetected": "No chapter detected",
+            "SelectChapter": "Select Chapter"
+        },
+        "Grounding": {
+            "SourceNotFound": "Source not found in journal",
+            "CitationRequired": "Citation required"
         },
         "Images": {
             "Generating": "Generating...",
@@ -173,7 +196,8 @@
             "Download": "Download"
         },
         "Tooltips": {
-            "ToggleRecording": "Start or stop audio recording",
+            "ToggleRecording": "Start or stop audio recording (Ctrl+Shift+R to start, Ctrl+Shift+S to stop)",
+            "PauseRecording": "Pause or resume recording (Ctrl+Shift+P)",
             "GenerateImage": "Generate an image based on the current context",
             "ClearImages": "Clear all generated images",
             "CopyText": "Copy text to clipboard",
@@ -182,6 +206,14 @@
             "CollapseRuleAnswer": "Hide full answer",
             "DismissRuleAnswer": "Dismiss this rules answer",
             "CopyRuleAnswer": "Copy answer to clipboard"
+        },
+        "KeyboardShortcuts": {
+            "Title": "Keyboard Shortcuts",
+            "StartRecording": "Start Recording: Ctrl+Shift+R",
+            "StopRecording": "Stop Recording: Ctrl+Shift+S",
+            "PauseRecording": "Pause/Resume Recording: Ctrl+Shift+P",
+            "Help": "Available shortcuts: Ctrl+Shift+R (start), Ctrl+Shift+S (stop), Ctrl+Shift+P (pause/resume)",
+            "Enabled": "Keyboard shortcuts enabled for recording controls"
         },
         "Accessibility": {
             "RecordButton": "Record button",
@@ -262,6 +294,19 @@
             "ClearAllRules": "Clear All Rules",
             "RulesCleared": "All rules answers have been cleared",
             "RuleAnswerCopied": "Answer copied to clipboard"
+        },
+        "Silence": {
+            "Detected": "Silence detected - Check the panel for narrative recovery options",
+            "RecoveryTitle": "Where to resume?",
+            "WhereToResume": "Select a point to resume the narration",
+            "SelectSubchapter": "Select subchapter",
+            "TimeSinceLast": "Time since last transcription: {seconds}s",
+            "NoChapterContext": "No active chapter. Select an adventure journal.",
+            "ResumeFromHere": "Resume from here",
+            "SuggestedResume": "Suggested Resume",
+            "ManualResume": "Manual Resume",
+            "DismissRecovery": "Dismiss",
+            "ContinueListening": "Continue listening"
         }
     }
 }

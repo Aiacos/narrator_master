@@ -10,6 +10,8 @@ import { TranscriptionService } from './transcription.js';
 import { AIAssistant } from './ai-assistant.js';
 import { ImageGenerator } from './image-generator.js';
 import { JournalParser } from './journal-parser.js';
+import { CompendiumParser } from './compendium-parser.js';
+import { ChapterTracker } from './chapter-tracker.js';
 import { NarratorPanel, RECORDING_STATE } from './ui-panel.js';
 import { SpeakerLabelService } from './speaker-labels.js';
 import { Logger } from './logger.js';
@@ -39,6 +41,14 @@ const MAX_CONSECUTIVE_ERRORS = 5;
  * @constant {number}
  */
 const ERROR_NOTIFICATION_COOLDOWN_MS = 30000;
+
+/**
+ * Default silence timeout in milliseconds before triggering chapter recovery UI
+ * When no transcription is received for this duration, the system will offer
+ * chapter navigation options to help the GM resume the narrative
+ * @constant {number}
+ */
+const DEFAULT_SILENCE_TIMEOUT_MS = 30000;
 
 /**
  * Error notification types for different severity levels
@@ -191,10 +201,22 @@ class NarratorMaster {
         this.journalParser = null;
 
         /**
+         * Compendium parser service
+         * @type {CompendiumParser|null}
+         */
+        this.compendiumParser = null;
+
+        /**
          * Speaker label service
          * @type {SpeakerLabelService|null}
          */
         this.speakerLabelService = null;
+
+        /**
+         * Chapter tracker service
+         * @type {ChapterTracker|null}
+         */
+        this.chapterTracker = null;
 
         /**
          * Audio level update interval ID
@@ -244,6 +266,29 @@ class NarratorMaster {
          * @private
          */
         this._lastErrorMessage = '';
+
+        /**
+         * Timestamp of the last successful transcription
+         * Used for silence detection to determine when to show chapter recovery UI
+         * @type {number}
+         * @private
+         */
+        this._lastTranscriptionTime = 0;
+
+        /**
+         * Timeout ID for the silence detection timer
+         * @type {number|null}
+         * @private
+         */
+        this._silenceTimeoutId = null;
+
+        /**
+         * Whether silence recovery mode is currently active
+         * When true, the panel shows chapter navigation options
+         * @type {boolean}
+         * @private
+         */
+        this._isSilenceRecoveryActive = false;
     }
 
     /**
@@ -282,6 +327,18 @@ class NarratorMaster {
             // Register journal update hooks
             this._registerJournalHooks();
 
+            // Register scene tracking hooks for chapter detection
+            this._registerSceneHooks();
+
+            // Update chapter tracker from current active scene (if any)
+            if (game.scenes?.active) {
+                const chapter = this.chapterTracker.updateFromScene(game.scenes.active);
+                // Also update AI context if a chapter was detected
+                if (chapter) {
+                    this._updateAIChapterContext(chapter);
+                }
+            }
+
             // Validate configuration
             const validation = this.settings.validateConfiguration();
             if (!validation.valid) {
@@ -310,8 +367,16 @@ class NarratorMaster {
         // Initialize Journal Parser (no API key needed)
         this.journalParser = new JournalParser();
 
+        // Initialize Compendium Parser (no API key needed)
+        this.compendiumParser = new CompendiumParser();
+
         // Initialize Speaker Label Service (no API key needed)
         this.speakerLabelService = new SpeakerLabelService();
+
+        // Initialize Chapter Tracker (no API key needed)
+        this.chapterTracker = new ChapterTracker({
+            journalParser: this.journalParser
+        });
 
         // Initialize Audio Capture
         this.audioCapture = new AudioCapture({
@@ -393,16 +458,34 @@ class NarratorMaster {
     }
 
     /**
-     * Loads all available journals and sets AI context
+     * Loads all available journals and compendiums, then sets AI context
      * @private
      */
     async _loadAllJournals() {
         try {
+            // Parse journals
             const parsedJournals = await this.journalParser.parseAllJournals();
-            const context = this.journalParser.getAllContentForAI();
+            const journalContext = this.journalParser.getAllContentForAI();
 
-            // Set context in AI assistant
-            this.aiAssistant.setAdventureContext(context);
+            // Parse compendiums (adventure content and rules)
+            let compendiumContext = '';
+            let compendiumStats = { journalCompendiums: 0, rulesCompendiums: 0, totalEntries: 0 };
+
+            if (this.compendiumParser) {
+                await this.compendiumParser.parseJournalCompendiums();
+                await this.compendiumParser.parseRulesCompendiums();
+
+                // Get compendium content for AI context
+                compendiumContext = this.compendiumParser.getContentForAI();
+                compendiumStats = this.compendiumParser.getCacheStats();
+            }
+
+            // Combine journal and compendium context for AI
+            const combinedContext = journalContext +
+                (compendiumContext ? '\n\n' + compendiumContext : '');
+
+            // Set combined context in AI assistant
+            this.aiAssistant.setAdventureContext(combinedContext);
 
             // Update panel with journal count
             if (this.panel) {
@@ -411,10 +494,13 @@ class NarratorMaster {
                 });
             }
 
-            Logger.info(`Loaded ${parsedJournals.length} journals, ${context.length} chars context`, 'JournalLoader');
+            Logger.info(
+                `Loaded ${parsedJournals.length} journals, ${compendiumStats.totalEntries} compendium entries, ${combinedContext.length} chars total context`,
+                'JournalLoader'
+            );
 
         } catch (error) {
-            Logger.warn('Failed to load journals', 'JournalLoader', error);
+            Logger.warn('Failed to load journals and compendiums', 'JournalLoader', error);
         }
     }
 
@@ -428,6 +514,155 @@ class NarratorMaster {
         Hooks.on('updateJournalEntry', reloadJournals);
         Hooks.on('createJournalEntry', reloadJournals);
         Hooks.on('deleteJournalEntry', reloadJournals);
+    }
+
+    /**
+     * Registers hooks for scene tracking and chapter detection
+     * Updates ChapterTracker when the active scene changes
+     * @private
+     */
+    _registerSceneHooks() {
+        // Hook into canvas ready event to detect scene changes
+        Hooks.on('canvasReady', (canvas) => {
+            this._onSceneChange(canvas.scene);
+        });
+
+        Logger.debug('Scene tracking hooks registered', 'NarratorMaster');
+    }
+
+    /**
+     * Handles scene change events
+     * Updates chapter tracker based on the new active scene
+     * @param {Object} scene - The newly active Foundry VTT scene
+     * @private
+     */
+    _onSceneChange(scene) {
+        if (!scene) {
+            Logger.debug('Scene change event with no scene', 'SceneTracking');
+            return;
+        }
+
+        Logger.debug(`Scene changed to: ${scene.name} (${scene.id})`, 'SceneTracking');
+
+        // Update chapter tracker from scene
+        if (this.chapterTracker) {
+            const chapter = this.chapterTracker.updateFromScene(scene);
+
+            if (chapter) {
+                Logger.info(`Chapter detected from scene: ${chapter.title}`, 'SceneTracking');
+
+                // Update AI assistant with chapter context
+                this._updateAIChapterContext(chapter);
+
+                // Update panel with chapter info if panel is open
+                if (this.panel?.rendered) {
+                    this.panel.render(false);
+                }
+            }
+        }
+    }
+
+    /**
+     * Updates the AI Assistant's chapter context based on current chapter info
+     * Transforms ChapterInfo from ChapterTracker to the format expected by AIAssistant
+     * @param {Object} chapter - The ChapterInfo object from ChapterTracker
+     * @private
+     */
+    _updateAIChapterContext(chapter) {
+        if (!this.aiAssistant) {
+            Logger.debug('AI Assistant not initialized, skipping chapter context update', 'ChapterContext');
+            return;
+        }
+
+        if (!chapter) {
+            // Clear chapter context if no chapter
+            this.aiAssistant.setChapterContext(null);
+            Logger.debug('Chapter context cleared', 'ChapterContext');
+            return;
+        }
+
+        // Get subchapters from ChapterTracker for navigation context
+        const subchapters = this.chapterTracker?.getSubchapters() || [];
+        const subsectionNames = subchapters.map(sub => sub.title);
+
+        // Build page references from the chapter info
+        const pageReferences = [];
+        if (chapter.pageId && chapter.pageName) {
+            pageReferences.push({
+                pageId: chapter.pageId,
+                pageName: chapter.pageName,
+                journalName: chapter.journalName || ''
+            });
+        }
+
+        // Get chapter content for summary (truncate if too long)
+        let summary = '';
+        if (chapter.content) {
+            summary = chapter.content.length > 500
+                ? chapter.content.substring(0, 500) + '...'
+                : chapter.content;
+        }
+
+        // Build the chapter context object
+        const chapterContext = {
+            chapterName: chapter.title || chapter.path || '',
+            subsections: subsectionNames,
+            pageReferences: pageReferences,
+            summary: summary
+        };
+
+        // Update AI assistant
+        this.aiAssistant.setChapterContext(chapterContext);
+        Logger.info(`AI chapter context updated: ${chapterContext.chapterName}`, 'ChapterContext');
+    }
+
+    /**
+     * Manually sets the current chapter by ID
+     * Updates both the ChapterTracker and AI Assistant context
+     * @param {string} chapterId - The chapter ID to set
+     * @returns {boolean} True if the chapter was found and set
+     */
+    setCurrentChapter(chapterId) {
+        if (!this.chapterTracker) {
+            Logger.warn('ChapterTracker not initialized', 'NarratorMaster.setCurrentChapter');
+            return false;
+        }
+
+        // Set the chapter in ChapterTracker
+        const success = this.chapterTracker.setManualChapter(chapterId);
+
+        if (success) {
+            // Get the updated chapter and update AI context
+            const chapter = this.chapterTracker.getCurrentChapter();
+            if (chapter) {
+                this._updateAIChapterContext(chapter);
+
+                // Update panel display
+                if (this.panel?.rendered) {
+                    this.panel.render(false);
+                }
+
+                Logger.info(`Chapter manually set to: ${chapter.title}`, 'NarratorMaster.setCurrentChapter');
+            }
+        }
+
+        return success;
+    }
+
+    /**
+     * Gets the current chapter information
+     * @returns {Object|null} The current chapter info or null
+     */
+    getCurrentChapter() {
+        return this.chapterTracker?.getCurrentChapter() || null;
+    }
+
+    /**
+     * Gets all available chapters for navigation
+     * @returns {Array} Array of chapter objects with id, title, level, path
+     */
+    getAllChapters() {
+        return this.chapterTracker?.getAllChapters() || [];
     }
 
     /**
@@ -449,23 +684,32 @@ class NarratorMaster {
                 this._startAudioLevelUpdates();
                 this._startTranscriptionCycles();
                 this._consecutiveTranscriptionErrors = 0;
+                // Start silence detection timer
+                this._resetSilenceTimer();
                 break;
 
             case RecordingState.PAUSED:
                 this.panel.setRecordingState(RECORDING_STATE.PAUSED);
                 this._stopAudioLevelUpdates();
                 this._stopTranscriptionCycles();
+                // Pause silence detection (don't trigger during pause)
+                this._clearSilenceTimer();
                 break;
 
             case RecordingState.STOPPING:
                 this.panel.setRecordingState(RECORDING_STATE.PROCESSING);
                 this._stopAudioLevelUpdates();
+                // Clear silence detection during stop
+                this._clearSilenceTimer();
                 break;
 
             case RecordingState.INACTIVE:
                 this.panel.setRecordingState(RECORDING_STATE.INACTIVE);
                 this._stopAudioLevelUpdates();
                 this._stopTranscriptionCycles();
+                // Clear silence detection and recovery state
+                this._clearSilenceTimer();
+                this._isSilenceRecoveryActive = false;
                 break;
         }
     }
@@ -545,6 +789,9 @@ class NarratorMaster {
                 Logger.debug('No text transcribed', 'TranscriptionCycle');
                 return;
             }
+
+            // Reset silence timer - we received valid transcription
+            this._resetSilenceTimer();
 
             // Store transcription internally for image generation context
             this.panel?.setLastTranscription(transcription.text);
@@ -680,6 +927,105 @@ class NarratorMaster {
             clearInterval(this._audioLevelInterval);
             this._audioLevelInterval = null;
         }
+    }
+
+    /**
+     * Resets the silence detection timer
+     * Called when a new transcription is received successfully
+     * Clears any active silence recovery UI and restarts the timer
+     * @private
+     */
+    _resetSilenceTimer() {
+        // Clear existing timeout
+        this._clearSilenceTimer();
+
+        // Update last transcription timestamp
+        this._lastTranscriptionTime = Date.now();
+
+        // Deactivate silence recovery mode if it was active
+        if (this._isSilenceRecoveryActive) {
+            this._isSilenceRecoveryActive = false;
+            if (this.panel) {
+                this.panel.hideSilenceRecovery?.();
+            }
+            Logger.debug('Silence recovery deactivated due to new transcription', 'SilenceDetection');
+        }
+
+        // Start new silence timer only if recording is active
+        if (this.audioCapture?.isRecording) {
+            this._silenceTimeoutId = setTimeout(() => {
+                this._onSilenceTimeout();
+            }, DEFAULT_SILENCE_TIMEOUT_MS);
+            Logger.debug(`Silence timer started (${DEFAULT_SILENCE_TIMEOUT_MS}ms)`, 'SilenceDetection');
+        }
+    }
+
+    /**
+     * Clears the silence detection timer without triggering recovery
+     * Used when stopping recording or cleaning up
+     * @private
+     */
+    _clearSilenceTimer() {
+        if (this._silenceTimeoutId) {
+            clearTimeout(this._silenceTimeoutId);
+            this._silenceTimeoutId = null;
+        }
+    }
+
+    /**
+     * Handles silence timeout - triggers chapter recovery UI
+     * Called when no transcription has been received for the configured timeout period
+     * @private
+     */
+    _onSilenceTimeout() {
+        // Only trigger if we're still recording
+        if (!this.audioCapture?.isRecording) {
+            Logger.debug('Silence timeout ignored - not recording', 'SilenceDetection');
+            return;
+        }
+
+        Logger.info('Silence detected - triggering chapter recovery UI', 'SilenceDetection');
+        this._isSilenceRecoveryActive = true;
+
+        // Get current chapter info from ChapterTracker
+        const currentChapter = this.chapterTracker?.getCurrentChapter();
+
+        // Generate recovery options from AIAssistant
+        let recoveryOptions = [];
+        if (this.aiAssistant && currentChapter) {
+            recoveryOptions = this.aiAssistant.generateChapterRecoveryOptions?.(currentChapter) || [];
+        }
+
+        // Notify panel to show silence recovery UI
+        if (this.panel) {
+            this.panel.showSilenceRecovery?.({
+                currentChapter,
+                recoveryOptions,
+                timeSinceLastTranscription: Date.now() - this._lastTranscriptionTime
+            });
+        }
+
+        // Show notification to GM
+        ui.notifications.info(game.i18n.localize('NARRATOR.Silence.Detected'));
+    }
+
+    /**
+     * Checks if silence recovery mode is currently active
+     * @returns {boolean} True if silence recovery UI is being shown
+     */
+    isSilenceRecoveryActive() {
+        return this._isSilenceRecoveryActive;
+    }
+
+    /**
+     * Gets the time elapsed since the last transcription
+     * @returns {number} Milliseconds since last transcription, or 0 if never recorded
+     */
+    getTimeSinceLastTranscription() {
+        if (this._lastTranscriptionTime === 0) {
+            return 0;
+        }
+        return Date.now() - this._lastTranscriptionTime;
     }
 
     /**
@@ -975,7 +1321,9 @@ class NarratorMaster {
                 transcription: this.transcriptionService?.isConfigured() ?? false,
                 aiAssistant: this.aiAssistant?.isConfigured() ?? false,
                 imageGenerator: this.imageGenerator?.isConfigured() ?? false,
-                journalParser: !!this.journalParser
+                journalParser: !!this.journalParser,
+                compendiumParser: !!this.compendiumParser,
+                chapterTracker: this.chapterTracker?.isConfigured() ?? false
             }
         };
     }
@@ -994,6 +1342,8 @@ class NarratorMaster {
         // Clear intervals and cycles
         this._stopAudioLevelUpdates();
         this._stopTranscriptionCycles();
+        this._clearSilenceTimer();
+        this._isSilenceRecoveryActive = false;
 
         // Close panel
         this.closePanel();

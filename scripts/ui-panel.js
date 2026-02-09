@@ -162,6 +162,39 @@ export class NarratorPanel extends Application {
          * @type {Array<{question: string, answer: string, citation: string, source: string, expanded: boolean, confidence: string, type: string, timestamp: number}>}
          */
         this.rulesAnswers = [];
+
+        /**
+         * Current chapter information for focused context
+         * @type {Object|null}
+         * @property {string} id - Chapter ID
+         * @property {string} title - Chapter title
+         * @property {string} content - Chapter content
+         */
+        this.currentChapter = null;
+
+        /**
+         * List of subchapters for navigation
+         * @type {Array<{id: string, title: string, level: number}>}
+         */
+        this.subchapters = [];
+
+        /**
+         * Whether silence recovery mode is active
+         * @type {boolean}
+         */
+        this.silenceRecoveryActive = false;
+
+        /**
+         * Recovery options for silence recovery
+         * @type {Array<{id: string, label: string, type: string, pageId?: string, journalName?: string, description?: string, isSuggested?: boolean}>}
+         */
+        this.recoveryOptions = [];
+
+        /**
+         * Callback for subchapter click events
+         * @type {Function|null}
+         */
+        this.onSubchapterClick = null;
     }
 
     /**
@@ -266,6 +299,15 @@ export class NarratorPanel extends Application {
             isLoading: this.isLoading,
             loadingMessage: this.loadingMessage,
 
+            // Chapter navigation
+            currentChapter: this.currentChapter,
+            hasChapter: this.currentChapter !== null,
+            subchapters: this.subchapters,
+            hasSubchapters: this.subchapters.length > 0,
+            silenceRecoveryActive: this.silenceRecoveryActive,
+            recoveryOptions: this.recoveryOptions,
+            hasRecoveryOptions: this.recoveryOptions.length > 0,
+
             // Localization keys for template
             i18n: {
                 startRecording: game.i18n.localize('NARRATOR.Panel.StartRecording'),
@@ -315,7 +357,23 @@ export class NarratorPanel extends Application {
                 collapseAnswer: game.i18n.localize('NARRATOR.Rules.CollapseAnswer'),
                 dismissRule: game.i18n.localize('NARRATOR.Rules.DismissRule'),
                 copyAnswer: game.i18n.localize('NARRATOR.Rules.CopyAnswer'),
-                clearAllRules: game.i18n.localize('NARRATOR.Rules.ClearAllRules')
+                clearAllRules: game.i18n.localize('NARRATOR.Rules.ClearAllRules'),
+                // Chapter navigation - keys must match template exactly
+                currentChapter: game.i18n.localize('NARRATOR.Chapter.CurrentChapter'),
+                subchapters: game.i18n.localize('NARRATOR.Panel.Subchapters') || 'Sottocapitoli',
+                noChapterDetected: game.i18n.localize('NARRATOR.Chapter.NoChapterDetected'),
+                selectChapterHint:
+                    game.i18n.localize('NARRATOR.Panel.SelectChapterHint') ||
+                    'Seleziona un journal o cambia scena',
+                backToParent: game.i18n.localize('NARRATOR.Panel.BackToParent') || 'Torna indietro',
+                navigateToChapter: game.i18n.localize('NARRATOR.Panel.NavigateToChapter') || 'Vai a',
+                // Silence recovery
+                silenceRecoveryTitle: game.i18n.localize('NARRATOR.Silence.RecoveryTitle'),
+                whereToResume: game.i18n.localize('NARRATOR.Silence.WhereToResume'),
+                noChapterContext: game.i18n.localize('NARRATOR.Silence.NoChapterContext'),
+                continueListening:
+                    game.i18n.localize('NARRATOR.Panel.ContinueListening') || 'Continua ad ascoltare',
+                dismissRecovery: game.i18n.localize('NARRATOR.Silence.DismissRecovery') || 'Chiudi'
             }
         };
     }
@@ -395,6 +453,13 @@ export class NarratorPanel extends Application {
         html.find('.dismiss-rule').click(this._onDismissRule.bind(this));
         html.find('.copy-rule-answer').click(this._onCopyRuleAnswer.bind(this));
         html.find('.clear-rules').click(this._onClearRules.bind(this));
+
+        // Chapter navigation controls
+        html.find('.subchapter-btn').click(this._onSubchapterItemClick.bind(this));
+        html.find('.chapter-back-btn').click(this._onChapterBackClick.bind(this));
+        html.find('.dismiss-recovery').click(this._onDismissSilenceRecovery.bind(this));
+        html.find('.recovery-option-btn').click(this._onRecoveryOptionClick.bind(this));
+        html.find('.continue-listening-btn').click(this._onDismissSilenceRecovery.bind(this));
     }
 
     /**
@@ -894,6 +959,69 @@ export class NarratorPanel extends Application {
     }
 
     /**
+     * Handles subchapter item click for chapter navigation
+     * @param {Event} event - Click event
+     * @private
+     */
+    _onSubchapterItemClick(event) {
+        event.preventDefault();
+        const chapterId = event.currentTarget.dataset.chapterId;
+        if (chapterId) {
+            this._handleSubchapterClick(chapterId);
+        }
+    }
+
+    /**
+     * Handles dismiss silence recovery button click
+     * @param {Event} event - Click event
+     * @private
+     */
+    _onDismissSilenceRecovery(event) {
+        event.preventDefault();
+        this.hideSilenceRecovery();
+    }
+
+    /**
+     * Handles chapter back button click
+     * @param {Event} event - Click event
+     * @private
+     */
+    _onChapterBackClick(event) {
+        event.preventDefault();
+        const chapterId = event.currentTarget.dataset.chapterId;
+        if (chapterId) {
+            this._handleSubchapterClick(chapterId);
+        }
+    }
+
+    /**
+     * Handles recovery option button click
+     * @param {Event} event - Click event
+     * @private
+     */
+    _onRecoveryOptionClick(event) {
+        event.preventDefault();
+        const optionId = event.currentTarget.dataset.optionId;
+        const optionType = event.currentTarget.dataset.optionType;
+        const pageId = event.currentTarget.dataset.pageId;
+
+        // Log for debugging
+        if (typeof console !== 'undefined') {
+            console.warn(`[Narrator Master] Recovery option selected: ${optionId} (type: ${optionType})`);
+        }
+
+        // Navigate to chapter based on selection
+        if (pageId) {
+            this._handleSubchapterClick(pageId);
+        } else if (optionId) {
+            this._handleSubchapterClick(optionId);
+        }
+
+        // Hide recovery UI
+        this.hideSilenceRecovery();
+    }
+
+    /**
      * Updates the panel with new content data
      * @param {Object} data - Content data to update
      * @param {Array<string>} [data.suggestions] - New AI suggestions
@@ -1187,6 +1315,89 @@ export class NarratorPanel extends Application {
         this.rulesAnswers = [];
         this.render(false);
         ui.notifications.info(game.i18n.localize('NARRATOR.Rules.RulesCleared'));
+    }
+
+    /**
+     * Sets the current chapter information for focused context navigation
+     * @param {Object|null} chapter - Chapter information object
+     * @param {string} chapter.id - Unique chapter identifier
+     * @param {string} chapter.title - Chapter title for display
+     * @param {string} [chapter.content] - Chapter content text
+     * @param {Array<{id: string, title: string, level: number}>} [chapter.subchapters] - List of subchapters
+     */
+    setChapterInfo(chapter) {
+        if (chapter && typeof chapter === 'object') {
+            this.currentChapter = {
+                id: chapter.id || '',
+                title: chapter.title || '',
+                content: chapter.content || ''
+            };
+
+            // Update subchapters if provided
+            if (Array.isArray(chapter.subchapters)) {
+                this.subchapters = chapter.subchapters.map((sub) => ({
+                    id: sub.id || '',
+                    title: sub.title || '',
+                    level: sub.level || 1
+                }));
+            }
+        } else {
+            this.currentChapter = null;
+            this.subchapters = [];
+        }
+
+        // Reset silence recovery when chapter changes
+        this.silenceRecoveryActive = false;
+
+        this.render(false);
+    }
+
+    /**
+     * Shows the silence recovery UI indicating the AI is waiting for player input
+     * This is displayed when no relevant player dialogue is detected for context analysis
+     */
+    showSilenceRecovery() {
+        this.silenceRecoveryActive = true;
+        this.render(false);
+    }
+
+    /**
+     * Hides the silence recovery UI
+     */
+    hideSilenceRecovery() {
+        this.silenceRecoveryActive = false;
+        this.render(false);
+    }
+
+    /**
+     * Handles subchapter navigation click
+     * @param {string} chapterId - The ID of the chapter to navigate to
+     * @private
+     */
+    _handleSubchapterClick(chapterId) {
+        if (this.onSubchapterClick && typeof this.onSubchapterClick === 'function') {
+            this.onSubchapterClick(chapterId);
+        }
+    }
+
+    /**
+     * Clears the current chapter info and subchapters
+     */
+    clearChapterInfo() {
+        this.currentChapter = null;
+        this.subchapters = [];
+        this.silenceRecoveryActive = false;
+        this.recoveryOptions = [];
+        this.render(false);
+    }
+
+    /**
+     * Sets the recovery options for silence recovery
+     * @param {Array<{id: string, label: string, type: string, pageId?: string, journalName?: string, description?: string, isSuggested?: boolean}>} options
+     */
+    setRecoveryOptions(options) {
+        this.recoveryOptions = Array.isArray(options) ? options : [];
+        this.render(false);
     }
 
     /**
