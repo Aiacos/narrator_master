@@ -157,7 +157,10 @@
             "ParsingJournal": "Analisi Journal in corso...",
             "JournalEmpty": "Il Journal selezionato e vuoto.",
             "PageCount": "{count} pagine trovate",
-            "UnnamedPage": "Pagina senza nome"
+            "UnnamedPage": "Pagina senza nome",
+            "SectionBreak": "--- Sezione ---",
+            "ChapterStructure": "Struttura Capitoli",
+            "NoChaptersFound": "Nessun capitolo trovato"
         },
 
         "Images": {

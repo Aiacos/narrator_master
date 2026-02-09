@@ -162,7 +162,10 @@
             "ParsingJournal": "Parsing Journal...",
             "JournalEmpty": "The selected Journal is empty.",
             "PageCount": "{count} pages found",
-            "UnnamedPage": "Unnamed page"
+            "UnnamedPage": "Unnamed page",
+            "SectionBreak": "--- Section ---",
+            "ChapterStructure": "Chapter Structure",
+            "NoChaptersFound": "No chapters found"
         },
         "Images": {
             "Generating": "Generating...",
