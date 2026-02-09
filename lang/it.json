@@ -19,7 +19,13 @@
             "SpeakerLabelsName": "Etichette Parlanti",
             "SpeakerLabelsHint": "Abilita l'assegnazione di nomi personalizzati ai parlanti rilevati nella trascrizione",
             "DebugModeName": "Modalità Debug",
-            "DebugModeHint": "Abilita messaggi di debug dettagliati nella console del browser. Utile per diagnosticare problemi e monitorare il comportamento del modulo"
+            "DebugModeHint": "Abilita messaggi di debug dettagliati nella console del browser. Utile per diagnosticare problemi e monitorare il comportamento del modulo",
+            "RulesDetectionName": "Rilevamento Regole",
+            "RulesDetectionHint": "Abilita il rilevamento automatico delle domande sulle regole nelle conversazioni",
+            "RulesSourceName": "Fonte Regole SRD",
+            "RulesSourceHint": "Seleziona quale compendio usare per le risposte sulle regole",
+            "RulesSourceAuto": "Automatico - Cerca in tutti i compendi",
+            "RulesSourceDnd5e": "D&D 5e - Solo compendi D&D 5e"
         },
 
         "Panel": {
@@ -52,7 +58,16 @@
             "NoTranscript": "Nessuna trascrizione disponibile",
             "ClearTranscript": "Cancella Trascrizione",
             "ExportTranscript": "Esporta Trascrizione",
-            "KeyboardShortcutsHelp": "Scorciatoie disponibili: Ctrl+Shift+R (avvia registrazione), Ctrl+Shift+S (ferma registrazione), Ctrl+Shift+P (pausa/riprendi registrazione)"
+            "KeyboardShortcutsHelp": "Scorciatoie disponibili: Ctrl+Shift+R (avvia registrazione), Ctrl+Shift+S (ferma registrazione), Ctrl+Shift+P (pausa/riprendi registrazione)",
+            "RulesTab": "Regole",
+            "ConfirmClearTranscript": "Sei sicuro di voler cancellare la trascrizione?",
+            "ConfirmClearImages": "Sei sicuro di voler cancellare tutte le immagini?",
+            "ConfirmDeleteImage": "Sei sicuro di voler eliminare questa immagine?",
+            "NPCDialogue": "Dialoghi PNG",
+            "NPCDialogueTitle": "Suggerimenti Dialoghi PNG",
+            "NoNPCDialogue": "Nessun suggerimento di dialogo PNG disponibile. I dialoghi verranno generati quando i PNG verranno menzionati nelle conversazioni.",
+            "CopyDialogue": "Copia Dialogo",
+            "DialogueFor": "Dialogo per {npc}"
         },
 
         "Errors": {
@@ -96,7 +111,12 @@
             "InvalidSpeaker": "ID parlante non valido",
             "InvalidLabel": "Etichetta parlante non valida",
             "EmptyLabel": "L'etichetta non può essere vuota",
-            "SaveMappingsFailed": "Impossibile salvare le mappature dei parlanti"
+            "SaveMappingsFailed": "Impossibile salvare le mappature dei parlanti",
+            "NPCNotFound": "PNG non trovato: {name}",
+            "NoNPCContext": "Nessun contesto disponibile per il PNG {name}",
+            "RulesSearchFailed": "Ricerca regole fallita: {message}",
+            "NoCompendiumsAvailable": "Nessun compendio disponibile per la ricerca delle regole",
+            "CompendiumAccessDenied": "Accesso al compendio negato"
         },
 
         "Warnings": {
@@ -178,7 +198,11 @@
             "GenerateImage": "Genera un'immagine basata sul contesto attuale",
             "ClearImages": "Cancella tutte le immagini generate",
             "CopyText": "Copia il testo negli appunti",
-            "OpenSettings": "Apri le impostazioni del modulo"
+            "OpenSettings": "Apri le impostazioni del modulo",
+            "ExpandRuleAnswer": "Espandi per vedere la risposta completa",
+            "CollapseRuleAnswer": "Nascondi risposta completa",
+            "DismissRuleAnswer": "Chiudi questa risposta sulle regole",
+            "CopyRuleAnswer": "Copia risposta negli appunti"
         },
 
         "KeyboardShortcuts": {
@@ -233,6 +257,56 @@
             "ColorCode": "Codice Colore",
             "SpeakerColor": "Colore Parlante {number}",
             "TranscriptionWithSpeakers": "Trascrizione con Parlanti"
+        },
+
+        "Scenes": {
+            "SceneBreak": "Interruzione Scena",
+            "SceneTypeExploration": "Esplorazione",
+            "SceneTypeCombat": "Combattimento",
+            "SceneTypeSocial": "Sociale",
+            "SceneTypeRest": "Riposo",
+            "SceneTransitionDetected": "Transizione scena rilevata",
+            "ManualSceneBreak": "Interruzione scena manuale",
+            "MarkSceneBreak": "Segna Interruzione Scena",
+            "SceneType": "Tipo Scena",
+            "AutomaticBreak": "Automatico",
+            "ManualBreak": "Manuale",
+            "SelectSceneType": "Seleziona il tipo di scena",
+            "SceneMarked": "Interruzione scena segnata",
+            "NoActiveScene": "Nessuna scena attiva"
+        },
+
+        "Rules": {
+            "NoRulesDetected": "Nessuna domanda sulle regole rilevata",
+            "QuestionDetected": "Domanda Rilevata",
+            "Answer": "Risposta",
+            "Source": "Fonte",
+            "Citation": "Citazione",
+            "ExpandAnswer": "Espandi Risposta",
+            "CollapseAnswer": "Chiudi Risposta",
+            "DismissRule": "Chiudi",
+            "CopyAnswer": "Copia Risposta",
+            "SearchingRules": "Ricerca regole...",
+            "NoAnswerFound": "Nessuna risposta trovata nelle fonti SRD",
+            "ConfidenceHigh": "Alta affidabilità",
+            "ConfidenceMedium": "Media affidabilità",
+            "ConfidenceLow": "Bassa affidabilità",
+            "FromCompendium": "Dal Compendio",
+            "PageReference": "Pagina {page}",
+            "MultipleAnswers": "{count} risposte trovate",
+            "QuestionType": "Tipo",
+            "QuestionTypeCombat": "Combattimento",
+            "QuestionTypeSpell": "Incantesimo",
+            "QuestionTypeCondition": "Condizione",
+            "QuestionTypeAbility": "Abilità",
+            "QuestionTypeMovement": "Movimento",
+            "QuestionTypeRest": "Riposo",
+            "QuestionTypeGeneral": "Generale",
+            "DetectedQuestion": "Domanda: {question}",
+            "AnswerFrom": "Risposta da {source}",
+            "ClearAllRules": "Cancella Tutte le Regole",
+            "RulesCleared": "Tutte le risposte sulle regole sono state cancellate",
+            "RuleAnswerCopied": "Risposta copiata negli appunti"
         },
 
         "Silence": {
