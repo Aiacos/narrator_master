@@ -198,6 +198,17 @@
             "SuggestionsList": "Lista suggerimenti"
         },
 
+        "Chapter": {
+            "CurrentChapter": "Capitolo Corrente",
+            "NoChapterDetected": "Nessun capitolo rilevato",
+            "SelectChapter": "Seleziona Capitolo"
+        },
+
+        "Grounding": {
+            "SourceNotFound": "Fonte non trovata nel journal",
+            "CitationRequired": "Citazione richiesta"
+        },
+
         "SpeakerLabels": {
             "Speaker": "Parlante",
             "SpeakerNumber": "Parlante {number}",
