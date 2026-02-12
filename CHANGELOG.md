@@ -7,19 +7,80 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/spec/v2.0
 
 ## [Unreleased]
 
-### Changed
-- **API Service Architecture** - Refactored API service classes to eliminate code duplication
-  - Created `BaseApiService` base class with common functionality (error handling, API key management, configuration checks)
-  - Refactored `TranscriptionService`, `AIAssistant`, and `ImageGenerator` to extend `BaseApiService`
-  - Standardized error handling patterns across all API services
-  - Improved code maintainability and consistency
-
 ### Planned
 - Integrazione con Discord per cattura audio alternativa
-- Supporto multilingua (oltre all'Italiano)
 - Ottimizzazioni per tier API a pagamento
 - Adattamenti UI per tablet/mobile
 - Funzionalità rivolte ai giocatori
+
+## [1.2.0] - 2026-02-12
+
+### Added
+
+#### Chapter-Aware System
+- **ChapterTracker** - Tracciamento posizione nell'avventura basato su journal e scena attiva
+  - Rilevamento automatico capitolo dalla scena Foundry VTT attiva
+  - Navigazione manuale tra capitoli/sottocapitoli
+  - Auto-selezione del journal più grande come avventura principale
+  - Metodi `getCurrentChapter()`, `getSubchapters()`, `updateFromScene()`
+
+- **CompendiumParser** - Lettura e indicizzazione contenuti dai Compendi Foundry VTT
+  - Parsing journal compendiums e rules compendiums
+  - Ricerca contenuti per keyword
+  - Integrazione con contesto AI per grounding
+
+- **Silence Detection & Recovery** - Rilevamento silenzi con navigazione capitoli
+  - Timer 30s per rilevamento assenza trascrizione
+  - UI di recovery con sottocapitoli cliccabili
+  - Opzioni di ripresa generate dall'AI basate sul contesto del capitolo
+  - Integrazione completa panel → controller → ChapterTracker
+
+- **Chapter Navigation UI** - Interfaccia navigazione capitoli nel pannello DM
+  - Sezione capitolo corrente con path gerarchico
+  - Lista sottocapitoli cliccabili per ripresa narrativa
+  - Normalizzazione dati ChapterTracker → template Handlebars
+
+#### Architecture Improvements
+- **OpenAIServiceBase** - Classe base condivisa per tutti i servizi API
+  - Gestione errori, API key, configuration checks centralizzati
+  - `TranscriptionService`, `AIAssistant`, `ImageGenerator` estendono la base
+  - Eliminazione duplicazione codice tra servizi
+
+- **Logger** - Utility di logging centralizzata
+  - Livelli debug/info/warn/error con context parameter
+  - Debug mode attivabile da settings
+  - Sostituzione completa di tutti i `console.*` diretti
+
+- **CacheManager** - Gestione cache centralizzata per contenuti journal
+
+- **ErrorNotificationHelper** - Gestione errori e notifiche UI centralizzata
+
+#### Localization
+- **7 lingue supportate** - en, it, de, es, fr, ja, pt
+  - Template per traduttori (`template.json`)
+  - Script di verifica traduzioni (`verify-translations.js`)
+  - Chiavi i18n per Recovery, Silence, Chapter, Grounding, Rules
+
+### Changed
+- **AI System Prompt** - Riscritto per essere focalizzato sul DM e grounded nei journal
+  - Anti-hallucination: suggerimenti basati solo su contenuti journal/compendi
+  - Context chapter-aware per suggerimenti più pertinenti
+  - Recovery options generate dal contesto del capitolo corrente
+
+- **Transcription Cycles** - Stop/restart periodico ogni 15s per WebM validi
+  - Circuit breaker dopo 5 errori consecutivi
+  - Throttling notifiche errore
+
+- **ESLint Config** - Aggiunta jQuery/$ ai globals per compatibilità Foundry VTT
+
+### Fixed
+- Fix loop errori trascrizione (header WebM incompleto)
+- Fix parametro `response_format` per gpt-image-1
+- Fix `showSilenceRecovery()` signature mismatch con panel
+- Fix callback `onSubchapterClick` non collegato
+- Fix mismatch proprietà template (title vs name)
+- Fix `== null` → `=== null || === undefined` (eqeqeq)
+- Rimozione import orfani dopo migrazione Logger
 
 ## [1.0.0] - 2026-02-06
 
@@ -152,5 +213,6 @@ e questo progetto aderisce al [Semantic Versioning](https://semver.org/spec/v2.0
 
 ---
 
-[unreleased]: https://github.com/narrator-master/narrator-master/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/narrator-master/narrator-master/releases/tag/v1.0.0
+[unreleased]: https://github.com/Aiacos/narrator_master/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/Aiacos/narrator_master/compare/v1.0.0...v1.2.0
+[1.0.0]: https://github.com/Aiacos/narrator_master/releases/tag/v1.0.0
