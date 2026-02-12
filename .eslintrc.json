@@ -30,7 +30,9 @@
         "FilePicker": "readonly",
         "loadTemplates": "readonly",
         "mergeObject": "readonly",
-        "ImagePopout": "readonly"
+        "ImagePopout": "readonly",
+        "$": "readonly",
+        "jQuery": "readonly"
     },
     "rules": {
         "no-unused-vars": [

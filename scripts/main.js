@@ -448,6 +448,7 @@ class NarratorMaster {
         // Set up panel callbacks
         this.panel.onRecordingControl = this._handleRecordingControl.bind(this);
         this.panel.onGenerateImage = this._handleGenerateImage.bind(this);
+        this.panel.onSubchapterClick = this._handleSubchapterNavigation.bind(this);
 
         // Connect speaker label service to panel
         if (this.speakerLabelService) {
@@ -492,6 +493,18 @@ class NarratorMaster {
                 this.panel.updateContent({
                     journalCount: parsedJournals.length
                 });
+            }
+
+            // Auto-select the largest journal as the adventure journal for ChapterTracker
+            if (this.chapterTracker && parsedJournals.length > 0) {
+                const largestJournal = parsedJournals.reduce((largest, current) =>
+                    current.totalCharacters > largest.totalCharacters ? current : largest
+                );
+                this.chapterTracker.setSelectedJournal(largestJournal.id);
+                Logger.info(
+                    `Auto-selected adventure journal: "${largestJournal.name}" (${largestJournal.totalCharacters} chars)`,
+                    'JournalLoader'
+                );
             }
 
             Logger.info(
@@ -613,6 +626,22 @@ class NarratorMaster {
 
         // Update AI assistant
         this.aiAssistant.setChapterContext(chapterContext);
+
+        // Update panel UI with chapter info and subchapters for navigation
+        if (this.panel) {
+            const subchapters = this.chapterTracker?.getSubchapters() || [];
+            this.panel.setChapterInfo({
+                id: chapter.id,
+                title: chapter.title,
+                path: chapter.path,
+                content: chapter.content,
+                pageId: chapter.pageId,
+                pageName: chapter.pageName,
+                journalName: chapter.journalName,
+                subchapters: subchapters
+            });
+        }
+
         Logger.info(`AI chapter context updated: ${chapterContext.chapterName}`, 'ChapterContext');
     }
 
@@ -989,17 +1018,24 @@ class NarratorMaster {
 
         // Get current chapter info from ChapterTracker
         const currentChapter = this.chapterTracker?.getCurrentChapter();
+        const subchapters = this.chapterTracker?.getSubchapters() || [];
 
-        // Generate recovery options from AIAssistant
+        // Build chapter context for AIAssistant recovery options
         let recoveryOptions = [];
         if (this.aiAssistant && currentChapter) {
-            recoveryOptions = this.aiAssistant.generateChapterRecoveryOptions?.(currentChapter) || [];
+            const chapterContext = this.aiAssistant.getChapterContext();
+            recoveryOptions = this.aiAssistant.generateChapterRecoveryOptions?.(chapterContext || currentChapter) || [];
         }
 
         // Notify panel to show silence recovery UI
         if (this.panel) {
-            this.panel.showSilenceRecovery?.({
-                currentChapter,
+            const chapterData = currentChapter ? {
+                ...currentChapter,
+                subchapters: subchapters
+            } : null;
+
+            this.panel.showSilenceRecovery({
+                currentChapter: chapterData,
                 recoveryOptions,
                 timeSinceLastTranscription: Date.now() - this._lastTranscriptionTime
             });
@@ -1026,6 +1062,23 @@ class NarratorMaster {
             return 0;
         }
         return Date.now() - this._lastTranscriptionTime;
+    }
+
+    /**
+     * Handles subchapter navigation clicks from the panel
+     * Sets the current chapter and updates all dependent systems
+     * @param {string} chapterId - The chapter ID to navigate to
+     * @private
+     */
+    _handleSubchapterNavigation(chapterId) {
+        if (!chapterId) { return; }
+
+        Logger.debug(`Subchapter navigation: ${chapterId}`, 'ChapterNavigation');
+        const success = this.setCurrentChapter(chapterId);
+
+        if (!success) {
+            Logger.warn(`Failed to navigate to chapter: ${chapterId}`, 'ChapterNavigation');
+        }
     }
 
     /**

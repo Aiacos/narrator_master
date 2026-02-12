@@ -314,6 +314,13 @@
             "RuleAnswerCopied": "Risposta copiata negli appunti"
         },
 
+        "Recovery": {
+            "SubsectionOf": "Sottosezione di {chapter}",
+            "Subsection": "Sottosezione",
+            "PageIn": "Pagina in {journal}",
+            "Page": "Pagina",
+            "ChapterSummary": "Riepilogo Capitolo"
+        },
         "Silence": {
             "Detected": "Silenzio rilevato - Consulta il pannello per opzioni di ripresa narrativa",
             "RecoveryTitle": "Dove riprendere?",

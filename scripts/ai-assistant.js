@@ -4,9 +4,8 @@
  * @module ai-assistant
  */
 
-import { MODULE_ID, SETTINGS } from './settings.js';
-import { SceneDetector } from './scene-detector.js';
 import { OpenAIServiceBase } from './openai-service-base.js';
+import { Logger } from './logger.js';
 
 /**
  * Default model for cost-effective suggestions
@@ -348,7 +347,7 @@ export class AIAssistant extends OpenAIServiceBase {
 
         // Return empty array if no chapter provided
         if (!currentChapter || typeof currentChapter !== 'object') {
-            console.warn(`${MODULE_ID} | No chapter context provided for recovery options`);
+            Logger.warn('No chapter context provided for recovery options', 'AIAssistant.generateChapterRecoveryOptions');
             return options;
         }
 
@@ -407,7 +406,7 @@ export class AIAssistant extends OpenAIServiceBase {
             });
         }
 
-        console.log(`${MODULE_ID} | Generated ${options.length} chapter recovery options`);
+        Logger.debug(`Generated ${options.length} chapter recovery options`, 'AIAssistant.generateChapterRecoveryOptions');
 
         return options;
     }
@@ -434,7 +433,7 @@ export class AIAssistant extends OpenAIServiceBase {
         const checkOffTrack = options.checkOffTrack !== false;
         const detectRules = options.detectRules !== false;
 
-        console.log(`${MODULE_ID} | Analyzing context, transcription length: ${transcription.length}`);
+        Logger.debug(`Analyzing context, transcription length: ${transcription.length}`, 'AIAssistant.analyzeContext');
 
         // Detect languages in transcription
         const detectedLanguages = this._detectLanguagesInTranscription(transcription);
@@ -444,7 +443,7 @@ export class AIAssistant extends OpenAIServiceBase {
         if (detectRules) {
             rulesDetection = this._detectRulesQuestions(transcription);
             if (rulesDetection.hasRulesQuestions) {
-                console.log(`${MODULE_ID} | Detected ${rulesDetection.questions.length} rules question(s)`);
+                Logger.debug(`Detected ${rulesDetection.questions.length} rules question(s)`, 'AIAssistant.analyzeContext');
             }
         }
 
@@ -470,7 +469,7 @@ export class AIAssistant extends OpenAIServiceBase {
 
             this._sessionState.suggestionsCount++;
 
-            console.log(`${MODULE_ID} | Analysis complete, ${analysis.suggestions.length} suggestions`);
+            Logger.info(`Analysis complete, ${analysis.suggestions.length} suggestions`, 'AIAssistant.analyzeContext');
 
             // Store current transcription for next comparison
             this._previousTranscription = transcription;
@@ -500,7 +499,7 @@ export class AIAssistant extends OpenAIServiceBase {
         }
 
         if (!this._adventureContext) {
-            console.warn(`${MODULE_ID} | No adventure context set, skipping off-track detection`);
+            Logger.warn('No adventure context set, skipping off-track detection', 'AIAssistant.detectOffTrack');
             return {
                 isOffTrack: false,
                 severity: 0,
@@ -508,7 +507,7 @@ export class AIAssistant extends OpenAIServiceBase {
             };
         }
 
-        console.log(`${MODULE_ID} | Checking off-track status`);
+        Logger.debug('Checking off-track status', 'AIAssistant.detectOffTrack');
 
         // Detect languages in transcription
         const detectedLanguages = this._detectLanguagesInTranscription(transcription);
@@ -545,7 +544,7 @@ export class AIAssistant extends OpenAIServiceBase {
 
         const maxSuggestions = options.maxSuggestions || 3;
 
-        console.log(`${MODULE_ID} | Generating suggestions`);
+        Logger.debug('Generating suggestions', 'AIAssistant.generateSuggestions');
 
         // Detect languages in transcription
         const detectedLanguages = this._detectLanguagesInTranscription(transcription);
@@ -576,7 +575,7 @@ export class AIAssistant extends OpenAIServiceBase {
             throw new Error(game.i18n.localize('NARRATOR.Errors.NoApiKey'));
         }
 
-        console.log(`${MODULE_ID} | Generating narrative bridge`);
+        Logger.debug('Generating narrative bridge', 'AIAssistant.generateNarrativeBridge');
 
         try {
             const messages = this._buildNarrativeBridgeMessages(currentSituation, targetScene);
@@ -614,7 +613,7 @@ export class AIAssistant extends OpenAIServiceBase {
 
         const maxOptions = options.maxOptions || 3;
 
-        console.log(`${MODULE_ID} | Generating NPC dialogue for ${npcName}`);
+        Logger.debug(`Generating NPC dialogue for ${npcName}`, 'AIAssistant.generateNPCDialogue');
 
         // Detect languages in transcription
         const detectedLanguages = this._detectLanguagesInTranscription(transcription);
@@ -642,19 +641,16 @@ export class AIAssistant extends OpenAIServiceBase {
      */
     detectNPCMentions(transcription, npcList) {
         if (!transcription || typeof transcription !== 'string') {
-            console.warn(`${MODULE_ID} | Invalid transcription provided to detectNPCMentions`);
+            Logger.warn('Invalid transcription provided to detectNPCMentions', 'AIAssistant.detectNPCMentions');
             return [];
         }
 
         if (!Array.isArray(npcList) || npcList.length === 0) {
-            console.warn(`${MODULE_ID} | No NPCs provided to detectNPCMentions`);
+            Logger.warn('No NPCs provided to detectNPCMentions', 'AIAssistant.detectNPCMentions');
             return [];
         }
 
-        console.log(`${MODULE_ID} | Detecting NPC mentions in transcription (${npcList.length} NPCs to check)`);
-
-        // Normalize transcription for case-insensitive matching
-        const normalizedTranscription = transcription.toLowerCase();
+        Logger.debug(`Detecting NPC mentions in transcription (${npcList.length} NPCs to check)`, 'AIAssistant.detectNPCMentions');
 
         // Find NPCs mentioned in the transcription
         const mentionedNPCs = [];
@@ -678,7 +674,7 @@ export class AIAssistant extends OpenAIServiceBase {
             }
         }
 
-        console.log(`${MODULE_ID} | Found ${mentionedNPCs.length} NPC mentions: ${mentionedNPCs.join(', ')}`);
+        Logger.debug(`Found ${mentionedNPCs.length} NPC mentions: ${mentionedNPCs.join(', ')}`, 'AIAssistant.detectNPCMentions');
 
         return mentionedNPCs;
     }
@@ -1199,7 +1195,7 @@ Rispondi in formato JSON:
             });
         } catch (networkError) {
             // Handle network errors (no connection, timeout, etc.)
-            console.error(`${MODULE_ID} | Network error during AI request:`, networkError);
+            Logger.error(networkError, 'AIAssistant._makeApiRequest');
             throw this._createNetworkError(networkError);
         }
 
@@ -1263,7 +1259,7 @@ Rispondi in formato JSON:
             };
 
         } catch (error) {
-            console.warn(`${MODULE_ID} | Failed to parse analysis response as JSON, using fallback`);
+            Logger.warn('Failed to parse analysis response as JSON, using fallback', 'AIAssistant._parseAnalysisResponse');
 
             // Apply validation even to fallback content
             const sanitizedContent = this._validateString(content, 5000, 'fallback.content');
@@ -1309,7 +1305,7 @@ Rispondi in formato JSON:
             };
 
         } catch (error) {
-            console.warn(`${MODULE_ID} | Failed to parse off-track response, returning default`);
+            Logger.warn('Failed to parse off-track response, returning default', 'AIAssistant._parseOffTrackResponse');
             return {
                 isOffTrack: false,
                 severity: 0,
@@ -1347,7 +1343,7 @@ Rispondi in formato JSON:
             return validatedSuggestions;
 
         } catch (error) {
-            console.warn(`${MODULE_ID} | Failed to parse suggestions response`);
+            Logger.warn('Failed to parse suggestions response', 'AIAssistant._parseSuggestionsResponse');
 
             // Apply validation even to fallback content
             const sanitizedContent = this._validateString(content, 5000, 'fallback.content');
@@ -1385,7 +1381,7 @@ Rispondi in formato JSON:
             return validatedOptions;
 
         } catch (error) {
-            console.warn(`${MODULE_ID} | Failed to parse NPC dialogue response`);
+            Logger.warn('Failed to parse NPC dialogue response', 'AIAssistant._parseNPCDialogueResponse');
 
             // Apply validation even to fallback content
             const sanitizedContent = this._validateString(content, 2000, 'fallback.dialogueOption');
@@ -1458,7 +1454,7 @@ Rispondi in formato JSON:
      */
     _validateString(str, maxLength, fieldName) {
         // Handle null/undefined
-        if (str == null) {
+        if (str === null || str === undefined) {
             return '';
         }
 
@@ -1467,8 +1463,9 @@ Rispondi in formato JSON:
 
         // Check for excessive length
         if (stringValue.length > maxLength) {
-            console.warn(
-                `${MODULE_ID} | ${fieldName} exceeds max length (${stringValue.length} > ${maxLength}), truncating`
+            Logger.warn(
+                `${fieldName} exceeds max length (${stringValue.length} > ${maxLength}), truncating`,
+                'AIAssistant._validateString'
             );
             return stringValue.substring(0, maxLength);
         }
@@ -1487,7 +1484,7 @@ Rispondi in formato JSON:
      */
     _validateNumber(num, min, max, fieldName) {
         // Handle null/undefined
-        if (num == null) {
+        if (num === null || num === undefined) {
             return min;
         }
 
@@ -1496,18 +1493,18 @@ Rispondi in formato JSON:
 
         // Handle NaN
         if (isNaN(numValue)) {
-            console.warn(`${MODULE_ID} | ${fieldName} is not a valid number, using min value`);
+            Logger.warn(`${fieldName} is not a valid number, using min value`, 'AIAssistant._validateNumber');
             return min;
         }
 
         // Clamp to range
         if (numValue < min) {
-            console.warn(`${MODULE_ID} | ${fieldName} below min (${numValue} < ${min}), clamping`);
+            Logger.warn(`${fieldName} below min (${numValue} < ${min}), clamping`, 'AIAssistant._validateNumber');
             return min;
         }
 
         if (numValue > max) {
-            console.warn(`${MODULE_ID} | ${fieldName} above max (${numValue} > ${max}), clamping`);
+            Logger.warn(`${fieldName} above max (${numValue} > ${max}), clamping`, 'AIAssistant._validateNumber');
             return max;
         }
 
@@ -1524,20 +1521,21 @@ Rispondi in formato JSON:
      */
     _validateArray(arr, maxItems, fieldName) {
         // Handle null/undefined
-        if (arr == null) {
+        if (arr === null || arr === undefined) {
             return [];
         }
 
         // Ensure it's an array
         if (!Array.isArray(arr)) {
-            console.warn(`${MODULE_ID} | ${fieldName} is not an array, converting to empty array`);
+            Logger.warn(`${fieldName} is not an array, converting to empty array`, 'AIAssistant._validateArray');
             return [];
         }
 
         // Check for excessive size
         if (arr.length > maxItems) {
-            console.warn(
-                `${MODULE_ID} | ${fieldName} exceeds max items (${arr.length} > ${maxItems}), truncating`
+            Logger.warn(
+                `${fieldName} exceeds max items (${arr.length} > ${maxItems}), truncating`,
+                'AIAssistant._validateArray'
             );
             return arr.slice(0, maxItems);
         }

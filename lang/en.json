@@ -295,6 +295,13 @@
             "RulesCleared": "All rules answers have been cleared",
             "RuleAnswerCopied": "Answer copied to clipboard"
         },
+        "Recovery": {
+            "SubsectionOf": "Subsection of {chapter}",
+            "Subsection": "Subsection",
+            "PageIn": "Page in {journal}",
+            "Page": "Page",
+            "ChapterSummary": "Chapter Summary"
+        },
         "Silence": {
             "Detected": "Silence detected - Check the panel for narrative recovery options",
             "RecoveryTitle": "Where to resume?",

@@ -1319,26 +1319,44 @@ export class NarratorPanel extends Application {
 
     /**
      * Sets the current chapter information for focused context navigation
-     * @param {Object|null} chapter - Chapter information object
+     * Accepts data from ChapterTracker (title, path, pageId, pageName) and normalizes
+     * it for template rendering (name, pageReference, parentId, parentName)
+     * @param {Object|null} chapter - Chapter information object from ChapterTracker
      * @param {string} chapter.id - Unique chapter identifier
      * @param {string} chapter.title - Chapter title for display
+     * @param {string} [chapter.path] - Hierarchical path (e.g. "Chapter 1 > The Tavern")
      * @param {string} [chapter.content] - Chapter content text
+     * @param {string} [chapter.pageId] - Page ID containing this chapter
+     * @param {string} [chapter.pageName] - Page name containing this chapter
+     * @param {string} [chapter.journalName] - Journal name
      * @param {Array<{id: string, title: string, level: number}>} [chapter.subchapters] - List of subchapters
      */
     setChapterInfo(chapter) {
         if (chapter && typeof chapter === 'object') {
+            // Extract parent from path for back navigation
+            const pathParts = (chapter.path || '').split(' > ');
+            const parentName = pathParts.length > 1 ? pathParts[pathParts.length - 2] : '';
+
             this.currentChapter = {
                 id: chapter.id || '',
-                title: chapter.title || '',
-                content: chapter.content || ''
+                // Template uses 'name' for display
+                name: chapter.title || chapter.name || '',
+                title: chapter.title || chapter.name || '',
+                content: chapter.content || '',
+                path: chapter.path || '',
+                pageReference: chapter.pageName || '',
+                parentName: parentName,
+                parentId: '' // Will be set by ChapterTracker navigation if available
             };
 
-            // Update subchapters if provided
+            // Update subchapters if provided (normalize title → name for template)
             if (Array.isArray(chapter.subchapters)) {
                 this.subchapters = chapter.subchapters.map((sub) => ({
                     id: sub.id || '',
-                    title: sub.title || '',
-                    level: sub.level || 1
+                    name: sub.title || sub.name || '',
+                    title: sub.title || sub.name || '',
+                    level: sub.level || 1,
+                    hasChildren: false
                 }));
             }
         } else {
@@ -1353,11 +1371,26 @@ export class NarratorPanel extends Application {
     }
 
     /**
-     * Shows the silence recovery UI indicating the AI is waiting for player input
-     * This is displayed when no relevant player dialogue is detected for context analysis
+     * Shows the silence recovery UI with chapter navigation options
+     * Called when no transcription is received for the configured timeout period
+     * @param {Object} [data={}] - Recovery context data
+     * @param {Object} [data.currentChapter] - Current chapter info from ChapterTracker
+     * @param {Array} [data.recoveryOptions] - Recovery options from AIAssistant
+     * @param {number} [data.timeSinceLastTranscription] - Time in ms since last transcription
      */
-    showSilenceRecovery() {
+    showSilenceRecovery(data = {}) {
         this.silenceRecoveryActive = true;
+
+        // Update chapter info if provided
+        if (data.currentChapter) {
+            this.setChapterInfo(data.currentChapter);
+        }
+
+        // Update recovery options if provided
+        if (Array.isArray(data.recoveryOptions)) {
+            this.recoveryOptions = data.recoveryOptions;
+        }
+
         this.render(false);
     }
 
