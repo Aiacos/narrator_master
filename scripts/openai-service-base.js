@@ -20,6 +20,7 @@ export class OpenAIServiceBase {
      * @param {number} [options.retryBaseDelay=1000] - Base delay in ms for exponential backoff
      * @param {number} [options.retryMaxDelay=60000] - Maximum delay in ms between retries
      * @param {boolean} [options.retryEnabled=true] - Enable automatic retry with exponential backoff
+     * @param {number} [options.maxQueueSize=100] - Maximum number of requests that can be queued
      */
     constructor(apiKey, options = {}) {
         /**
@@ -61,6 +62,27 @@ export class OpenAIServiceBase {
             maxDelay: options.retryMaxDelay ?? 60000,     // 60 seconds
             enabled: options.retryEnabled ?? true
         };
+
+        /**
+         * Request queue for managing concurrent API requests
+         * @type {Array<{operation: Function, resolve: Function, reject: Function, context: Object}>}
+         * @private
+         */
+        this._requestQueue = [];
+
+        /**
+         * Flag indicating if the queue is currently being processed
+         * @type {boolean}
+         * @private
+         */
+        this._isProcessingQueue = false;
+
+        /**
+         * Maximum number of requests that can be queued
+         * @type {number}
+         * @private
+         */
+        this._maxQueueSize = options.maxQueueSize ?? 100;
     }
 
     /**
