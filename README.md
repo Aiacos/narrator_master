@@ -17,6 +17,7 @@ Narrator Master is a Foundry VTT module that helps Dungeon Masters run their ses
 - **Off-Track Detection** - Receive red-highlighted warnings when players deviate from the planned adventure
 - **Adaptive Storytelling** - Generate narrative bridges to guide players back on track while staying faithful to the adventure
 - **Image Generation** - Create infographics and scene illustrations on demand via OpenAI's image generation
+- **Automatic Retry & Request Queuing** - Built-in exponential backoff retry for transient failures and intelligent request queuing to prevent rate limiting
 - **Multilingual Interface** - Full English and Italian localization for all UI elements
 
 ## Requirements
@@ -105,6 +106,48 @@ mklink /D "%localappdata%\FoundryVTT\Data\modules\narrator-master" "C:\path\to\n
 | **Mostra Etichette Parlanti** | Display speaker labels in transcription | On |
 | **Sensibilità Deviazione** | How sensitive off-track detection should be (low/medium/high) | Medium |
 | **Posizione Pannello** | Remember panel position between sessions | On |
+
+### 4. Advanced API Settings (Optional)
+
+Narrator Master includes robust retry and queuing mechanisms to ensure reliable OpenAI API communication, even under challenging network conditions or rate limits.
+
+#### Automatic Retry Features
+
+The module automatically retries failed API requests using **exponential backoff with jitter**:
+
+- **Retryable Errors**: Network failures, rate limits (HTTP 429), server errors (5xx)
+- **Non-Retryable Errors**: Invalid API key (401), bad requests (400), file too large (413)
+- **Smart Delays**: Respects OpenAI's `Retry-After` headers and uses exponential backoff (1s → 2s → 4s → ...)
+- **Jitter**: Adds randomness (0-25%) to prevent thundering herd problems
+
+#### Request Queue
+
+All API requests are processed sequentially through a queue system:
+
+- **Rate Limit Protection**: Prevents hitting OpenAI rate limits by processing one request at a time
+- **Priority Support**: Critical requests (e.g., off-track detection) can be prioritized
+- **Memory Safe**: Queue size limits prevent memory exhaustion during high load
+
+#### Configuration Options
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| **Abilita Retry Automatico** | Enable automatic retry for failed API requests | On |
+| **Tentativi Massimi di Retry** | Maximum number of retry attempts before giving up | 3 |
+| **Ritardo Base Retry (ms)** | Base delay in milliseconds (before exponential backoff) | 1000 |
+| **Ritardo Massimo Retry (ms)** | Maximum delay between retries (caps exponential growth) | 30000 |
+| **Dimensione Massima Coda** | Maximum number of requests that can be queued | 10 |
+
+> **Note**: Most users should use the default settings. Only adjust these if you experience frequent rate limiting or have specific API quota constraints.
+
+#### What This Means for You
+
+- **Temporary network issues** are handled automatically - no manual intervention needed
+- **Rate limit errors** trigger automatic retry with appropriate delays
+- **Multiple concurrent requests** are queued to prevent overwhelming the API
+- **Failed requests** are retried up to 3 times before showing an error notification
+
+You can monitor queue activity in the browser console (F12) when debug logging is enabled.
 
 ## Usage
 
@@ -231,7 +274,7 @@ Below are the **5 most common issues** and their quick solutions:
 |-------|-------|----------|
 | `Chiave API non configurata` | No API key entered | Add your OpenAI API key in settings |
 | `Errore di rete` | Connection issue | Check internet connection |
-| `Limite di rate superato` | Too many API requests | Wait a moment, consider upgrading OpenAI plan |
+| `Limite di rate superato` | Too many API requests | Module automatically retries with backoff; consider upgrading OpenAI plan if persistent |
 | `File troppo grande` | Audio exceeds 25MB | Module should auto-chunk; report if persists |
 | `Permesso microfono negato` | Browser blocked microphone | Allow microphone in browser settings |
 
