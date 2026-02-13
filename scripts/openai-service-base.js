@@ -369,6 +369,52 @@ export class OpenAIServiceBase {
     }
 
     /**
+     * Enqueues a request for processing with optional priority
+     * @param {Function} operation - Async function to execute
+     * @param {Object} [context={}] - Context information for the request
+     * @param {number} [priority=0] - Priority level (higher = more important, 0 = normal)
+     * @returns {Promise<*>} Promise that resolves with the operation result
+     * @throws {Error} If queue is full
+     * @private
+     */
+    _enqueueRequest(operation, context = {}, priority = 0) {
+        // Check if queue is full
+        if (this._requestQueue.length >= this._maxQueueSize) {
+            throw new Error(`Request queue full (${this._maxQueueSize} requests). Try again later.`);
+        }
+
+        // Create a promise that will be resolved when the operation executes
+        return new Promise((resolve, reject) => {
+            const request = {
+                operation,
+                resolve,
+                reject,
+                context,
+                priority
+            };
+
+            // Insert based on priority (higher priority first)
+            if (priority > 0) {
+                // Find the insertion point (first item with lower priority)
+                const insertIndex = this._requestQueue.findIndex(req => req.priority < priority);
+                if (insertIndex === -1) {
+                    // No lower priority found, add to end
+                    this._requestQueue.push(request);
+                } else {
+                    // Insert at the found position
+                    this._requestQueue.splice(insertIndex, 0, request);
+                }
+            } else {
+                // No priority (or priority 0), add to end (FIFO for normal priority)
+                this._requestQueue.push(request);
+            }
+
+            // Note: Queue processing will be triggered by _processQueue() (implemented in subtask-3-3)
+            // For now, requests are queued but not automatically processed
+        });
+    }
+
+    /**
      * Gets statistics about the service
      * This is an abstract method that should be overridden by subclasses
      * @returns {Object} Service statistics
