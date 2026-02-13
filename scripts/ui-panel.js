@@ -1155,6 +1155,14 @@ export class NarratorPanel extends Application {
      * @param {number} segment.timestamp - Timestamp in milliseconds
      * @private
      */
+    /**
+     * Appends a single transcript segment to the DOM without full re-render
+     * @param {Object} segment - Transcript segment to append
+     * @param {string} segment.speaker - Speaker label
+     * @param {string} segment.text - Transcript text
+     * @param {number} segment.timestamp - Timestamp in milliseconds
+     * @private
+     */
     _appendTranscriptSegment(segment) {
         if (!segment || !segment.speaker || !segment.text) {
             return;
@@ -1169,19 +1177,24 @@ export class NarratorPanel extends Application {
         // Format the timestamp
         const formattedTimestamp = this._formatTimestamp(segment.timestamp);
 
-        // Create the segment DOM element
-        const segmentHtml = `
-            <div class="transcript-segment" data-speaker="${segment.speaker}" data-timestamp="${segment.timestamp}">
-                <div class="segment-header">
-                    <span class="speaker-label">${segment.speaker}</span>
-                    <span class="transcript-timestamp">${formattedTimestamp}</span>
-                </div>
-                <div class="transcript-text">${segment.text}</div>
-            </div>
-        `;
+        // Create DOM elements safely using jQuery
+        // .attr() and .text() automatically escape HTML
+        const $segment = $('<div class="transcript-segment"></div>')
+            .attr('data-speaker', segment.speaker)
+            .attr('data-timestamp', segment.timestamp);
 
-        // Append to the transcript list
-        transcriptList.append(segmentHtml);
+        const $header = $('<div class="segment-header"></div>');
+        $header.append(
+            $('<span class="speaker-label"></span>').text(segment.speaker)
+        );
+        $header.append(
+            $('<span class="transcript-timestamp"></span>').text(formattedTimestamp)
+        );
+
+        const $text = $('<div class="transcript-text"></div>').text(segment.text);
+
+        $segment.append($header).append($text);
+        transcriptList.append($segment);
     }
 
     /**
