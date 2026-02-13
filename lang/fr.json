@@ -22,7 +22,17 @@
             "RulesSourceName": "SRD Rules Source",
             "RulesSourceHint": "Select which compendium to use for rules answers",
             "RulesSourceAuto": "Automatic - Search all compendia",
-            "RulesSourceDnd5e": "D&D 5e - Only D&D 5e compendia"
+            "RulesSourceDnd5e": "D&D 5e - Only D&D 5e compendia",
+            "ApiRetryEnabledName": "Activer les Tentatives Automatiques",
+            "ApiRetryEnabledHint": "Réessayer automatiquement les requêtes API échouées avec un délai exponentiel",
+            "ApiRetryMaxAttemptsName": "Tentatives Maximales",
+            "ApiRetryMaxAttemptsHint": "Nombre maximum de tentatives de réessai pour les requêtes API échouées (0-10)",
+            "ApiRetryBaseDelayName": "Délai de Base (ms)",
+            "ApiRetryBaseDelayHint": "Délai initial en millisecondes avant la première tentative de réessai",
+            "ApiRetryMaxDelayName": "Délai Maximum (ms)",
+            "ApiRetryMaxDelayHint": "Délai maximum en millisecondes entre les réessais (limite du délai exponentiel)",
+            "ApiQueueMaxSizeName": "Taille Maximale de la File",
+            "ApiQueueMaxSizeHint": "Nombre maximum de requêtes API pouvant être mises en file d'attente simultanément"
         },
         "Panel": {
             "Title": "Narrator Master",
@@ -109,7 +119,8 @@
             "NoNPCContext": "No context available for NPC {name}",
             "RulesSearchFailed": "Rules search failed: {message}",
             "NoCompendiumsAvailable": "No compendia available for rules search",
-            "CompendiumAccessDenied": "Compendium access denied"
+            "CompendiumAccessDenied": "Compendium access denied",
+            "RateLimitedRetrying": "Limite de requêtes atteinte. Nouvelle tentative automatique..."
         },
         "Warnings": {
             "ConfigIncomplete": "Configuration incomplète"
@@ -126,7 +137,11 @@
             "ApiKeyUpdated": "Clé API mise à jour",
             "MicrophoneReady": "Microphone prêt pour l'enregistrement",
             "PlayersOffTrack": "Attention : Les joueurs s'éloignent de l'intrigue !",
-            "TranscriptExported": "Transcript exported"
+            "TranscriptExported": "Transcript exported",
+            "RetryingRequest": "Tentative {attempt}/{max} pour {operation}... attente de {delay}s",
+            "RetrySuccess": "{operation} terminée après {attempts} tentative(s)",
+            "RetryFailed": "{operation} échouée après {attempts} tentative(s)",
+            "QueueFull": "File de requêtes pleine ({size}). Réessayez plus tard."
         },
         "OffTrack": {
             "NoContext": "Aucun contexte d'aventure défini pour la détection hors-sujet.",
