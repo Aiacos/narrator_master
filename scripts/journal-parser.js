@@ -183,12 +183,19 @@ export class JournalParser {
             return '';
         }
 
-        // Create a temporary DOM element to parse HTML
-        const div = document.createElement('div');
-        div.innerHTML = html;
+        // Lazily create cached DOM element on first use
+        if (!this._stripHtmlElement) {
+            this._stripHtmlElement = document.createElement('div');
+        }
+
+        // Reuse the cached element instead of creating a new one
+        this._stripHtmlElement.innerHTML = html;
 
         // Get text content, handling nested elements
-        let text = div.textContent || div.innerText || '';
+        let text = this._stripHtmlElement.textContent || this._stripHtmlElement.innerText || '';
+
+        // Clear the element after use to prevent state leakage between calls
+        this._stripHtmlElement.innerHTML = '';
 
         // Normalize whitespace
         text = text.replace(/\s+/g, ' ').trim();
