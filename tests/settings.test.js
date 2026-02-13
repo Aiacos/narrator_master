@@ -4,7 +4,7 @@
  * @module tests/settings
  */
 
-import { setupMockGame, cleanupMocks, MockSettings, assert, TestRunner } from './test-helper.js';
+import { setupMockGame, cleanupMocks, assert, TestRunner } from './test-helper.js';
 
 // Note: We need to set up mocks before importing the module
 let MODULE_ID, SETTINGS, registerSettings, SettingsManager;
@@ -514,13 +514,13 @@ export async function runTests() {
         const manager = new SettingsManager();
         const all = manager.getAllSettings();
 
-        assert.ok(all.hasOwnProperty('apiKey'), 'Should have apiKey');
-        assert.ok(all.hasOwnProperty('selectedJournal'), 'Should have selectedJournal');
-        assert.ok(all.hasOwnProperty('autoStartRecording'), 'Should have autoStartRecording');
-        assert.ok(all.hasOwnProperty('transcriptionLanguage'), 'Should have transcriptionLanguage');
-        assert.ok(all.hasOwnProperty('panelPosition'), 'Should have panelPosition');
-        assert.ok(all.hasOwnProperty('showSpeakerLabels'), 'Should have showSpeakerLabels');
-        assert.ok(all.hasOwnProperty('offTrackSensitivity'), 'Should have offTrackSensitivity');
+        assert.ok(Object.hasOwn(all, 'apiKey'), 'Should have apiKey');
+        assert.ok(Object.hasOwn(all, 'selectedJournal'), 'Should have selectedJournal');
+        assert.ok(Object.hasOwn(all, 'autoStartRecording'), 'Should have autoStartRecording');
+        assert.ok(Object.hasOwn(all, 'transcriptionLanguage'), 'Should have transcriptionLanguage');
+        assert.ok(Object.hasOwn(all, 'panelPosition'), 'Should have panelPosition');
+        assert.ok(Object.hasOwn(all, 'showSpeakerLabels'), 'Should have showSpeakerLabels');
+        assert.ok(Object.hasOwn(all, 'offTrackSensitivity'), 'Should have offTrackSensitivity');
 
         assert.equal(all.apiKey, 'test-key', 'API key should match');
         assert.equal(all.selectedJournal, 'test-journal', 'Journal should match');

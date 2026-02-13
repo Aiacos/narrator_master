@@ -8,7 +8,6 @@ import {
     setupMockGame,
     setupMockDocument,
     cleanupMocks,
-    mockI18n,
     assert,
     TestRunner
 } from './test-helper.js';

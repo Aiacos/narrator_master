@@ -296,7 +296,7 @@ export function setupMockDocument() {
 
     // Set up DOMParser mock for safe HTML parsing
     const MockDOMParser = class {
-        parseFromString(htmlString, mimeType) {
+        parseFromString(htmlString, _mimeType) {
             // Create a mock document that safely extracts text without executing scripts
             const bodyElement = {
                 textContent: '',

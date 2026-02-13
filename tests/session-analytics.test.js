@@ -152,10 +152,10 @@ export async function runTests() {
         await setup();
 
         const analytics = new SessionAnalytics();
-        const firstId = analytics.startSession('session-1');
+        const _firstId = analytics.startSession('session-1');
         assert.equal(analytics._sessionHistory.length, 0, 'History should be empty initially');
 
-        const secondId = analytics.startSession('session-2');
+        const _secondId = analytics.startSession('session-2');
 
         assert.equal(
             analytics._currentSession.sessionId,
@@ -660,7 +660,7 @@ export async function runTests() {
 
         assert.equal(analytics.getCurrentSessionId(), null, 'Should be null initially');
 
-        const id = analytics.startSession('my-session');
+        const _id = analytics.startSession('my-session');
         assert.equal(analytics.getCurrentSessionId(), 'my-session', 'Should return session ID');
 
         analytics.endSession();

@@ -10,7 +10,6 @@ import {
     cleanupMocks,
     createMockFetch,
     createMockFetchError,
-    createMockBlob,
     assert,
     TestRunner
 } from './test-helper.js';
@@ -51,7 +50,7 @@ function setupFileReaderMock() {
             this.onerror = null;
         }
 
-        readAsDataURL(blob) {
+        readAsDataURL(_blob) {
             // Simulate async read
             setTimeout(() => {
                 // Return mock base64 data
@@ -94,9 +93,9 @@ function teardown() {
 
     // Clean up foundry mock
     const targets = [];
-    if (typeof globalThis !== 'undefined') targets.push(globalThis);
-    if (typeof global !== 'undefined') targets.push(global);
-    if (typeof window !== 'undefined') targets.push(window);
+    if (typeof globalThis !== 'undefined') {targets.push(globalThis);}
+    if (typeof global !== 'undefined') {targets.push(global);}
+    if (typeof window !== 'undefined') {targets.push(window);}
 
     for (const target of targets) {
         delete target.foundry;
@@ -131,8 +130,8 @@ function createMockBase64Response() {
 /**
  * Creates a mock Blob for image caching tests
  */
-function createImageBlob() {
-    return createMockBlob('image/png', 2048);
+function _createImageBlob() {
+    return { size: 2048, type: 'image/png' };
 }
 
 /**

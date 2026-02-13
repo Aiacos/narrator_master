@@ -556,7 +556,7 @@ export class ImageGenerator extends OpenAIServiceBase {
      * @private
      */
     async _cacheImage(result) {
-        if (!result.url) return;
+        if (!result.url) {return;}
 
         try {
             // Download the image
@@ -643,7 +643,7 @@ export class ImageGenerator extends OpenAIServiceBase {
      * @private
      */
     _trimCache() {
-        if (this._imageCache.size <= this._maxCacheSize) return;
+        if (this._imageCache.size <= this._maxCacheSize) {return;}
 
         // Remove oldest entries
         const entries = Array.from(this._imageCache.entries())
@@ -664,7 +664,7 @@ export class ImageGenerator extends OpenAIServiceBase {
         const cacheKey = this._generateCacheKey(prompt);
         const cached = this._imageCache.get(cacheKey);
 
-        if (!cached) return null;
+        if (!cached) {return null;}
 
         // Check if URL has expired
         if (new Date() > cached.expiresAt && !cached.base64) {

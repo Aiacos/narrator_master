@@ -131,7 +131,7 @@ class Logger {
      * @param {*} [data] - Optional additional data to log (objects, arrays, etc.)
      */
     static debug(message, context, data) {
-        if (!this._debugMode) return;
+        if (!this._debugMode) {return;}
 
         const formattedMessage = this._formatMessage(LOG_LEVEL.DEBUG, message, context);
         if (data !== undefined) {

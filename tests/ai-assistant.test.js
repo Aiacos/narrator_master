@@ -9,7 +9,6 @@ import {
     setupMockUI,
     cleanupMocks,
     createMockFetch,
-    createMockFetchError,
     assert,
     TestRunner
 } from './test-helper.js';

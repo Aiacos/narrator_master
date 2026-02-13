@@ -357,11 +357,11 @@ export class JournalPicker extends FormApplication {
 
     /**
      * Override _updateObject to prevent default form submission
-     * @param {Event} event - Form submission event
-     * @param {Object} formData - Form data
+     * @param {Event} _event - Form submission event
+     * @param {Object} _formData - Form data
      * @private
      */
-    async _updateObject(event, formData) {
+    async _updateObject(_event, _formData) {
         // Do nothing - we handle saves manually via buttons
     }
 }

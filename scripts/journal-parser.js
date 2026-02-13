@@ -4,7 +4,7 @@
  * @module journal-parser
  */
 
-import { MODULE_ID } from './settings.js';
+import { MODULE_ID as _MODULE_ID } from './settings.js';
 import { Logger } from './logger.js';
 
 /**
@@ -244,7 +244,7 @@ export class JournalParser {
 
         for (const keyword of keywords) {
             const normalizedKeyword = keyword.toLowerCase().trim();
-            if (normalizedKeyword.length < 3) continue;
+            if (normalizedKeyword.length < 3) {continue;}
 
             const key = `${journalId}:${normalizedKeyword}`;
             const pageIds = this._keywordIndex.get(key);
@@ -1192,7 +1192,7 @@ export class JournalParser {
         const terms = [];
 
         // Normalize the scene name
-        let normalized = sceneName.trim();
+        const normalized = sceneName.trim();
 
         // Common separators in scene names
         const separators = [':', '-', '–', '—', '|', '/'];
