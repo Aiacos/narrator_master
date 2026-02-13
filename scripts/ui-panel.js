@@ -1174,6 +1174,30 @@ export class NarratorPanel extends Application {
     }
 
     /**
+     * Updates the loading overlay without full re-render
+     * @private
+     */
+    _updateLoadingState() {
+        // Find the loading overlay element
+        const overlayEl = this.element?.find('.narrator-loading-overlay');
+        if (!overlayEl || !overlayEl.length) {
+            return;
+        }
+
+        // Show or hide the overlay based on loading state
+        if (this.isLoading) {
+            overlayEl.show();
+            // Update the loading message
+            const messageEl = overlayEl.find('span');
+            if (messageEl && messageEl.length) {
+                messageEl.text(this.loadingMessage);
+            }
+        } else {
+            overlayEl.hide();
+        }
+    }
+
+    /**
      * Sets the loading state
      * @param {boolean} loading - Whether loading
      * @param {string} [message] - Loading message
