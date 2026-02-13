@@ -24,7 +24,12 @@ export const SETTINGS = {
     SELECTED_JOURNALS: 'selectedJournals',
     RULES_DETECTION: 'rulesDetection',
     RULES_SOURCE: 'rulesSource',
-    DEBUG_MODE: 'debugMode'
+    DEBUG_MODE: 'debugMode',
+    API_RETRY_ENABLED: 'apiRetryEnabled',
+    API_RETRY_MAX_ATTEMPTS: 'apiRetryMaxAttempts',
+    API_RETRY_BASE_DELAY: 'apiRetryBaseDelay',
+    API_RETRY_MAX_DELAY: 'apiRetryMaxDelay',
+    API_QUEUE_MAX_SIZE: 'apiQueueMaxSize'
 };
 
 /**
