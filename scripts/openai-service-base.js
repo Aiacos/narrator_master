@@ -205,12 +205,12 @@ export class OpenAIServiceBase {
     }
 
     /**
-     * Determines if an error is retryable
+     * Determines if an error should be retried
      * @param {Object} error - The error to check
      * @returns {boolean} True if the error should be retried
      * @private
      */
-    _isRetryableError(error) {
+    _shouldRetry(error) {
         // Network errors are always retryable
         if (error.isNetworkError) {
             return true;
@@ -218,12 +218,12 @@ export class OpenAIServiceBase {
 
         // Check HTTP status codes
         if (error.status) {
-            // Rate limiting - retryable
+            // Rate limiting (429) - retryable
             if (error.status === 429) {
                 return true;
             }
 
-            // Server errors - retryable
+            // Server errors (500-599 including 503) - retryable
             if (error.status >= 500 && error.status < 600) {
                 return true;
             }
@@ -273,7 +273,7 @@ export class OpenAIServiceBase {
                 lastError = error;
 
                 // Check if we should retry
-                const isRetryable = this._isRetryableError(error);
+                const isRetryable = this._shouldRetry(error);
                 const isLastAttempt = attempt === maxAttempts - 1;
 
                 if (!isRetryable || isLastAttempt) {
