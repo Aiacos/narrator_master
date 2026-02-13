@@ -481,16 +481,13 @@ export class TestRunner {
  * Creates a mock Blob for testing audio upload
  * @param {string} type - MIME type
  * @param {number} size - Size in bytes
- * @returns {Object} Mock Blob object
+ * @returns {Blob} Mock Blob instance
  */
 export function createMockBlob(type = 'audio/webm', size = 1024) {
-    return {
-        type,
-        size,
-        arrayBuffer: async () => new ArrayBuffer(size),
-        text: async () => '',
-        slice: () => createMockBlob(type, size)
-    };
+    // Create a buffer of the specified size
+    const buffer = new ArrayBuffer(size);
+    // Use the Blob constructor to create a proper Blob instance
+    return new Blob([buffer], { type });
 }
 
 /**
@@ -526,7 +523,25 @@ if (typeof FormData === 'undefined') {
 // Set up Blob mock globally if not available
 if (typeof Blob === 'undefined') {
     const MockBlob = function (parts = [], options = {}) {
-        return createMockBlob(options.type, parts.length > 0 ? parts[0].length : 0);
+        // Calculate total size from all parts
+        let totalSize = 0;
+        for (const part of parts) {
+            if (typeof part === 'string') {
+                totalSize += part.length;
+            } else if (part instanceof ArrayBuffer) {
+                totalSize += part.byteLength;
+            } else if (part && part.byteLength !== undefined) {
+                totalSize += part.byteLength;
+            } else if (part && part.length !== undefined) {
+                totalSize += part.length;
+            }
+        }
+
+        this.type = options.type || '';
+        this.size = totalSize;
+        this.arrayBuffer = async () => new ArrayBuffer(totalSize);
+        this.text = async () => '';
+        this.slice = () => new MockBlob(parts, options);
     };
 
     if (typeof globalThis !== 'undefined') {

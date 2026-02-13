@@ -22,7 +22,17 @@
             "RulesSourceName": "SRD Rules Source",
             "RulesSourceHint": "Select which compendium to use for rules answers",
             "RulesSourceAuto": "Automatic - Search all compendia",
-            "RulesSourceDnd5e": "D&D 5e - Only D&D 5e compendia"
+            "RulesSourceDnd5e": "D&D 5e - Only D&D 5e compendia",
+            "ApiRetryEnabledName": "自動リトライを有効化",
+            "ApiRetryEnabledHint": "失敗したAPIリクエストを指数バックオフで自動的に再試行",
+            "ApiRetryMaxAttemptsName": "最大試行回数",
+            "ApiRetryMaxAttemptsHint": "失敗したAPIリクエストの最大再試行回数 (0-10)",
+            "ApiRetryBaseDelayName": "基本遅延 (ms)",
+            "ApiRetryBaseDelayHint": "最初の再試行前の初期遅延時間（ミリ秒）",
+            "ApiRetryMaxDelayName": "最大遅延 (ms)",
+            "ApiRetryMaxDelayHint": "再試行間の最大遅延時間（ミリ秒）（指数バックオフの上限）",
+            "ApiQueueMaxSizeName": "最大キューサイズ",
+            "ApiQueueMaxSizeHint": "同時にキューイングできるAPIリクエストの最大数"
         },
         "Panel": {
             "Title": "Narrator Master",
@@ -109,7 +119,8 @@
             "NoNPCContext": "No context available for NPC {name}",
             "RulesSearchFailed": "Rules search failed: {message}",
             "NoCompendiumsAvailable": "No compendia available for rules search",
-            "CompendiumAccessDenied": "Compendium access denied"
+            "CompendiumAccessDenied": "Compendium access denied",
+            "RateLimitedRetrying": "レート制限に達しました。自動的に再試行中..."
         },
         "Warnings": {
             "ConfigIncomplete": "設定が不完全です"
@@ -126,7 +137,11 @@
             "ApiKeyUpdated": "APIキーを更新しました",
             "MicrophoneReady": "マイクが録音準備完了です",
             "PlayersOffTrack": "注意：プレイヤーがストーリーから外れています！",
-            "TranscriptExported": "Transcript exported"
+            "TranscriptExported": "Transcript exported",
+            "RetryingRequest": "{operation}の試行 {attempt}/{max}... {delay}秒待機中",
+            "RetrySuccess": "{operation}が{attempts}回の試行で完了しました",
+            "RetryFailed": "{operation}が{attempts}回の試行後に失敗しました",
+            "QueueFull": "リクエストキューが満杯です ({size})。後で再試行してください。"
         },
         "OffTrack": {
             "NoContext": "脱線検知のための冒険コンテキストが設定されていません。",

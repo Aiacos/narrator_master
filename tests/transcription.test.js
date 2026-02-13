@@ -235,7 +235,7 @@ export async function runTests() {
 
         try {
             const service = new TranscriptionService('valid-key');
-            const audioBlob = createMockBlob('audio/webm', 1024);
+            const audioBlob = createMockBlob('audio/webm', 15000);
 
             const result = await service.transcribe(audioBlob);
 
@@ -274,7 +274,7 @@ export async function runTests() {
 
         try {
             const service = new TranscriptionService('valid-key');
-            const audioBlob = createMockBlob('audio/webm', 1024);
+            const audioBlob = createMockBlob('audio/webm', 15000);
 
             await service.transcribe(audioBlob);
 
@@ -300,7 +300,7 @@ export async function runTests() {
         try {
             const service = new TranscriptionService('valid-key');
             service.setKnownSpeakerNames(['Marco', 'Giulia']);
-            const audioBlob = createMockBlob('audio/webm', 1024);
+            const audioBlob = createMockBlob('audio/webm', 15000);
 
             await service.transcribe(audioBlob);
 
@@ -324,7 +324,7 @@ export async function runTests() {
 
         try {
             const service = new TranscriptionService('valid-key');
-            const audioBlob = createMockBlob('audio/webm', 1024);
+            const audioBlob = createMockBlob('audio/webm', 15000);
 
             const result = await service.transcribeSimple(audioBlob);
 
@@ -414,7 +414,7 @@ export async function runTests() {
 
         try {
             const service = new TranscriptionService('valid-key');
-            const audioBlob = createMockBlob('audio/webm', 1024);
+            const audioBlob = createMockBlob('audio/webm', 15000);
 
             // Make multiple transcriptions
             await service.transcribe(audioBlob);
@@ -443,7 +443,7 @@ export async function runTests() {
 
         try {
             const service = new TranscriptionService('valid-key');
-            const audioBlob = createMockBlob('audio/webm', 1024);
+            const audioBlob = createMockBlob('audio/webm', 15000);
 
             await service.transcribe(audioBlob);
             assert.equal(service.getHistory().length, 1, 'Should have history');
@@ -468,7 +468,7 @@ export async function runTests() {
 
         try {
             const service = new TranscriptionService('valid-key');
-            const audioBlob = createMockBlob('audio/webm', 1024);
+            const audioBlob = createMockBlob('audio/webm', 15000);
 
             await service.transcribe(audioBlob);
 
@@ -711,7 +711,7 @@ export async function runTests() {
                     language: 'it',
                     multiLanguageMode: true
                 });
-                const audioBlob = createMockBlob('audio/webm', 1024);
+                const audioBlob = createMockBlob('audio/webm', 15000);
 
                 await service.transcribe(audioBlob);
 
@@ -747,7 +747,7 @@ export async function runTests() {
             const service = new TranscriptionService('valid-key', {
                 language: 'auto'
             });
-            const audioBlob = createMockBlob('audio/webm', 1024);
+            const audioBlob = createMockBlob('audio/webm', 15000);
 
             await service.transcribe(audioBlob);
 
@@ -787,7 +787,7 @@ export async function runTests() {
         globalThis.fetch = mockFetch;
 
         try {
-            const audioBlob = createMockBlob('audio/webm', 1024);
+            const audioBlob = createMockBlob('audio/webm', 15000);
 
             // Add more than max
             for (let i = 0; i < 5; i++) {
@@ -796,6 +796,423 @@ export async function runTests() {
 
             const history = service.getHistory();
             assert.ok(history.length <= 3, 'History should not exceed max size');
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        teardown();
+    });
+
+    // ========================================
+    // RETRY AND QUEUE TESTS
+    // ========================================
+
+    // Test: Retry on 429 rate limit error
+    runner.test('retries on 429 rate limit with exponential backoff', async () => {
+        await setup();
+
+        let attemptCount = 0;
+        const mockFetch = async () => {
+            attemptCount++;
+            if (attemptCount < 3) {
+                // Fail first 2 attempts with 429
+                return {
+                    ok: false,
+                    status: 429,
+                    json: async () => ({ error: { message: 'Rate limit exceeded' } })
+                };
+            }
+            // Succeed on 3rd attempt
+            return {
+                ok: true,
+                status: 200,
+                json: async () => createMockTranscriptionResponse()
+            };
+        };
+
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = mockFetch;
+
+        try {
+            const service = new TranscriptionService('valid-key', {
+                retryBaseDelay: 10, // Short delay for testing
+                maxRetryAttempts: 3
+            });
+            const audioBlob = createMockBlob('audio/webm', 15000);
+
+            const result = await service.transcribe(audioBlob);
+
+            assert.equal(attemptCount, 3, 'Should have retried 3 times');
+            assert.ok(result.text, 'Should eventually succeed');
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        teardown();
+    });
+
+    // Test: Retry on 503 server error
+    runner.test('retries on 503 service unavailable', async () => {
+        await setup();
+
+        let attemptCount = 0;
+        const mockFetch = async () => {
+            attemptCount++;
+            if (attemptCount === 1) {
+                // Fail first attempt with 503
+                return {
+                    ok: false,
+                    status: 503,
+                    json: async () => ({ error: { message: 'Service temporarily unavailable' } })
+                };
+            }
+            // Succeed on 2nd attempt
+            return {
+                ok: true,
+                status: 200,
+                json: async () => createMockTranscriptionResponse()
+            };
+        };
+
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = mockFetch;
+
+        try {
+            const service = new TranscriptionService('valid-key', {
+                retryBaseDelay: 10,
+                maxRetryAttempts: 3
+            });
+            const audioBlob = createMockBlob('audio/webm', 15000);
+
+            const result = await service.transcribe(audioBlob);
+
+            assert.equal(attemptCount, 2, 'Should have retried once');
+            assert.ok(result.text, 'Should succeed after retry');
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        teardown();
+    });
+
+    // Test: Retry on network error
+    runner.test('retries on network error', async () => {
+        await setup();
+
+        let attemptCount = 0;
+        const mockFetch = async () => {
+            attemptCount++;
+            if (attemptCount < 2) {
+                // Throw network error on first attempt
+                throw new Error('Network request failed');
+            }
+            // Succeed on 2nd attempt
+            return {
+                ok: true,
+                status: 200,
+                json: async () => createMockTranscriptionResponse()
+            };
+        };
+
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = mockFetch;
+
+        try {
+            const service = new TranscriptionService('valid-key', {
+                retryBaseDelay: 10,
+                maxRetryAttempts: 3
+            });
+            const audioBlob = createMockBlob('audio/webm', 15000);
+
+            const result = await service.transcribe(audioBlob);
+
+            assert.equal(attemptCount, 2, 'Should have retried once after network error');
+            assert.ok(result.text, 'Should succeed after retry');
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        teardown();
+    });
+
+    // Test: No retry on 400 bad request
+    runner.test('does not retry on 400 bad request', async () => {
+        await setup();
+
+        let attemptCount = 0;
+        const mockFetch = async () => {
+            attemptCount++;
+            return {
+                ok: false,
+                status: 400,
+                json: async () => ({ error: { message: 'Invalid request' } })
+            };
+        };
+
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = mockFetch;
+
+        try {
+            const service = new TranscriptionService('valid-key', {
+                retryBaseDelay: 10,
+                maxRetryAttempts: 3
+            });
+            const audioBlob = createMockBlob('audio/webm', 15000);
+
+            await assert.throws(
+                () => service.transcribe(audioBlob),
+                'Should throw on non-retryable error'
+            );
+
+            assert.equal(attemptCount, 1, 'Should not retry 400 errors');
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        teardown();
+    });
+
+    // Test: Respects max retry attempts
+    runner.test('respects max retry attempts limit', async () => {
+        await setup();
+
+        let attemptCount = 0;
+        const mockFetch = async () => {
+            attemptCount++;
+            // Always fail with 503
+            return {
+                ok: false,
+                status: 503,
+                json: async () => ({ error: { message: 'Service unavailable' } })
+            };
+        };
+
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = mockFetch;
+
+        try {
+            const service = new TranscriptionService('valid-key', {
+                retryBaseDelay: 10,
+                maxRetryAttempts: 2
+            });
+            const audioBlob = createMockBlob('audio/webm', 15000);
+
+            await assert.throws(
+                () => service.transcribe(audioBlob),
+                'Should throw after max attempts'
+            );
+
+            assert.equal(attemptCount, 2, 'Should respect max retry attempts of 2');
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        teardown();
+    });
+
+    // Test: Retry disabled works correctly
+    runner.test('works with retry disabled', async () => {
+        await setup();
+
+        let attemptCount = 0;
+        const mockFetch = async () => {
+            attemptCount++;
+            if (attemptCount === 1) {
+                // Fail first attempt
+                return {
+                    ok: false,
+                    status: 503,
+                    json: async () => ({ error: { message: 'Service unavailable' } })
+                };
+            }
+            return {
+                ok: true,
+                status: 200,
+                json: async () => createMockTranscriptionResponse()
+            };
+        };
+
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = mockFetch;
+
+        try {
+            const service = new TranscriptionService('valid-key', {
+                retryEnabled: false
+            });
+            const audioBlob = createMockBlob('audio/webm', 15000);
+
+            await assert.throws(
+                () => service.transcribe(audioBlob),
+                'Should throw immediately with retry disabled'
+            );
+
+            assert.equal(attemptCount, 1, 'Should not retry when disabled');
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        teardown();
+    });
+
+    // Test: Request queue processes sequentially
+    runner.test('processes queued requests sequentially', async () => {
+        await setup();
+
+        let currentlyExecuting = 0;
+        let maxConcurrent = 0;
+        let executionCount = 0;
+
+        const mockFetch = async () => {
+            currentlyExecuting++;
+            maxConcurrent = Math.max(maxConcurrent, currentlyExecuting);
+            executionCount++;
+
+            // Simulate async work
+            await new Promise(resolve => setTimeout(resolve, 5));
+
+            currentlyExecuting--;
+
+            return {
+                ok: true,
+                status: 200,
+                json: async () => createMockTranscriptionResponse()
+            };
+        };
+
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = mockFetch;
+
+        try {
+            const service = new TranscriptionService('valid-key', {
+                retryEnabled: false
+            });
+
+            // Queue multiple requests
+            const promises = [];
+            for (let i = 0; i < 3; i++) {
+                const blob = createMockBlob('audio/webm', 15000);
+                promises.push(service.transcribe(blob));
+            }
+
+            await Promise.all(promises);
+
+            assert.equal(maxConcurrent, 1, 'Should execute only one request at a time');
+            assert.equal(executionCount, 3, 'Should have executed all 3 requests');
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        teardown();
+    });
+
+    // Test: Queue size limit
+    runner.test('throws when queue size limit exceeded', async () => {
+        await setup();
+
+        const mockFetch = async () => {
+            // Simulate slow request
+            await new Promise(resolve => setTimeout(resolve, 100));
+            return {
+                ok: true,
+                status: 200,
+                json: async () => createMockTranscriptionResponse()
+            };
+        };
+
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = mockFetch;
+
+        try {
+            const service = new TranscriptionService('valid-key', {
+                maxQueueSize: 2,
+                retryEnabled: false
+            });
+
+            // Start first request (will be processing)
+            const blob1 = createMockBlob('audio/webm', 15000);
+            const promise1 = service.transcribe(blob1);
+
+            // Wait a bit for it to start processing
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            // Queue second request (should queue successfully)
+            const blob2 = createMockBlob('audio/webm', 15000);
+            const promise2 = service.transcribe(blob2);
+
+            // Third request should throw (queue full)
+            const blob3 = createMockBlob('audio/webm', 15000);
+            await assert.throws(
+                () => service.transcribe(blob3),
+                'Should throw when queue is full'
+            );
+
+            // Wait for promises to complete to avoid hanging
+            await Promise.all([promise1, promise2]);
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+
+        teardown();
+    });
+
+    // Test: Get queue size
+    runner.test('getQueueSize returns current queue size', async () => {
+        await setup();
+
+        const service = new TranscriptionService('valid-key');
+
+        assert.equal(service.getQueueSize(), 0, 'Queue should start empty');
+
+        teardown();
+    });
+
+    // Test: Clear queue
+    runner.test('clearQueue cancels all pending requests', async () => {
+        await setup();
+
+        let requestStarted = false;
+        const mockFetch = async () => {
+            requestStarted = true;
+            // Simulate slow request
+            await new Promise(resolve => setTimeout(resolve, 100));
+            return {
+                ok: true,
+                status: 200,
+                json: async () => createMockTranscriptionResponse()
+            };
+        };
+
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = mockFetch;
+
+        try {
+            const service = new TranscriptionService('valid-key', {
+                retryEnabled: false
+            });
+
+            // Queue some requests
+            const blob1 = createMockBlob('audio/webm', 15000);
+            const promise1 = service.transcribe(blob1).catch(() => {});
+
+            // Wait for first request to start
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            const blob2 = createMockBlob('audio/webm', 15000);
+            const promise2 = service.transcribe(blob2);
+
+            // Clear the queue
+            service.clearQueue();
+
+            // Second request should be cancelled
+            await assert.throws(
+                () => promise2,
+                'Queued request should be cancelled'
+            );
+
+            assert.ok(requestStarted, 'First request should have started');
+
+            // Wait for first request to complete to avoid hanging
+            await promise1;
         } finally {
             globalThis.fetch = originalFetch;
         }

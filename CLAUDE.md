@@ -176,32 +176,33 @@ graph TD
 
 ```
 ./
-├── module.json              # Foundry VTT manifest
-├── TODO.md                  # Known issues tracker (read before every session)
+├── module.json                 # Foundry VTT manifest
+├── TODO.md                     # Known issues tracker (read before every session)
 ├── scripts/
-│   ├── main.js             # Entry point, NarratorMaster controller, Hooks
-│   ├── settings.js         # Settings registration, SettingsManager class
-│   ├── audio-capture.js    # AudioCapture class, MediaRecorder, Web Audio API
-│   ├── transcription.js    # TranscriptionService class, OpenAI Whisper
-│   ├── journal-parser.js   # JournalParser class, Foundry Journal API
-│   ├── ai-assistant.js     # AIAssistant class, OpenAI GPT chat
-│   ├── image-generator.js  # ImageGenerator class, OpenAI image generation
-│   ├── speaker-labels.js   # SpeakerLabelService, persistent speaker mappings
-│   └── ui-panel.js         # NarratorPanel Application class
+│   ├── main.js                # Entry point, NarratorMaster controller, Hooks
+│   ├── settings.js            # Settings registration, SettingsManager class
+│   ├── openai-service-base.js # OpenAIServiceBase class, retry/queue logic
+│   ├── audio-capture.js       # AudioCapture class, MediaRecorder, Web Audio API
+│   ├── transcription.js       # TranscriptionService class, OpenAI Whisper
+│   ├── journal-parser.js      # JournalParser class, Foundry Journal API
+│   ├── ai-assistant.js        # AIAssistant class, OpenAI GPT chat
+│   ├── image-generator.js     # ImageGenerator class, OpenAI image generation
+│   ├── speaker-labels.js      # SpeakerLabelService, persistent speaker mappings
+│   └── ui-panel.js            # NarratorPanel Application class
 ├── styles/
-│   └── narrator-master.css # All styling, including off-track warnings (red)
+│   └── narrator-master.css    # All styling, including off-track warnings (red)
 ├── templates/
-│   └── panel.hbs           # Handlebars template for DM panel (3 tabs)
+│   └── panel.hbs              # Handlebars template for DM panel (3 tabs)
 ├── lang/
-│   ├── it.json             # Italian localization (primary, most complete)
-│   ├── en.json             # English localization
-│   ├── de.json             # German localization
-│   ├── es.json             # Spanish localization
-│   ├── fr.json             # French localization
-│   ├── ja.json             # Japanese localization
-│   ├── pt.json             # Portuguese localization
-│   └── template.json       # Template for translators
-└── docs/                   # User documentation (wiki)
+│   ├── it.json                # Italian localization (primary, most complete)
+│   ├── en.json                # English localization
+│   ├── de.json                # German localization
+│   ├── es.json                # Spanish localization
+│   ├── fr.json                # French localization
+│   ├── ja.json                # Japanese localization
+│   ├── pt.json                # Portuguese localization
+│   └── template.json          # Template for translators
+└── docs/                      # User documentation (wiki)
 ```
 
 ## Key Components
@@ -218,12 +219,13 @@ All services follow consistent OOP patterns:
 
 | Class | Purpose | Key Methods |
 |-------|---------|-------------|
-| `SettingsManager` | Access module settings | `getApiKey()`, `validateConfiguration()` |
+| `OpenAIServiceBase` | Base class for OpenAI services | `_retryWithBackoff()`, `_enqueueRequest()`, `getQueueSize()`, `clearQueue()` |
+| `SettingsManager` | Access module settings | `getApiKey()`, `validateConfiguration()`, `getApiRetryEnabled()` |
 | `AudioCapture` | Record browser audio | `start()`, `stop()`, `pause()`, `resume()` |
-| `TranscriptionService` | Whisper API integration | `transcribe(audioBlob)`, `setMultiLanguageMode()` |
+| `TranscriptionService` | Whisper API integration (extends OpenAIServiceBase) | `transcribe(audioBlob)`, `setMultiLanguageMode()` |
 | `JournalParser` | Extract journal content | `parseAllJournals()`, `getAllContentForAI()`, `clearAllCache()` |
-| `AIAssistant` | Generate suggestions | `analyzeContext()`, `detectOffTrack()`, `generateNarrativeBridge()` |
-| `ImageGenerator` | Create images | `generateInfographic()`, `saveToGallery()`, `loadGallery()` |
+| `AIAssistant` | Generate suggestions (extends OpenAIServiceBase) | `analyzeContext()`, `detectOffTrack()`, `generateNarrativeBridge()` |
+| `ImageGenerator` | Create images (extends OpenAIServiceBase) | `generateInfographic()`, `saveToGallery()`, `loadGallery()` |
 | `SpeakerLabelService` | Speaker name mappings | `applyLabelsToSegments()`, `setLabel()`, `importMappings()` |
 | `NarratorPanel` | DM panel UI | `render()`, `updateContent()`, `addTranscriptSegments()` |
 
@@ -257,6 +259,150 @@ class ServiceName {
 
     static notifyError(error) {
         // Static method for external error notification
+    }
+}
+```
+
+### Retry and Queue Architecture
+
+All OpenAI API services inherit from `OpenAIServiceBase` (scripts/openai-service-base.js), which provides robust retry logic and request queuing to handle transient failures and rate limiting.
+
+#### Exponential Backoff Retry
+
+**Key Features**:
+- Automatic retry for transient errors (network failures, rate limits, server errors 5xx)
+- Exponential backoff: `delay = baseDelay * 2^attempt + jitter`
+- Jitter (0-25% of delay) prevents thundering herd
+- Respects `Retry-After` headers (both seconds and HTTP-date formats)
+- Does NOT retry client errors (400-499 except 429)
+
+**Configuration** (set in constructor `options`):
+```javascript
+{
+    maxRetryAttempts: 3,        // Maximum retry attempts (default: 3)
+    retryBaseDelay: 1000,       // Base delay in ms (default: 1000)
+    retryMaxDelay: 60000,       // Max delay cap in ms (default: 60000)
+    retryEnabled: true          // Enable/disable retry (default: true)
+}
+```
+
+**Retryable Errors**:
+- Network errors (connection failures, timeouts)
+- HTTP 429 (Rate Limited)
+- HTTP 500-599 (Server Errors)
+
+**Non-Retryable Errors**:
+- HTTP 400 (Bad Request)
+- HTTP 401 (Invalid API Key)
+- HTTP 413 (File Too Large)
+- Other 4xx client errors
+
+**Example Retry Timing**:
+```
+Attempt 1: 0ms (immediate)
+Attempt 2: ~1250ms (1000 * 2^0 + jitter)
+Attempt 3: ~2500ms (1000 * 2^1 + jitter)
+Attempt 4: ~5000ms (1000 * 2^2 + jitter)
+```
+
+#### Request Queue
+
+**Key Features**:
+- Sequential processing (one request at a time) to avoid rate limiting
+- Priority support (higher priority requests processed first)
+- FIFO for equal-priority requests
+- Queue size limit prevents memory exhaustion
+- Each queued request automatically uses retry logic
+
+**Configuration**:
+```javascript
+{
+    maxQueueSize: 100  // Maximum queued requests (default: 100)
+}
+```
+
+**Queue Methods**:
+- `_enqueueRequest(operation, context, priority)` - Add request to queue
+- `_processQueue()` - Process queue sequentially
+- `getQueueSize()` - Get current queue length
+- `clearQueue()` - Cancel all pending requests
+
+**Priority Levels**:
+- `priority > 0` - High priority (processed first)
+- `priority = 0` - Normal priority (FIFO)
+- Higher numbers = higher priority
+
+#### Settings Integration
+
+Retry and queue behavior can be configured via Foundry settings (GM-only):
+
+| Setting | Default | Purpose |
+|---------|---------|---------|
+| `apiRetryEnabled` | `true` | Enable/disable automatic retry |
+| `apiRetryMaxAttempts` | `3` | Maximum retry attempts |
+| `apiRetryBaseDelay` | `1000` | Base delay in ms (before exponential backoff) |
+| `apiRetryMaxDelay` | `30000` | Maximum delay in ms between retries |
+| `apiQueueMaxSize` | `10` | Maximum number of requests that can be queued |
+
+**Accessing settings**:
+```javascript
+const retryEnabled = settingsManager.getApiRetryEnabled();
+const maxAttempts = settingsManager.getApiRetryMaxAttempts();
+const baseDelay = settingsManager.getApiRetryBaseDelay();
+const maxDelay = settingsManager.getApiRetryMaxDelay();
+const queueSize = settingsManager.getApiQueueMaxSize();
+```
+
+#### Usage Example
+
+```javascript
+import { OpenAIServiceBase } from './openai-service-base.js';
+
+class MyAPIService extends OpenAIServiceBase {
+    constructor(apiKey, options = {}) {
+        super(apiKey, {
+            maxRetryAttempts: 3,
+            retryBaseDelay: 1000,
+            retryMaxDelay: 60000,
+            retryEnabled: true,
+            maxQueueSize: 100,
+            ...options
+        });
+    }
+
+    async callAPI() {
+        // Wrap API call with retry logic
+        return await this._retryWithBackoff(
+            async () => {
+                const response = await fetch(this._baseUrl + '/endpoint', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${this._apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ /* ... */ })
+                });
+
+                if (!response.ok) {
+                    throw await this._handleApiError({
+                        status: response.status,
+                        message: await response.text()
+                    }, 'Operation Name');
+                }
+
+                return await response.json();
+            },
+            { operationName: 'MyAPIService.callAPI' }
+        );
+    }
+
+    async queuedAPICall() {
+        // Use queue for concurrent request management
+        return await this._enqueueRequest(
+            () => this.callAPI(),
+            { operationName: 'MyAPIService.queuedAPICall' },
+            0  // Normal priority
+        );
     }
 }
 ```
@@ -473,10 +619,14 @@ ErrorNotificationHelper.handleApiError(error, 'Operation Name');
 - Never use deprecated `journal.content` - use `journal.pages`
 
 ### OpenAI API
-- Rate limiting varies by account tier - implement exponential backoff
+- **Retry logic is automatic** - All OpenAI services inherit from `OpenAIServiceBase` with built-in exponential backoff
+- Rate limiting (HTTP 429) is automatically retried - honors `Retry-After` headers
+- Network errors and server errors (5xx) are retried - client errors (4xx except 429) are NOT retried
+- Queue processes requests sequentially - prevents rate limiting from concurrent requests
 - Transcription requires `FormData` with proper file naming
 - Images return URLs that expire - always download to base64
 - gpt-4o-transcribe-diarize requires `response_format: 'diarized_json'`
+- **Queue can fill up** - If queue is full (`maxQueueSize`), requests will throw an error immediately
 
 ### Localization
 - All strings MUST use i18n keys - no hardcoded text

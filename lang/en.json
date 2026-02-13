@@ -26,7 +26,17 @@
             "RulesSourceName": "SRD Rules Source",
             "RulesSourceHint": "Select which compendium to use for rules answers",
             "RulesSourceAuto": "Automatic - Search all compendia",
-            "RulesSourceDnd5e": "D&D 5e - Only D&D 5e compendia"
+            "RulesSourceDnd5e": "D&D 5e - Only D&D 5e compendia",
+            "ApiRetryEnabledName": "Enable Automatic Retry",
+            "ApiRetryEnabledHint": "Automatically retry failed API requests with exponential backoff",
+            "ApiRetryMaxAttemptsName": "Maximum Attempts",
+            "ApiRetryMaxAttemptsHint": "Maximum number of retry attempts for failed API requests (0-10)",
+            "ApiRetryBaseDelayName": "Base Delay (ms)",
+            "ApiRetryBaseDelayHint": "Initial delay in milliseconds before the first retry attempt",
+            "ApiRetryMaxDelayName": "Maximum Delay (ms)",
+            "ApiRetryMaxDelayHint": "Maximum delay in milliseconds between retries (exponential backoff limit)",
+            "ApiQueueMaxSizeName": "Maximum Queue Size",
+            "ApiQueueMaxSizeHint": "Maximum number of API requests that can be queued simultaneously"
         },
         "Panel": {
             "Title": "Narrator Master",
@@ -120,7 +130,8 @@
             "NoNPCContext": "No context available for NPC {name}",
             "RulesSearchFailed": "Rules search failed: {message}",
             "NoCompendiumsAvailable": "No compendia available for rules search",
-            "CompendiumAccessDenied": "Compendium access denied"
+            "CompendiumAccessDenied": "Compendium access denied",
+            "RateLimitedRetrying": "Rate limit reached. Retrying automatically..."
         },
         "Warnings": {
             "ConfigIncomplete": "Configuration incomplete",
@@ -143,7 +154,11 @@
             "RecordingStartedViaShortcut": "Recording started via keyboard shortcut",
             "RecordingStoppedViaShortcut": "Recording stopped via keyboard shortcut",
             "RecordingPausedViaShortcut": "Recording paused via keyboard shortcut",
-            "RecordingResumedViaShortcut": "Recording resumed via keyboard shortcut"
+            "RecordingResumedViaShortcut": "Recording resumed via keyboard shortcut",
+            "RetryingRequest": "Attempt {attempt}/{max} for {operation}... waiting {delay}s",
+            "RetrySuccess": "{operation} completed after {attempts} attempt(s)",
+            "RetryFailed": "{operation} failed after {attempts} attempt(s)",
+            "QueueFull": "Request queue full ({size}). Try again later."
         },
         "OffTrack": {
             "NoContext": "No adventure context set for off-track detection.",

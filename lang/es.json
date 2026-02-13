@@ -22,7 +22,17 @@
             "RulesSourceName": "SRD Rules Source",
             "RulesSourceHint": "Select which compendium to use for rules answers",
             "RulesSourceAuto": "Automatic - Search all compendia",
-            "RulesSourceDnd5e": "D&D 5e - Only D&D 5e compendia"
+            "RulesSourceDnd5e": "D&D 5e - Only D&D 5e compendia",
+            "ApiRetryEnabledName": "Habilitar Reintento Automático",
+            "ApiRetryEnabledHint": "Reintentar automáticamente solicitudes API fallidas con retroceso exponencial",
+            "ApiRetryMaxAttemptsName": "Intentos Máximos",
+            "ApiRetryMaxAttemptsHint": "Número máximo de intentos de reintento para solicitudes API fallidas (0-10)",
+            "ApiRetryBaseDelayName": "Retraso Base (ms)",
+            "ApiRetryBaseDelayHint": "Retraso inicial en milisegundos antes del primer intento de reintento",
+            "ApiRetryMaxDelayName": "Retraso Máximo (ms)",
+            "ApiRetryMaxDelayHint": "Retraso máximo en milisegundos entre reintentos (límite de retroceso exponencial)",
+            "ApiQueueMaxSizeName": "Tamaño Máximo de Cola",
+            "ApiQueueMaxSizeHint": "Número máximo de solicitudes API que se pueden poner en cola simultáneamente"
         },
         "Panel": {
             "Title": "Narrator Master",
@@ -109,7 +119,8 @@
             "NoNPCContext": "No context available for NPC {name}",
             "RulesSearchFailed": "Rules search failed: {message}",
             "NoCompendiumsAvailable": "No compendia available for rules search",
-            "CompendiumAccessDenied": "Compendium access denied"
+            "CompendiumAccessDenied": "Compendium access denied",
+            "RateLimitedRetrying": "Límite de velocidad alcanzado. Reintentando automáticamente..."
         },
         "Warnings": {
             "ConfigIncomplete": "Configuración incompleta"
@@ -126,7 +137,11 @@
             "ApiKeyUpdated": "Clave API actualizada",
             "MicrophoneReady": "Micrófono listo para grabar",
             "PlayersOffTrack": "Atención: ¡Los jugadores se están alejando de la trama!",
-            "TranscriptExported": "Transcript exported"
+            "TranscriptExported": "Transcript exported",
+            "RetryingRequest": "Intento {attempt}/{max} para {operation}... esperando {delay}s",
+            "RetrySuccess": "{operation} completada después de {attempts} intento(s)",
+            "RetryFailed": "{operation} falló después de {attempts} intento(s)",
+            "QueueFull": "Cola de solicitudes llena ({size}). Intenta de nuevo más tarde."
         },
         "OffTrack": {
             "NoContext": "No hay contexto de aventura configurado para la detección fuera de tema.",

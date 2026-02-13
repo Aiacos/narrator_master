@@ -22,7 +22,17 @@
             "RulesSourceName": "SRD Rules Source",
             "RulesSourceHint": "Select which compendium to use for rules answers",
             "RulesSourceAuto": "Automatic - Search all compendia",
-            "RulesSourceDnd5e": "D&D 5e - Only D&D 5e compendia"
+            "RulesSourceDnd5e": "D&D 5e - Only D&D 5e compendia",
+            "ApiRetryEnabledName": "Ativar Tentativa Automática",
+            "ApiRetryEnabledHint": "Tentar novamente automaticamente requisições API com recuo exponencial",
+            "ApiRetryMaxAttemptsName": "Tentativas Máximas",
+            "ApiRetryMaxAttemptsHint": "Número máximo de tentativas de repetição para requisições API falhadas (0-10)",
+            "ApiRetryBaseDelayName": "Atraso Base (ms)",
+            "ApiRetryBaseDelayHint": "Atraso inicial em milissegundos antes da primeira tentativa de repetição",
+            "ApiRetryMaxDelayName": "Atraso Máximo (ms)",
+            "ApiRetryMaxDelayHint": "Atraso máximo em milissegundos entre tentativas (limite de recuo exponencial)",
+            "ApiQueueMaxSizeName": "Tamanho Máximo da Fila",
+            "ApiQueueMaxSizeHint": "Número máximo de requisições API que podem ser enfileiradas simultaneamente"
         },
         "Panel": {
             "Title": "Narrator Master",
@@ -109,7 +119,8 @@
             "NoNPCContext": "No context available for NPC {name}",
             "RulesSearchFailed": "Rules search failed: {message}",
             "NoCompendiumsAvailable": "No compendia available for rules search",
-            "CompendiumAccessDenied": "Compendium access denied"
+            "CompendiumAccessDenied": "Compendium access denied",
+            "RateLimitedRetrying": "Limite de taxa atingido. Tentando novamente automaticamente..."
         },
         "Warnings": {
             "ConfigIncomplete": "Configuração incompleta"
@@ -126,7 +137,11 @@
             "ApiKeyUpdated": "Chave API atualizada",
             "MicrophoneReady": "Microfone pronto para gravação",
             "PlayersOffTrack": "Atenção: Os jogadores estão se desviando do enredo!",
-            "TranscriptExported": "Transcript exported"
+            "TranscriptExported": "Transcript exported",
+            "RetryingRequest": "Tentativa {attempt}/{max} para {operation}... aguardando {delay}s",
+            "RetrySuccess": "{operation} completada após {attempts} tentativa(s)",
+            "RetryFailed": "{operation} falhou após {attempts} tentativa(s)",
+            "QueueFull": "Fila de requisições cheia ({size}). Tente novamente mais tarde."
         },
         "OffTrack": {
             "NoContext": "Nenhum contexto de aventura definido para detecção fora do tema.",

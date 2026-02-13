@@ -22,7 +22,17 @@
             "RulesSourceName": "SRD Rules Source",
             "RulesSourceHint": "Select which compendium to use for rules answers",
             "RulesSourceAuto": "Automatic - Search all compendia",
-            "RulesSourceDnd5e": "D&D 5e - Only D&D 5e compendia"
+            "RulesSourceDnd5e": "D&D 5e - Only D&D 5e compendia",
+            "ApiRetryEnabledName": "Automatische Wiederholung aktivieren",
+            "ApiRetryEnabledHint": "Fehlgeschlagene API-Anfragen automatisch mit exponentiellem Backoff wiederholen",
+            "ApiRetryMaxAttemptsName": "Maximale Versuche",
+            "ApiRetryMaxAttemptsHint": "Maximale Anzahl der Wiederholungsversuche für fehlgeschlagene API-Anfragen (0-10)",
+            "ApiRetryBaseDelayName": "Basisverzögerung (ms)",
+            "ApiRetryBaseDelayHint": "Anfangsverzögerung in Millisekunden vor dem ersten Wiederholungsversuch",
+            "ApiRetryMaxDelayName": "Maximale Verzögerung (ms)",
+            "ApiRetryMaxDelayHint": "Maximale Verzögerung in Millisekunden zwischen Wiederholungen (exponentielles Backoff-Limit)",
+            "ApiQueueMaxSizeName": "Maximale Warteschlangengröße",
+            "ApiQueueMaxSizeHint": "Maximale Anzahl von API-Anfragen, die gleichzeitig in die Warteschlange gestellt werden können"
         },
         "Panel": {
             "Title": "Narrator Master",
@@ -109,7 +119,8 @@
             "NoNPCContext": "No context available for NPC {name}",
             "RulesSearchFailed": "Rules search failed: {message}",
             "NoCompendiumsAvailable": "No compendia available for rules search",
-            "CompendiumAccessDenied": "Compendium access denied"
+            "CompendiumAccessDenied": "Compendium access denied",
+            "RateLimitedRetrying": "Anfragelimit erreicht. Wiederhole automatisch..."
         },
         "Warnings": {
             "ConfigIncomplete": "Konfiguration unvollständig"
@@ -126,7 +137,11 @@
             "ApiKeyUpdated": "API-Schlüssel aktualisiert",
             "MicrophoneReady": "Mikrofon bereit für die Aufnahme",
             "PlayersOffTrack": "Achtung: Die Spieler weichen von der Handlung ab!",
-            "TranscriptExported": "Transcript exported"
+            "TranscriptExported": "Transcript exported",
+            "RetryingRequest": "Versuch {attempt}/{max} für {operation}... warte {delay}s",
+            "RetrySuccess": "{operation} nach {attempts} Versuch(en) abgeschlossen",
+            "RetryFailed": "{operation} nach {attempts} Versuch(en) fehlgeschlagen",
+            "QueueFull": "Anfragewarteschlange voll ({size}). Versuchen Sie es später erneut."
         },
         "OffTrack": {
             "NoContext": "Kein Abenteuerkontext für die Abweichungserkennung festgelegt.",

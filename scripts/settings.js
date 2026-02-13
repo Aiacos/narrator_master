@@ -25,7 +25,12 @@ export const SETTINGS = {
     SELECTED_JOURNALS: 'selectedJournals',
     RULES_DETECTION: 'rulesDetection',
     RULES_SOURCE: 'rulesSource',
-    DEBUG_MODE: 'debugMode'
+    DEBUG_MODE: 'debugMode',
+    API_RETRY_ENABLED: 'apiRetryEnabled',
+    API_RETRY_MAX_ATTEMPTS: 'apiRetryMaxAttempts',
+    API_RETRY_BASE_DELAY: 'apiRetryBaseDelay',
+    API_RETRY_MAX_DELAY: 'apiRetryMaxDelay',
+    API_QUEUE_MAX_SIZE: 'apiQueueMaxSize'
 };
 
 /**
@@ -174,6 +179,56 @@ export function registerSettings() {
         type: Boolean,
         default: false
     });
+
+    // API Retry Enabled - Enable automatic retry with exponential backoff for failed API requests
+    game.settings.register(MODULE_ID, SETTINGS.API_RETRY_ENABLED, {
+        name: 'NARRATOR.Settings.ApiRetryEnabledName',
+        hint: 'NARRATOR.Settings.ApiRetryEnabledHint',
+        scope: 'world',
+        config: true,
+        type: Boolean,
+        default: true
+    });
+
+    // API Retry Max Attempts - Maximum number of retry attempts for failed API requests
+    game.settings.register(MODULE_ID, SETTINGS.API_RETRY_MAX_ATTEMPTS, {
+        name: 'NARRATOR.Settings.ApiRetryMaxAttemptsName',
+        hint: 'NARRATOR.Settings.ApiRetryMaxAttemptsHint',
+        scope: 'world',
+        config: true,
+        type: Number,
+        default: 3
+    });
+
+    // API Retry Base Delay - Base delay in milliseconds before first retry (will increase exponentially)
+    game.settings.register(MODULE_ID, SETTINGS.API_RETRY_BASE_DELAY, {
+        name: 'NARRATOR.Settings.ApiRetryBaseDelayName',
+        hint: 'NARRATOR.Settings.ApiRetryBaseDelayHint',
+        scope: 'world',
+        config: true,
+        type: Number,
+        default: 1000
+    });
+
+    // API Retry Max Delay - Maximum delay in milliseconds between retries
+    game.settings.register(MODULE_ID, SETTINGS.API_RETRY_MAX_DELAY, {
+        name: 'NARRATOR.Settings.ApiRetryMaxDelayName',
+        hint: 'NARRATOR.Settings.ApiRetryMaxDelayHint',
+        scope: 'world',
+        config: true,
+        type: Number,
+        default: 30000
+    });
+
+    // API Queue Max Size - Maximum number of requests that can be queued
+    game.settings.register(MODULE_ID, SETTINGS.API_QUEUE_MAX_SIZE, {
+        name: 'NARRATOR.Settings.ApiQueueMaxSizeName',
+        hint: 'NARRATOR.Settings.ApiQueueMaxSizeHint',
+        scope: 'world',
+        config: true,
+        type: Number,
+        default: 10
+    });
 }
 
 /**
@@ -304,6 +359,46 @@ export class SettingsManager {
     }
 
     /**
+     * Gets the API retry enabled setting
+     * @returns {boolean} True if API retry is enabled
+     */
+    getApiRetryEnabled() {
+        return game.settings.get(MODULE_ID, SETTINGS.API_RETRY_ENABLED) ?? true;
+    }
+
+    /**
+     * Gets the API retry max attempts setting
+     * @returns {number} Maximum number of retry attempts
+     */
+    getApiRetryMaxAttempts() {
+        return game.settings.get(MODULE_ID, SETTINGS.API_RETRY_MAX_ATTEMPTS) || 3;
+    }
+
+    /**
+     * Gets the API retry base delay setting
+     * @returns {number} Base delay in milliseconds before first retry
+     */
+    getApiRetryBaseDelay() {
+        return game.settings.get(MODULE_ID, SETTINGS.API_RETRY_BASE_DELAY) || 1000;
+    }
+
+    /**
+     * Gets the API retry max delay setting
+     * @returns {number} Maximum delay in milliseconds between retries
+     */
+    getApiRetryMaxDelay() {
+        return game.settings.get(MODULE_ID, SETTINGS.API_RETRY_MAX_DELAY) || 30000;
+    }
+
+    /**
+     * Gets the API queue max size setting
+     * @returns {number} Maximum number of requests that can be queued
+     */
+    getApiQueueMaxSize() {
+        return game.settings.get(MODULE_ID, SETTINGS.API_QUEUE_MAX_SIZE) || 10;
+    }
+
+    /**
      * Checks if the API key is configured
      * @returns {boolean} True if API key is set
      */
@@ -345,7 +440,12 @@ export class SettingsManager {
             selectedJournals: this.getSelectedJournals(),
             rulesDetection: this.getRulesDetection(),
             rulesSource: this.getRulesSource(),
-            debugMode: this.getDebugMode()
+            debugMode: this.getDebugMode(),
+            apiRetryEnabled: this.getApiRetryEnabled(),
+            apiRetryMaxAttempts: this.getApiRetryMaxAttempts(),
+            apiRetryBaseDelay: this.getApiRetryBaseDelay(),
+            apiRetryMaxDelay: this.getApiRetryMaxDelay(),
+            apiQueueMaxSize: this.getApiQueueMaxSize()
         };
     }
 }

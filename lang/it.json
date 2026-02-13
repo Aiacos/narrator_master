@@ -27,7 +27,17 @@
             "RulesSourceName": "Fonte Regole SRD",
             "RulesSourceHint": "Seleziona quale compendio usare per le risposte sulle regole",
             "RulesSourceAuto": "Automatico - Cerca in tutti i compendi",
-            "RulesSourceDnd5e": "D&D 5e - Solo compendi D&D 5e"
+            "RulesSourceDnd5e": "D&D 5e - Solo compendi D&D 5e",
+            "ApiRetryEnabledName": "Abilita Retry Automatico",
+            "ApiRetryEnabledHint": "Riprova automaticamente le richieste API fallite con backoff esponenziale",
+            "ApiRetryMaxAttemptsName": "Tentativi Massimi",
+            "ApiRetryMaxAttemptsHint": "Numero massimo di tentativi di ripetizione per richieste API fallite (0-10)",
+            "ApiRetryBaseDelayName": "Ritardo Base (ms)",
+            "ApiRetryBaseDelayHint": "Ritardo iniziale in millisecondi prima del primo tentativo di ripetizione",
+            "ApiRetryMaxDelayName": "Ritardo Massimo (ms)",
+            "ApiRetryMaxDelayHint": "Ritardo massimo in millisecondi tra i tentativi (limite backoff esponenziale)",
+            "ApiQueueMaxSizeName": "Dimensione Massima Coda",
+            "ApiQueueMaxSizeHint": "Numero massimo di richieste API in coda contemporaneamente"
         },
 
         "Panel": {
@@ -123,7 +133,8 @@
             "NoNPCContext": "Nessun contesto disponibile per il PNG {name}",
             "RulesSearchFailed": "Ricerca regole fallita: {message}",
             "NoCompendiumsAvailable": "Nessun compendio disponibile per la ricerca delle regole",
-            "CompendiumAccessDenied": "Accesso al compendio negato"
+            "CompendiumAccessDenied": "Accesso al compendio negato",
+            "RateLimitedRetrying": "Limite di velocità raggiunto. Riprovando automaticamente..."
         },
 
         "Warnings": {
@@ -148,7 +159,11 @@
             "RecordingStartedViaShortcut": "Registrazione avviata tramite scorciatoia tastiera",
             "RecordingStoppedViaShortcut": "Registrazione fermata tramite scorciatoia tastiera",
             "RecordingPausedViaShortcut": "Registrazione in pausa tramite scorciatoia tastiera",
-            "RecordingResumedViaShortcut": "Registrazione ripresa tramite scorciatoia tastiera"
+            "RecordingResumedViaShortcut": "Registrazione ripresa tramite scorciatoia tastiera",
+            "RetryingRequest": "Tentativo {attempt}/{max} per {operation}... attendi {delay}s",
+            "RetrySuccess": "{operation} completata dopo {attempts} tentativo/i",
+            "RetryFailed": "{operation} fallita dopo {attempts} tentativo/i",
+            "QueueFull": "Coda richieste piena ({size}). Riprova più tardi."
         },
 
         "OffTrack": {
