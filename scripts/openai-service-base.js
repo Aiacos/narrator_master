@@ -205,6 +205,113 @@ export class OpenAIServiceBase {
     }
 
     /**
+     * Determines if an error is retryable
+     * @param {Object} error - The error to check
+     * @returns {boolean} True if the error should be retried
+     * @private
+     */
+    _isRetryableError(error) {
+        // Network errors are always retryable
+        if (error.isNetworkError) {
+            return true;
+        }
+
+        // Check HTTP status codes
+        if (error.status) {
+            // Rate limiting - retryable
+            if (error.status === 429) {
+                return true;
+            }
+
+            // Server errors - retryable
+            if (error.status >= 500 && error.status < 600) {
+                return true;
+            }
+
+            // Client errors (400-499 except 429) - not retryable
+            if (error.status >= 400 && error.status < 500) {
+                return false;
+            }
+        }
+
+        // Default to not retryable for unknown errors
+        return false;
+    }
+
+    /**
+     * Executes an operation with exponential backoff retry logic
+     * @param {Function} operation - Async function to execute
+     * @param {Object} [context={}] - Context information for logging
+     * @param {string} [context.operationName] - Name of the operation being retried
+     * @returns {Promise<*>} Result of the operation
+     * @throws {Error} If operation fails after all retries
+     * @private
+     */
+    async _retryWithBackoff(operation, context = {}) {
+        const { operationName = 'API request' } = context;
+
+        // If retry is disabled, just execute once
+        if (!this._retryConfig.enabled) {
+            return await operation();
+        }
+
+        let lastError;
+        const maxAttempts = Math.max(1, this._retryConfig.maxAttempts);
+
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            try {
+                // Execute the operation
+                const result = await operation();
+
+                // Log retry success if this wasn't the first attempt
+                if (attempt > 0) {
+                    console.warn(`[${MODULE_ID}] ${operationName} succeeded after ${attempt + 1} attempts`);
+                }
+
+                return result;
+            } catch (error) {
+                lastError = error;
+
+                // Check if we should retry
+                const isRetryable = this._isRetryableError(error);
+                const isLastAttempt = attempt === maxAttempts - 1;
+
+                if (!isRetryable || isLastAttempt) {
+                    // Don't retry - either not retryable or out of attempts
+                    if (!isRetryable) {
+                        console.warn(`[${MODULE_ID}] ${operationName} failed with non-retryable error:`, error.message);
+                    } else {
+                        console.warn(`[${MODULE_ID}] ${operationName} failed after ${maxAttempts} attempts`);
+                    }
+                    throw error;
+                }
+
+                // Calculate delay with exponential backoff: baseDelay * 2^attempt
+                const exponentialDelay = this._retryConfig.baseDelay * Math.pow(2, attempt);
+
+                // Cap at maxDelay
+                const cappedDelay = Math.min(exponentialDelay, this._retryConfig.maxDelay);
+
+                // Add jitter: random value between 0 and 25% of the delay
+                // This prevents thundering herd when multiple requests fail simultaneously
+                const jitter = Math.random() * cappedDelay * 0.25;
+                const finalDelay = cappedDelay + jitter;
+
+                console.warn(
+                    `[${MODULE_ID}] ${operationName} failed (attempt ${attempt + 1}/${maxAttempts}), ` +
+                    `retrying in ${Math.round(finalDelay)}ms: ${error.message}`
+                );
+
+                // Wait before retrying
+                await new Promise(resolve => setTimeout(resolve, finalDelay));
+            }
+        }
+
+        // Should never reach here, but throw last error if we do
+        throw lastError;
+    }
+
+    /**
      * Gets statistics about the service
      * This is an abstract method that should be overridden by subclasses
      * @returns {Object} Service statistics
