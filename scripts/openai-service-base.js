@@ -15,6 +15,11 @@ export class OpenAIServiceBase {
      * Creates a new OpenAIServiceBase instance
      * @param {string} apiKey - The OpenAI API key
      * @param {Object} [options={}] - Configuration options
+     * @param {number} [options.maxHistorySize=50] - Maximum history entries to keep
+     * @param {number} [options.maxRetryAttempts=3] - Maximum retry attempts for failed requests
+     * @param {number} [options.retryBaseDelay=1000] - Base delay in ms for exponential backoff
+     * @param {number} [options.retryMaxDelay=60000] - Maximum delay in ms between retries
+     * @param {boolean} [options.retryEnabled=true] - Enable automatic retry with exponential backoff
      */
     constructor(apiKey, options = {}) {
         /**
@@ -44,6 +49,18 @@ export class OpenAIServiceBase {
          * @private
          */
         this._maxHistorySize = options.maxHistorySize || 50;
+
+        /**
+         * Retry configuration for API requests
+         * @type {Object}
+         * @private
+         */
+        this._retryConfig = {
+            maxAttempts: options.maxRetryAttempts ?? 3,
+            baseDelay: options.retryBaseDelay ?? 1000,    // 1 second
+            maxDelay: options.retryMaxDelay ?? 60000,     // 60 seconds
+            enabled: options.retryEnabled ?? true
+        };
     }
 
     /**
