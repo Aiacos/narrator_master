@@ -1514,7 +1514,7 @@ export class NarratorPanel extends Application {
         this._stopDurationTimer();
         this._durationTimer = setInterval(() => {
             this.recordingDuration++;
-            this.render(false);
+            this._updateDurationDisplay();
         }, 1000);
     }
 
