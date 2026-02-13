@@ -180,7 +180,7 @@ export class JournalParser {
 
     /**
      * Strips HTML tags from content while preserving text
-     * Uses DOMParser for safe parsing (avoids innerHTML XSS risk)
+     * Uses DOMParser for safe parsing without script execution (XSS prevention)
      * @param {string} html - The HTML content to strip
      * @returns {string} Plain text content
      */
@@ -189,8 +189,11 @@ export class JournalParser {
             return '';
         }
 
-        // Use DOMParser for safe HTML parsing (no script execution)
-        const doc = new DOMParser().parseFromString(html, 'text/html');
+        // Use DOMParser to safely parse HTML without executing scripts
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+
+        // Get text content from the parsed document body
         let text = doc.body.textContent || '';
 
         // Normalize whitespace

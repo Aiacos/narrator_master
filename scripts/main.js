@@ -479,7 +479,7 @@ class NarratorMaster {
      */
     async _loadAllJournals() {
         try {
-            // Clear stale cache before re-parsing (fixes stale content on journal updates)
+            // Clear cache before reloading to ensure fresh data
             this.journalParser.clearAllCache();
 
             // Parse journals

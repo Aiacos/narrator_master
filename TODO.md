@@ -2,17 +2,13 @@
 
 Tracker dei problemi noti, organizzato per priorità. Aggiornare questo file quando un issue viene risolto (spostare in "Completati") o quando ne vengono trovati di nuovi.
 
-Ultimo audit: 2026-02-13 (versione 1.3.1)
+Ultimo audit: 2026-02-13 (branch `autoclaude`, versione 1.3.0)
 
 ---
 
 ## CRITICI (bloccano funzionalità)
 
-### 1. `SETTINGS.IMAGE_GALLERY` non definito — crash gallery
-- **File**: `scripts/image-generator.js` righe 837, 850, 866
-- **File**: `scripts/settings.js` righe 17-24
-- **Problema**: `image-generator.js` usa `SETTINGS.IMAGE_GALLERY` per salvare/caricare la gallery via `game.settings`, ma questa chiave NON esiste nel `SETTINGS` constant in `settings.js` e la setting NON è registrata in `registerSettings()`. Il risultato è `game.settings.get('narrator-master', undefined)` → errore runtime.
-- **Fix**: Aggiungere `IMAGE_GALLERY: 'imageGallery'` al `SETTINGS` constant e registrare la setting con tipo `Object`, default `[]`, scope `world`, config `false`.
+(Nessun issue aperto)
 
 ---
 
@@ -64,37 +60,50 @@ Il piano originale diceva "la trascrizione è interna". I merge successivi hanno
 
 ## COMPLETATI
 
-### 8. Freeze in scena causato da `_trimKeywordIndex` nel journal-parser (CRITICO - performance)
+### 1. `SETTINGS.IMAGE_GALLERY` non definito — crash gallery (critico)
 - **Data risoluzione**: 2026-02-13
-- **File interessati**: `scripts/journal-parser.js`, `scripts/main.js`, `scripts/ui-panel.js`, `scripts/journal-picker.js`
-- **Problema**: `_buildKeywordIndex` processava ogni parola sincronamente, e per ogni parola oltre il limite di 5000, `_trimKeywordIndex` ordinava l'intero indice (O(n log n) per ogni inserimento). Con journal grandi (50k+ parole), questo causava miliardi di comparazioni sul main thread, portando a timeout dello script e freeze della scena.
+- **File interessati**: `scripts/settings.js`, `scripts/image-generator.js`
+- **Problema**: `image-generator.js` usava `SETTINGS.IMAGE_GALLERY` per salvare/caricare la gallery via `game.settings`, ma questa chiave NON esisteva nel `SETTINGS` constant in `settings.js` e la setting NON era registrata in `registerSettings()`. Il risultato era `game.settings.get('narrator-master', undefined)` → errore runtime.
 - **Soluzione implementata**:
-  - `_buildKeywordIndex`: deduplicazione parole per pagina (`Set`), skip silenzioso per nuove entry quando il limite è raggiunto (nessun sorting)
-  - `_trimKeywordIndex`: eviction batch (20% degli entry) con iterazione O(n) su Map insertion order invece di O(n log n) sort
-  - `_addToKeywordIndex`: `Date.now()` (number) invece di `new Date()` (object) per ogni parola
-  - `parseAllJournals`: yield tra journal (`setTimeout(0)`) per non bloccare il main thread
-  - `stripHtml`: migrato da `innerHTML` a `DOMParser` per sicurezza XSS (fix TODO #4)
-  - `_loadAllJournals`: aggiunto `clearAllCache()` prima del re-parsing (fix TODO #5)
-  - Fix deprecation warnings v13: `foundry.utils.mergeObject` e `foundry.applications.handlebars.loadTemplates`
-
-### 7. Migrazione da console.log a Logger utility (code quality)
-- **Data risoluzione**: 2026-02-08
-- **File interessati**: Tutti i file in `scripts/` (main.js, audio-capture.js, transcription.js, ai-assistant.js, image-generator.js, journal-parser.js, journal-utils.js, rules-reference.js, vocabulary-manager.js, settings.js)
-- **Problema**: Uso diretto di `console.log`, `console.warn`, `console.error` in tutto il codebase, causando warning ESLint e mancanza di controllo centralizzato sul logging di produzione.
-- **Soluzione implementata**:
-  - Creato `scripts/logger.js` — utility centralizzata con metodi `debug()`, `info()`, `warn()`, `error()`
-  - Aggiunto setting `debugMode` in `settings.js` per abilitare/disabilitare i messaggi di debug
-  - Migrati ~80+ statement console.* a Logger calls in tutti i file del modulo
-  - Logger usa `console.warn` per debug/info/warn e `console.error` per errori (conforme a ESLint no-console)
-  - Debug messages sono soppressi di default e attivabili tramite UI settings
-  - Aggiornato `CLAUDE.md` con linee guida per l'uso del Logger
+  - Aggiunto `IMAGE_GALLERY: 'imageGallery'` al `SETTINGS` constant in `scripts/settings.js`
+  - Registrata la setting `imageGallery` in `registerSettings()` con tipo `Object`, default `[]`, scope `world`, config `false`
+  - Seguita la pattern esistente per hidden Object settings (come SELECTED_JOURNALS)
 - **Benefici**:
-  - ESLint passa senza warning su console.* nel codice di produzione
-  - Logging controllabile tramite settings (debug mode on/off)
-  - Output consistente con prefisso MODULE_ID e context identifier
-  - Facilita debugging senza inquinare la console in produzione
-- **Commit principali**: 9a06cc3 (migrazione main.js), 76cea1f (documentazione CLAUDE.md)
-- **Task**: 020-reduce-console-log-usage-in-production-code-per-es
+  - Gallery delle immagini funziona correttamente senza crash runtime
+  - Persistenza corretta delle immagini generate tra le sessioni
+  - Coerenza con le altre hidden settings del modulo
+- **Commit principali**: b52925a (SETTINGS constant), cae675a (registerSettings)
+- **Task**: 038-ricontrolla-il-progetto-ed-aggiorna-il-todo-con-tu
+
+### 4. `stripHtml()` usa `innerHTML` — potenziale XSS (sicurezza)
+- **Data risoluzione**: 2026-02-13
+- **File interessati**: `scripts/journal-parser.js`
+- **Problema**: `div.innerHTML = html` eseguiva handler inline (es. `<img onerror="...">`) se il journal conteneva contenuto malevolo. Vulnerabilità XSS potenziale se un journal entry conteneva script malevoli.
+- **Soluzione implementata**:
+  - Sostituito `innerHTML` con `DOMParser` nel metodo `stripHtml()`
+  - Nuovo codice: `const doc = new DOMParser().parseFromString(html, 'text/html'); return doc.body.textContent || '';`
+  - DOMParser parsa HTML senza eseguire script, prevenendo XSS
+- **Benefici**:
+  - Eliminata vulnerabilità XSS nel parsing dei journal
+  - Contenuto malevolo nei journal non può più eseguire codice
+  - Conformità alle best practice di sicurezza per parsing HTML
+- **Commit principali**: 5e30a09 (DOMParser implementation)
+- **Task**: 038-ricontrolla-il-progetto-ed-aggiorna-il-todo-con-tu
+
+### 5. Cache stale sui journal hooks (correttezza)
+- **Data risoluzione**: 2026-02-13
+- **File interessati**: `scripts/main.js`
+- **Problema**: I hooks `updateJournalEntry`/`createJournalEntry`/`deleteJournalEntry` chiamavano `_loadAllJournals()` ma NON chiamavano `journalParser.clearAllCache()` prima. Il parsing interno usava cache, quindi un journal modificato poteva restituire contenuto vecchio all'AI assistant.
+- **Soluzione implementata**:
+  - Aggiunto `this.journalParser.clearAllCache()` come prima riga nel metodo `_loadAllJournals()`
+  - La cache viene invalidata prima di ogni reload dei journal
+  - Garantisce che le modifiche ai journal siano immediatamente visibili all'AI
+- **Benefici**:
+  - Journal modificati restituiscono sempre contenuto aggiornato
+  - AI assistant riceve il contesto corretto dopo modifiche ai journal
+  - Eliminato bug di contenuto stale dopo edit/create/delete di journal
+- **Commit principali**: 43a716f (clearAllCache call)
+- **Task**: 038-ricontrolla-il-progetto-ed-aggiorna-il-todo-con-tu
 
 ### 6. `render(false)` ogni secondo durante la registrazione (performance)
 - **Data risoluzione**: 2026-02-13
@@ -115,3 +124,22 @@ Il piano originale diceva "la trascrizione è interna". I merge successivi hanno
   - Mantenuta reattività per eventi critici con render() esplicito
 - **Commit principali**: 1d73c3e (timer DOM update), a96e5a2 (transcript append), 3c655a9 (loading state), db812ac (debounced render), 7772ea0 (verification)
 - **Task**: 011-reduce-excessive-ui-panel-re-renders-with-debounci
+
+### 7. Migrazione da console.log a Logger utility (code quality)
+- **Data risoluzione**: 2026-02-08
+- **File interessati**: Tutti i file in `scripts/` (main.js, audio-capture.js, transcription.js, ai-assistant.js, image-generator.js, journal-parser.js, journal-utils.js, rules-reference.js, vocabulary-manager.js, settings.js)
+- **Problema**: Uso diretto di `console.log`, `console.warn`, `console.error` in tutto il codebase, causando warning ESLint e mancanza di controllo centralizzato sul logging di produzione.
+- **Soluzione implementata**:
+  - Creato `scripts/logger.js` — utility centralizzata con metodi `debug()`, `info()`, `warn()`, `error()`
+  - Aggiunto setting `debugMode` in `settings.js` per abilitare/disabilitare i messaggi di debug
+  - Migrati ~80+ statement console.* a Logger calls in tutti i file del modulo
+  - Logger usa `console.warn` per debug/info/warn e `console.error` per errori (conforme a ESLint no-console)
+  - Debug messages sono soppressi di default e attivabili tramite UI settings
+  - Aggiornato `CLAUDE.md` con linee guida per l'uso del Logger
+- **Benefici**:
+  - ESLint passa senza warning su console.* nel codice di produzione
+  - Logging controllabile tramite settings (debug mode on/off)
+  - Output consistente con prefisso MODULE_ID e context identifier
+  - Facilita debugging senza inquinare la console in produzione
+- **Commit principali**: 9a06cc3 (migrazione main.js), 76cea1f (documentazione CLAUDE.md)
+- **Task**: 020-reduce-console-log-usage-in-production-code-per-es

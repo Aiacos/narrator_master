@@ -30,7 +30,8 @@ export const SETTINGS = {
     API_RETRY_MAX_ATTEMPTS: 'apiRetryMaxAttempts',
     API_RETRY_BASE_DELAY: 'apiRetryBaseDelay',
     API_RETRY_MAX_DELAY: 'apiRetryMaxDelay',
-    API_QUEUE_MAX_SIZE: 'apiQueueMaxSize'
+    API_QUEUE_MAX_SIZE: 'apiQueueMaxSize',
+    IMAGE_GALLERY: 'imageGallery'
 };
 
 /**
@@ -228,6 +229,16 @@ export function registerSettings() {
         config: true,
         type: Number,
         default: 10
+    });
+
+    // Image Gallery - Stores generated images for persistence (stored as array of image objects)
+    game.settings.register(MODULE_ID, SETTINGS.IMAGE_GALLERY, {
+        name: 'NARRATOR.Settings.ImageGalleryName',
+        hint: 'NARRATOR.Settings.ImageGalleryHint',
+        scope: 'world',
+        config: false,
+        type: Object,
+        default: []
     });
 }
 
