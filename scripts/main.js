@@ -1281,6 +1281,28 @@ class NarratorMaster {
     }
 
     /**
+     * Restarts transcription cycles with new batch duration from settings
+     * Called when the transcription batch duration setting changes
+     * Only takes effect if recording is currently active
+     */
+    restartTranscriptionCycles() {
+        // Only restart if currently recording
+        if (!this.audioCapture?.isRecording) {
+            Logger.debug('Transcription batch duration changed but not recording, will apply on next recording', 'NarratorMaster');
+            return;
+        }
+
+        const newBatchDuration = this.settings.getTranscriptionBatchDuration();
+        Logger.info(`Restarting transcription cycles with new interval: ${newBatchDuration}ms`, 'NarratorMaster');
+
+        // Stop current cycles
+        this._stopTranscriptionCycles();
+
+        // Start cycles with new duration
+        this._startTranscriptionCycles();
+    }
+
+    /**
      * Shows a configuration warning to the user
      * @param {string[]} errors - Array of configuration error messages
      * @private

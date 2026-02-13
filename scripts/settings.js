@@ -88,6 +88,11 @@ export function registerSettings() {
             min: 5000,
             max: 30000,
             step: 1000
+        },
+        onChange: value => {
+            if (window.narratorMaster) {
+                window.narratorMaster.restartTranscriptionCycles();
+            }
         }
     });
 
