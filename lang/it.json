@@ -9,6 +9,8 @@
             "LanguageHint": "Lingua per la trascrizione audio. Seleziona 'Auto-detect' per rilevamento automatico della lingua o scegli una lingua specifica (predefinito: Italiano)",
             "MultiLanguageModeName": "Modalita Multi-Lingua",
             "MultiLanguageModeHint": "Abilita il rilevamento automatico della lingua per sessioni con conversazioni in piu lingue. Quando attivo, la trascrizione gestisce il cambio di lingua all'interno della sessione",
+            "TranscriptionBatchDurationName": "Durata Lotto Trascrizione",
+            "TranscriptionBatchDurationHint": "Tempo di accumulo audio prima della trascrizione in millisecondi (5-30 secondi). Valori piu alti riducono le chiamate API e migliorano la qualita della trascrizione con segmenti piu lunghi",
             "PanelPositionName": "Posizione Pannello",
             "PanelPositionHint": "Posizione salvata del pannello DM",
             "SensitivityName": "Sensibilita Rilevamento Fuori Tema",
