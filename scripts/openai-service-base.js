@@ -455,6 +455,35 @@ export class OpenAIServiceBase {
     }
 
     /**
+     * Gets the current size of the request queue
+     * @returns {number} Number of requests currently queued
+     */
+    getQueueSize() {
+        return this._requestQueue.length;
+    }
+
+    /**
+     * Clears all pending requests from the queue
+     * All queued promises will be rejected with a cancellation error
+     */
+    clearQueue() {
+        const queueSize = this._requestQueue.length;
+
+        // Reject all pending requests
+        const cancellationError = new Error('Request cancelled: queue cleared');
+        cancellationError.isCancelled = true;
+
+        while (this._requestQueue.length > 0) {
+            const request = this._requestQueue.shift();
+            request.reject(cancellationError);
+        }
+
+        if (queueSize > 0) {
+            console.warn(`[${MODULE_ID}] Cleared ${queueSize} pending request(s) from queue`);
+        }
+    }
+
+    /**
      * Gets statistics about the service
      * This is an abstract method that should be overridden by subclasses
      * @returns {Object} Service statistics
