@@ -4,7 +4,7 @@
  * @module compendium-parser
  */
 
-import { MODULE_ID as _MODULE_ID } from './settings.js';
+import { MODULE_ID } from './settings.js';
 import { Logger } from './logger.js';
 
 /**
@@ -46,11 +46,20 @@ export class CompendiumParser {
         this._cachedContent = new Map();
 
         /**
-         * Index of keywords to entries for quick lookup
-         * @type {Map<string, Set<string>>}
+         * Keyword index with LRU eviction (bounded to prevent unbounded growth)
+         * Maps keywords (≥3 chars) to entry IDs and last access timestamp
+         * Automatically evicts oldest accessed entries when size exceeds _maxKeywordIndexSize
+         * @type {Map<string, {entryIds: Set<string>, lastAccessed: Date}>}
          * @private
          */
         this._keywordIndex = new Map();
+
+        /**
+         * Maximum number of keyword index entries before LRU eviction
+         * @type {number}
+         * @private
+         */
+        this._maxKeywordIndexSize = 5000;
 
         /**
          * Cached journal compendiums (adventure content)
@@ -118,10 +127,10 @@ export class CompendiumParser {
             const packId = (p.metadata?.id || p.collection || '').toLowerCase();
 
             // Include Item compendiums (spells, equipment, etc.)
-            if (docType === 'Item') {return true;}
+            if (docType === 'Item') return true;
 
             // Include RollTables (random tables often used for rules)
-            if (docType === 'RollTable') {return true;}
+            if (docType === 'RollTable') return true;
 
             // Include journal packs that seem rules-related
             if (docType === 'JournalEntry') {
@@ -196,7 +205,7 @@ export class CompendiumParser {
             try {
                 // Load the full document
                 const doc = await pack.getDocument(indexEntry._id);
-                if (!doc) {continue;}
+                if (!doc) continue;
 
                 const parsedEntry = this._parseCompendiumDocument(doc, packId, packName, documentName);
                 if (parsedEntry) {
@@ -431,12 +440,71 @@ export class CompendiumParser {
 
             for (const word of allWords) {
                 const key = `${packId}:${word}`;
-                if (!this._keywordIndex.has(key)) {
-                    this._keywordIndex.set(key, new Set());
-                }
-                this._keywordIndex.get(key).add(entry.id);
+                // Use bounded index with LRU eviction
+                this._addToKeywordIndex(key, entry.id);
             }
         }
+    }
+
+    /**
+     * Adds a keyword to the bounded keyword index with LRU tracking
+     * @param {string} key - The keyword index key (format: "packId:word")
+     * @param {string} entryId - The entry ID containing this keyword
+     * @private
+     */
+    _addToKeywordIndex(key, entryId) {
+        // Get existing entry or create new one
+        let entry = this._keywordIndex.get(key);
+
+        if (entry) {
+            // Update existing entry
+            entry.entryIds.add(entryId);
+            entry.lastAccessed = new Date();
+        } else {
+            // Create new entry
+            entry = {
+                entryIds: new Set([entryId]),
+                lastAccessed: new Date()
+            };
+            this._keywordIndex.set(key, entry);
+        }
+
+        // Trim index if size exceeded
+        if (this._keywordIndex.size > this._maxKeywordIndexSize) {
+            this._trimKeywordIndex();
+        }
+    }
+
+    /**
+     * Trims the bounded keyword index using LRU eviction
+     * Removes oldest accessed entries until size is within limit
+     * @private
+     */
+    _trimKeywordIndex() {
+        const currentSize = this._keywordIndex.size;
+        const targetSize = this._maxKeywordIndexSize;
+
+        if (currentSize <= targetSize) {
+            return; // No trimming needed
+        }
+
+        // Convert to array with keys and sort by lastAccessed (oldest first)
+        const entries = Array.from(this._keywordIndex.entries());
+        entries.sort((a, b) => a[1].lastAccessed - b[1].lastAccessed);
+
+        // Calculate how many entries to remove
+        const entriesToRemove = currentSize - targetSize;
+
+        // Remove oldest entries
+        for (let i = 0; i < entriesToRemove; i++) {
+            const [key] = entries[i];
+            this._keywordIndex.delete(key);
+        }
+
+        Logger.debug(
+            `Trimmed keyword index: removed ${entriesToRemove} entries (${currentSize} → ${targetSize})`,
+            'CompendiumParser._trimKeywordIndex'
+        );
     }
 
     /**
@@ -479,6 +547,40 @@ export class CompendiumParser {
         }
 
         return content;
+    }
+
+    /**
+     * Searches for entries containing specific keywords using the bounded index
+     * @param {string} packId - The compendium pack ID to search in
+     * @param {string[]} keywords - Keywords to search for
+     * @returns {ParsedCompendiumEntry[]} Entries containing the keywords
+     */
+    searchByKeywords(packId, keywords) {
+        const cached = this._cachedContent.get(packId);
+        if (!cached) {
+            Logger.warn(`Compendium not cached: ${packId}`, 'CompendiumParser.searchByKeywords');
+            return [];
+        }
+
+        const matchingEntryIds = new Set();
+
+        for (const keyword of keywords) {
+            const normalizedKeyword = keyword.toLowerCase().trim();
+            if (normalizedKeyword.length < 2) continue;
+
+            const key = `${packId}:${normalizedKeyword}`;
+            // Use bounded index with LRU tracking
+            const entry = this._keywordIndex.get(key);
+            if (entry) {
+                // Update last accessed time for LRU tracking
+                entry.lastAccessed = new Date();
+                for (const entryId of entry.entryIds) {
+                    matchingEntryIds.add(entryId);
+                }
+            }
+        }
+
+        return cached.entries.filter(entry => matchingEntryIds.has(entry.id));
     }
 
     /**
@@ -612,7 +714,7 @@ export class CompendiumParser {
     clearCache(packId) {
         this._cachedContent.delete(packId);
 
-        // Clear keyword index entries for this pack
+        // Clear bounded keyword index entries for this pack
         for (const key of this._keywordIndex.keys()) {
             if (key.startsWith(`${packId}:`)) {
                 this._keywordIndex.delete(key);

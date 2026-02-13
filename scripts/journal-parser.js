@@ -4,7 +4,7 @@
  * @module journal-parser
  */
 
-import { MODULE_ID as _MODULE_ID } from './settings.js';
+import { MODULE_ID } from './settings.js';
 import { Logger } from './logger.js';
 
 /**
@@ -68,18 +68,23 @@ export class JournalParser {
         this._cachedContent = new Map();
 
         /**
-         * Index of keywords to pages for quick lookup
-         * @type {Map<string, Set<string>>}
+         * Keyword index with bounded size and LRU (Least Recently Used) eviction.
+         * Maps keyword keys to page IDs and last access time for quick lookup.
+         * When the index exceeds _maxKeywordIndexSize, the oldest accessed entries
+         * are automatically evicted to prevent unbounded memory growth.
+         *
+         * @type {Map<string, {pageIds: Set<string>, lastAccessed: Date}>}
          * @private
          */
         this._keywordIndex = new Map();
 
         /**
-         * Cached DOM element for HTML parsing to avoid repeated element creation
-         * @type {HTMLDivElement|null}
+         * Maximum number of keyword index entries before LRU eviction.
+         * Default: 5000 entries (protects against unbounded memory growth in large journals)
+         * @type {number}
          * @private
          */
-        this._stripHtmlElement = null;
+        this._maxKeywordIndexSize = 5000;
     }
 
     /**
@@ -183,19 +188,12 @@ export class JournalParser {
             return '';
         }
 
-        // Lazily create cached DOM element on first use
-        if (!this._stripHtmlElement) {
-            this._stripHtmlElement = document.createElement('div');
-        }
-
-        // Reuse the cached element instead of creating a new one
-        this._stripHtmlElement.innerHTML = html;
+        // Create a temporary DOM element to parse HTML
+        const div = document.createElement('div');
+        div.innerHTML = html;
 
         // Get text content, handling nested elements
-        let text = this._stripHtmlElement.textContent || this._stripHtmlElement.innerText || '';
-
-        // Clear the element after use to prevent state leakage between calls
-        this._stripHtmlElement.innerHTML = '';
+        let text = div.textContent || div.innerText || '';
 
         // Normalize whitespace
         text = text.replace(/\s+/g, ' ').trim();
@@ -219,12 +217,71 @@ export class JournalParser {
 
             for (const word of words) {
                 const key = `${journalId}:${word}`;
-                if (!this._keywordIndex.has(key)) {
-                    this._keywordIndex.set(key, new Set());
-                }
-                this._keywordIndex.get(key).add(page.id);
+                // Use bounded index with LRU eviction
+                this._addToKeywordIndex(key, page.id);
             }
         }
+    }
+
+    /**
+     * Adds a keyword to the bounded keyword index with LRU tracking
+     * @param {string} key - The keyword index key (format: "journalId:word")
+     * @param {string} pageId - The page ID containing this keyword
+     * @private
+     */
+    _addToKeywordIndex(key, pageId) {
+        // Get existing entry or create new one
+        let entry = this._keywordIndex.get(key);
+
+        if (entry) {
+            // Update existing entry
+            entry.pageIds.add(pageId);
+            entry.lastAccessed = new Date();
+        } else {
+            // Create new entry
+            entry = {
+                pageIds: new Set([pageId]),
+                lastAccessed: new Date()
+            };
+            this._keywordIndex.set(key, entry);
+        }
+
+        // Trim index if size exceeded
+        if (this._keywordIndex.size > this._maxKeywordIndexSize) {
+            this._trimKeywordIndex();
+        }
+    }
+
+    /**
+     * Trims the bounded keyword index using LRU eviction
+     * Removes oldest accessed entries until size is within limit
+     * @private
+     */
+    _trimKeywordIndex() {
+        const currentSize = this._keywordIndex.size;
+        const targetSize = this._maxKeywordIndexSize;
+
+        if (currentSize <= targetSize) {
+            return; // No trimming needed
+        }
+
+        // Convert to array with keys and sort by lastAccessed (oldest first)
+        const entries = Array.from(this._keywordIndex.entries());
+        entries.sort((a, b) => a[1].lastAccessed - b[1].lastAccessed);
+
+        // Calculate how many entries to remove
+        const entriesToRemove = currentSize - targetSize;
+
+        // Remove oldest entries
+        for (let i = 0; i < entriesToRemove; i++) {
+            const [key] = entries[i];
+            this._keywordIndex.delete(key);
+        }
+
+        Logger.debug(
+            `Trimmed keyword index: removed ${entriesToRemove} entries (${currentSize} → ${targetSize})`,
+            'JournalParser._trimKeywordIndex'
+        );
     }
 
     /**
@@ -244,12 +301,15 @@ export class JournalParser {
 
         for (const keyword of keywords) {
             const normalizedKeyword = keyword.toLowerCase().trim();
-            if (normalizedKeyword.length < 3) {continue;}
+            if (normalizedKeyword.length < 3) continue;
 
             const key = `${journalId}:${normalizedKeyword}`;
-            const pageIds = this._keywordIndex.get(key);
-            if (pageIds) {
-                for (const pageId of pageIds) {
+            // Use bounded index with LRU tracking
+            const entry = this._keywordIndex.get(key);
+            if (entry) {
+                // Update last accessed time for LRU tracking
+                entry.lastAccessed = new Date();
+                for (const pageId of entry.pageIds) {
                     matchingPageIds.add(pageId);
                 }
             }
@@ -335,7 +395,7 @@ export class JournalParser {
     clearCache(journalId) {
         this._cachedContent.delete(journalId);
 
-        // Clear keyword index entries for this journal
+        // Clear keyword index entries for this journal from bounded index
         for (const key of this._keywordIndex.keys()) {
             if (key.startsWith(`${journalId}:`)) {
                 this._keywordIndex.delete(key);
@@ -351,7 +411,6 @@ export class JournalParser {
     clearAllCache() {
         this._cachedContent.clear();
         this._keywordIndex.clear();
-        this._stripHtmlElement = null;
         Logger.debug('Cleared all journal cache', 'JournalParser.clearAllCache');
     }
 
@@ -1192,7 +1251,7 @@ export class JournalParser {
         const terms = [];
 
         // Normalize the scene name
-        const normalized = sceneName.trim();
+        let normalized = sceneName.trim();
 
         // Common separators in scene names
         const separators = [':', '-', '–', '—', '|', '/'];
