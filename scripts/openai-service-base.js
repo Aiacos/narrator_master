@@ -239,6 +239,41 @@ export class OpenAIServiceBase {
     }
 
     /**
+     * Parses the Retry-After header from an API response
+     * @param {Response} response - The fetch response object
+     * @returns {number|null} Delay in milliseconds, or null if header is absent/invalid
+     * @private
+     */
+    _parseRetryAfter(response) {
+        const retryAfter = response?.headers?.get('Retry-After');
+        if (!retryAfter) {
+            return null;
+        }
+
+        // Try parsing as seconds (numeric format)
+        const seconds = parseInt(retryAfter, 10);
+        if (!isNaN(seconds) && seconds > 0) {
+            return seconds * 1000; // Convert to milliseconds
+        }
+
+        // Try parsing as HTTP-date
+        try {
+            const date = new Date(retryAfter);
+            const now = new Date();
+            const delayMs = date.getTime() - now.getTime();
+
+            // Only return positive delays
+            if (!isNaN(delayMs) && delayMs > 0) {
+                return delayMs;
+            }
+        } catch (e) {
+            // Invalid date format, fall through to null
+        }
+
+        return null;
+    }
+
+    /**
      * Executes an operation with exponential backoff retry logic
      * @param {Function} operation - Async function to execute
      * @param {Object} [context={}] - Context information for logging
