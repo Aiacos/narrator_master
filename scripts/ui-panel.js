@@ -5,6 +5,7 @@
  */
 
 import { MODULE_ID, SettingsManager } from './settings.js';
+import { debounce } from './dom-utils.js';
 
 /**
  * Recording state enumeration
@@ -195,6 +196,16 @@ export class NarratorPanel extends Application {
          * @type {Function|null}
          */
         this.onSubchapterClick = null;
+
+        /**
+         * Debounced version of render() for non-critical updates
+         * Delays rendering by 150ms to batch multiple rapid updates
+         * @type {Function}
+         * @private
+         */
+        this._debouncedRender = debounce(() => {
+            this.render(false);
+        }, 150);
     }
 
     /**
@@ -1125,6 +1136,92 @@ export class NarratorPanel extends Application {
     }
 
     /**
+     * Updates the recording duration display without full re-render
+     * @private
+     */
+    _updateDurationDisplay() {
+        // Only update the duration display without full re-render
+        const durationEl = this.element?.find('.recording-duration');
+        if (durationEl && durationEl.length) {
+            durationEl.text(this._formatDuration(this.recordingDuration));
+        }
+    }
+
+    /**
+     * Appends a single transcript segment to the DOM without full re-render
+     * @param {Object} segment - Transcript segment to append
+     * @param {string} segment.speaker - Speaker label
+     * @param {string} segment.text - Transcript text
+     * @param {number} segment.timestamp - Timestamp in milliseconds
+     * @private
+     */
+    /**
+     * Appends a single transcript segment to the DOM without full re-render
+     * @param {Object} segment - Transcript segment to append
+     * @param {string} segment.speaker - Speaker label
+     * @param {string} segment.text - Transcript text
+     * @param {number} segment.timestamp - Timestamp in milliseconds
+     * @private
+     */
+    _appendTranscriptSegment(segment) {
+        if (!segment || !segment.speaker || !segment.text) {
+            return;
+        }
+
+        // Check if the transcript list exists
+        const transcriptList = this.element?.find('.transcript-list');
+        if (!transcriptList || !transcriptList.length) {
+            return;
+        }
+
+        // Format the timestamp
+        const formattedTimestamp = this._formatTimestamp(segment.timestamp);
+
+        // Create DOM elements safely using jQuery
+        // .attr() and .text() automatically escape HTML
+        const $segment = $('<div class="transcript-segment"></div>')
+            .attr('data-speaker', segment.speaker)
+            .attr('data-timestamp', segment.timestamp);
+
+        const $header = $('<div class="segment-header"></div>');
+        $header.append(
+            $('<span class="speaker-label"></span>').text(segment.speaker)
+        );
+        $header.append(
+            $('<span class="transcript-timestamp"></span>').text(formattedTimestamp)
+        );
+
+        const $text = $('<div class="transcript-text"></div>').text(segment.text);
+
+        $segment.append($header).append($text);
+        transcriptList.append($segment);
+    }
+
+    /**
+     * Updates the loading overlay without full re-render
+     * @private
+     */
+    _updateLoadingState() {
+        // Find the loading overlay element
+        const overlayEl = this.element?.find('.narrator-loading-overlay');
+        if (!overlayEl || !overlayEl.length) {
+            return;
+        }
+
+        // Show or hide the overlay based on loading state
+        if (this.isLoading) {
+            overlayEl.show();
+            // Update the loading message
+            const messageEl = overlayEl.find('span');
+            if (messageEl && messageEl.length) {
+                messageEl.text(this.loadingMessage);
+            }
+        } else {
+            overlayEl.hide();
+        }
+    }
+
+    /**
      * Sets the loading state
      * @param {boolean} loading - Whether loading
      * @param {string} [message] - Loading message
@@ -1132,7 +1229,7 @@ export class NarratorPanel extends Application {
     setLoading(loading, message = '') {
         this.isLoading = loading;
         this.loadingMessage = message;
-        this.render(false);
+        this._updateLoadingState();
     }
 
     /**
@@ -1200,8 +1297,13 @@ export class NarratorPanel extends Application {
             newSegments = this.speakerLabelService.applyLabelsToSegments(segments);
         }
 
+        // Add to internal array
         this.transcriptSegments.push(...newSegments);
-        this.render(false);
+
+        // Append each segment to the DOM without full re-render
+        for (const segment of newSegments) {
+            this._appendTranscriptSegment(segment);
+        }
     }
 
     /**
@@ -1441,7 +1543,7 @@ export class NarratorPanel extends Application {
         this._stopDurationTimer();
         this._durationTimer = setInterval(() => {
             this.recordingDuration++;
-            this.render(false);
+            this._updateDurationDisplay();
         }, 1000);
     }
 
