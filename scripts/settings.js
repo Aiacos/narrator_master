@@ -330,6 +330,46 @@ export class SettingsManager {
     }
 
     /**
+     * Gets the API retry enabled setting
+     * @returns {boolean} True if API retry is enabled
+     */
+    getApiRetryEnabled() {
+        return game.settings.get(MODULE_ID, SETTINGS.API_RETRY_ENABLED) ?? true;
+    }
+
+    /**
+     * Gets the API retry max attempts setting
+     * @returns {number} Maximum number of retry attempts
+     */
+    getApiRetryMaxAttempts() {
+        return game.settings.get(MODULE_ID, SETTINGS.API_RETRY_MAX_ATTEMPTS) || 3;
+    }
+
+    /**
+     * Gets the API retry base delay setting
+     * @returns {number} Base delay in milliseconds before first retry
+     */
+    getApiRetryBaseDelay() {
+        return game.settings.get(MODULE_ID, SETTINGS.API_RETRY_BASE_DELAY) || 1000;
+    }
+
+    /**
+     * Gets the API retry max delay setting
+     * @returns {number} Maximum delay in milliseconds between retries
+     */
+    getApiRetryMaxDelay() {
+        return game.settings.get(MODULE_ID, SETTINGS.API_RETRY_MAX_DELAY) || 30000;
+    }
+
+    /**
+     * Gets the API queue max size setting
+     * @returns {number} Maximum number of requests that can be queued
+     */
+    getApiQueueMaxSize() {
+        return game.settings.get(MODULE_ID, SETTINGS.API_QUEUE_MAX_SIZE) || 10;
+    }
+
+    /**
      * Checks if the API key is configured
      * @returns {boolean} True if API key is set
      */
@@ -370,7 +410,12 @@ export class SettingsManager {
             selectedJournals: this.getSelectedJournals(),
             rulesDetection: this.getRulesDetection(),
             rulesSource: this.getRulesSource(),
-            debugMode: this.getDebugMode()
+            debugMode: this.getDebugMode(),
+            apiRetryEnabled: this.getApiRetryEnabled(),
+            apiRetryMaxAttempts: this.getApiRetryMaxAttempts(),
+            apiRetryBaseDelay: this.getApiRetryBaseDelay(),
+            apiRetryMaxDelay: this.getApiRetryMaxDelay(),
+            apiQueueMaxSize: this.getApiQueueMaxSize()
         };
     }
 }
