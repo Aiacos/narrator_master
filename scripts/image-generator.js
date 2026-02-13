@@ -394,33 +394,41 @@ export class ImageGenerator extends OpenAIServiceBase {
      * @private
      */
     async _makeApiRequest(requestBody) {
-        let response;
+        // Define the API operation as an async function
+        const operation = async () => {
+            let response;
 
-        try {
-            response = await fetch(`${this._baseUrl}/images/generations`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this._apiKey}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestBody)
-            });
-        } catch (networkError) {
-            // Handle network errors (no connection, timeout, etc.)
-            Logger.error('Network error during image generation', 'ImageGenerator', networkError);
-            throw this._createNetworkError(networkError);
-        }
+            try {
+                response = await fetch(`${this._baseUrl}/images/generations`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${this._apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+            } catch (networkError) {
+                // Handle network errors (no connection, timeout, etc.)
+                Logger.error('Network error during image generation', 'ImageGenerator', networkError);
+                throw this._createNetworkError(networkError);
+            }
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw {
-                message: errorData.error?.message || 'Image generation failed',
-                code: errorData.error?.code || 'unknown',
-                status: response.status
-            };
-        }
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw {
+                    message: errorData.error?.message || 'Image generation failed',
+                    code: errorData.error?.code || 'unknown',
+                    status: response.status
+                };
+            }
 
-        return await response.json();
+            return await response.json();
+        };
+
+        // Execute with retry logic
+        return await this._retryWithBackoff(operation, {
+            operationName: 'Image generation'
+        });
     }
 
     /**
