@@ -1205,7 +1205,7 @@ export class NarratorPanel extends Application {
     setLoading(loading, message = '') {
         this.isLoading = loading;
         this.loadingMessage = message;
-        this.render(false);
+        this._updateLoadingState();
     }
 
     /**
