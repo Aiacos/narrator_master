@@ -158,6 +158,56 @@ export function registerSettings() {
         type: Boolean,
         default: false
     });
+
+    // API Retry Enabled - Enable automatic retry with exponential backoff for failed API requests
+    game.settings.register(MODULE_ID, SETTINGS.API_RETRY_ENABLED, {
+        name: 'NARRATOR.Settings.ApiRetryEnabledName',
+        hint: 'NARRATOR.Settings.ApiRetryEnabledHint',
+        scope: 'world',
+        config: true,
+        type: Boolean,
+        default: true
+    });
+
+    // API Retry Max Attempts - Maximum number of retry attempts for failed API requests
+    game.settings.register(MODULE_ID, SETTINGS.API_RETRY_MAX_ATTEMPTS, {
+        name: 'NARRATOR.Settings.ApiRetryMaxAttemptsName',
+        hint: 'NARRATOR.Settings.ApiRetryMaxAttemptsHint',
+        scope: 'world',
+        config: true,
+        type: Number,
+        default: 3
+    });
+
+    // API Retry Base Delay - Base delay in milliseconds before first retry (will increase exponentially)
+    game.settings.register(MODULE_ID, SETTINGS.API_RETRY_BASE_DELAY, {
+        name: 'NARRATOR.Settings.ApiRetryBaseDelayName',
+        hint: 'NARRATOR.Settings.ApiRetryBaseDelayHint',
+        scope: 'world',
+        config: true,
+        type: Number,
+        default: 1000
+    });
+
+    // API Retry Max Delay - Maximum delay in milliseconds between retries
+    game.settings.register(MODULE_ID, SETTINGS.API_RETRY_MAX_DELAY, {
+        name: 'NARRATOR.Settings.ApiRetryMaxDelayName',
+        hint: 'NARRATOR.Settings.ApiRetryMaxDelayHint',
+        scope: 'world',
+        config: true,
+        type: Number,
+        default: 30000
+    });
+
+    // API Queue Max Size - Maximum number of requests that can be queued
+    game.settings.register(MODULE_ID, SETTINGS.API_QUEUE_MAX_SIZE, {
+        name: 'NARRATOR.Settings.ApiQueueMaxSizeName',
+        hint: 'NARRATOR.Settings.ApiQueueMaxSizeHint',
+        scope: 'world',
+        config: true,
+        type: Number,
+        default: 10
+    });
 }
 
 /**
