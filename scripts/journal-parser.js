@@ -351,6 +351,7 @@ export class JournalParser {
     clearAllCache() {
         this._cachedContent.clear();
         this._keywordIndex.clear();
+        this._stripHtmlElement = null;
         Logger.debug('Cleared all journal cache', 'JournalParser.clearAllCache');
     }
 
