@@ -73,6 +73,13 @@ export class JournalParser {
          * @private
          */
         this._keywordIndex = new Map();
+
+        /**
+         * Cached DOM element for HTML parsing to avoid repeated element creation
+         * @type {HTMLDivElement|null}
+         * @private
+         */
+        this._stripHtmlElement = null;
     }
 
     /**
