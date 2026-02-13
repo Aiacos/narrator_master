@@ -31,6 +31,14 @@ const TRANSCRIPTION_CYCLE_MS = 15000;
 const MIN_AUDIO_SIZE = 15000;
 
 /**
+ * Silence detection threshold (0.0 to 1.0)
+ * Audio segments with average level below this threshold are considered silent
+ * and will not be sent for transcription to reduce API calls
+ * @constant {number}
+ */
+const SILENCE_THRESHOLD = 0.01;
+
+/**
  * Maximum consecutive transcription errors before circuit breaker activates
  * @constant {number}
  */
@@ -289,6 +297,14 @@ class NarratorMaster {
          * @private
          */
         this._isSilenceRecoveryActive = false;
+
+        /**
+         * Audio levels collected during current transcription cycle
+         * Used for silence detection to skip transcribing silent segments
+         * @type {number[]}
+         * @private
+         */
+        this._cycleAudioLevels = [];
     }
 
     /**
@@ -790,6 +806,16 @@ class NarratorMaster {
         this._isProcessingCycle = true;
 
         try {
+            // Calculate average audio level from samples collected during this cycle
+            let avgAudioLevel = 0;
+            if (this._cycleAudioLevels.length > 0) {
+                const sum = this._cycleAudioLevels.reduce((acc, level) => acc + level, 0);
+                avgAudioLevel = sum / this._cycleAudioLevels.length;
+            }
+
+            // Clear audio levels for next cycle
+            this._cycleAudioLevels = [];
+
             // Suppress UI state changes during the brief stop/restart
             this._isCyclicRestart = true;
 
@@ -804,6 +830,15 @@ class NarratorMaster {
             // Process the blob if large enough
             if (!audioBlob || audioBlob.size < MIN_AUDIO_SIZE) {
                 Logger.debug(`Audio too small (${audioBlob?.size || 0}B), skipping`, 'TranscriptionCycle');
+                return;
+            }
+
+            // Skip silent audio segments to reduce API calls
+            if (avgAudioLevel < SILENCE_THRESHOLD) {
+                Logger.debug(
+                    `Audio too quiet (avg level: ${(avgAudioLevel * 100).toFixed(2)}%), skipping transcription`,
+                    'TranscriptionCycle'
+                );
                 return;
             }
 
@@ -940,9 +975,14 @@ class NarratorMaster {
 
         // Update every 100ms
         this._audioLevelInterval = setInterval(() => {
-            const level = this.audioCapture.getAudioLevel() * 100;
+            const level = this.audioCapture.getAudioLevel();
+
+            // Track level for silence detection (raw 0-1 value)
+            this._cycleAudioLevels.push(level);
+
+            // Update UI with percentage value
             if (this.panel) {
-                this.panel.setAudioLevel(level);
+                this.panel.setAudioLevel(level * 100);
             }
         }, 100);
     }
