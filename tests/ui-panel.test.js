@@ -37,12 +37,12 @@ class MockApplication {
         };
     }
 
-    render(force = false) {
+    render(_force = false) {
         // Mock render - just return this
         return this;
     }
 
-    async close(options = {}) {
+    async close(_options = {}) {
         return true;
     }
 
@@ -51,7 +51,7 @@ class MockApplication {
         return this.position;
     }
 
-    activateListeners(html) {
+    activateListeners(_html) {
         // Mock listener activation
     }
 }
@@ -71,7 +71,7 @@ class MockDialog {
         this.config = config;
     }
 
-    render(force) {
+    render(_force) {
         return this;
     }
 
@@ -90,7 +90,7 @@ class MockImagePopout {
         this.options = options;
     }
 
-    render(force) {
+    render(_force) {
         return this;
     }
 }
@@ -132,16 +132,16 @@ async function setup() {
     // Set up URL.createObjectURL
     if (!globalThis.URL) {
         globalThis.URL = {
-            createObjectURL: (blob) => 'blob:mock-url',
-            revokeObjectURL: (url) => {}
+            createObjectURL: (_blob) => 'blob:mock-url',
+            revokeObjectURL: (_url) => {}
         };
     }
 
     // Mock setInterval and clearInterval for timer tests
     globalThis._intervals = [];
-    globalThis.setInterval = (fn, ms) => {
+    globalThis.setInterval = (fn, _ms) => {
         const id = Math.random();
-        globalThis._intervals.push({ id, fn, ms });
+        globalThis._intervals.push({ id, fn, ms: _ms });
         return id;
     };
     globalThis.clearInterval = (id) => {
@@ -152,14 +152,14 @@ async function setup() {
     };
 
     // Mock setTimeout for async operations
-    globalThis.setTimeout = (fn, ms) => {
+    globalThis.setTimeout = (fn, _ms) => {
         // Execute immediately in tests
         fn();
         return Math.random();
     };
 
     // Mock jQuery find() method
-    globalThis.$ = (selector) => {
+    globalThis.$ = (_selector) => {
         const elements = {
             find: () => elements,
             click: () => elements,

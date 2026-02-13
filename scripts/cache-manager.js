@@ -4,7 +4,8 @@
  * @module cache-manager
  */
 
-import { MODULE_ID } from './settings.js';
+import { MODULE_ID as _MODULE_ID } from './settings.js';
+import { Logger } from './logger.js';
 
 /**
  * Represents a cache entry with value, timestamps, and optional metadata
@@ -192,7 +193,7 @@ export class CacheManager {
     get(key, checkExpiration = true) {
         const entry = this._cache.get(key);
 
-        if (!entry) return null;
+        if (!entry) {return null;}
 
         // Check if entry has expired
         if (checkExpiration && new Date() > entry.expiresAt) {
@@ -268,7 +269,7 @@ export class CacheManager {
         }
 
         if (expiredKeys.length > 0) {
-            console.log(`${MODULE_ID} | ${this._name}: Cleared ${expiredKeys.length} expired cache entries`);
+            Logger.info(`Cleared ${expiredKeys.length} expired cache entries`, this._name);
         }
 
         return expiredKeys.length;
@@ -279,7 +280,7 @@ export class CacheManager {
      */
     clear() {
         this._cache.clear();
-        console.log(`${MODULE_ID} | ${this._name}: Cache cleared`);
+        Logger.info('Cache cleared', this._name);
     }
 
     /**
@@ -313,7 +314,7 @@ export class CacheManager {
      * @private
      */
     _trim() {
-        if (this._cache.size <= this._maxSize) return;
+        if (this._cache.size <= this._maxSize) {return;}
 
         // Remove oldest entries (LRU - Least Recently Used)
         const entries = Array.from(this._cache.entries())
@@ -324,7 +325,7 @@ export class CacheManager {
             this._cache.delete(key);
         }
 
-        console.log(`${MODULE_ID} | ${this._name}: Trimmed ${toRemove.length} old cache entries`);
+        Logger.info(`Trimmed ${toRemove.length} old cache entries`, this._name);
     }
 
     /**

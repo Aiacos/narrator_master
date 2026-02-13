@@ -4,7 +4,7 @@
  * @module compendium-parser
  */
 
-import { MODULE_ID } from './settings.js';
+import { MODULE_ID as _MODULE_ID } from './settings.js';
 import { Logger } from './logger.js';
 
 /**
@@ -118,10 +118,10 @@ export class CompendiumParser {
             const packId = (p.metadata?.id || p.collection || '').toLowerCase();
 
             // Include Item compendiums (spells, equipment, etc.)
-            if (docType === 'Item') return true;
+            if (docType === 'Item') {return true;}
 
             // Include RollTables (random tables often used for rules)
-            if (docType === 'RollTable') return true;
+            if (docType === 'RollTable') {return true;}
 
             // Include journal packs that seem rules-related
             if (docType === 'JournalEntry') {
@@ -196,7 +196,7 @@ export class CompendiumParser {
             try {
                 // Load the full document
                 const doc = await pack.getDocument(indexEntry._id);
-                if (!doc) continue;
+                if (!doc) {continue;}
 
                 const parsedEntry = this._parseCompendiumDocument(doc, packId, packName, documentName);
                 if (parsedEntry) {

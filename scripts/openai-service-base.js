@@ -4,7 +4,7 @@
  * @module openai-service-base
  */
 
-import { MODULE_ID } from './settings.js';
+import { MODULE_ID as _MODULE_ID } from './settings.js';
 
 /**
  * OpenAIServiceBase - Base class for OpenAI API services
@@ -92,11 +92,11 @@ export class OpenAIServiceBase {
     /**
      * Handles API errors and returns user-friendly error messages
      * @param {Object} error - The API error
-     * @param {string} operation - The operation being performed (e.g., 'Transcription', 'AI Assistant')
+     * @param {string} _operation - The operation being performed (e.g., 'Transcription', 'AI Assistant')
      * @returns {Error} A user-friendly error
      * @private
      */
-    _handleApiError(error, operation) {
+    _handleApiError(error, _operation) {
         let message;
 
         // Handle network errors first

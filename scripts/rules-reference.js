@@ -4,7 +4,7 @@
  * @module rules-reference
  */
 
-import { MODULE_ID, SETTINGS } from './settings.js';
+import { MODULE_ID as _MODULE_ID, SETTINGS as _SETTINGS } from './settings.js';
 import { Logger } from './logger.js';
 
 /**
@@ -17,7 +17,7 @@ const DEFAULT_RESULT_LIMIT = 5;
  * Maximum cache size for rules entries
  * @constant {number}
  */
-const MAX_CACHE_SIZE = 1000;
+const _MAX_CACHE_SIZE = 1000;
 
 /**
  * Represents a rule or game mechanic entry
@@ -168,17 +168,17 @@ export class RulesReferenceService {
      * @param {number} [options.limit] - Override result limit
      * @returns {Promise<SearchResult[]>} Array of search results
      */
-    async searchRules(query, options = {}) {
+    async searchRules(_query, _options = {}) {
         // TODO: Implementation
         return [];
     }
 
     /**
      * Gets a specific rule by ID
-     * @param {string} ruleId - The rule ID
+     * @param {string} _ruleId - The rule ID
      * @returns {Promise<RuleEntry|null>} The rule entry or null if not found
      */
-    async getRuleById(ruleId) {
+    async getRuleById(_ruleId) {
         // TODO: Implementation
         return null;
     }
@@ -215,10 +215,10 @@ export class RulesReferenceService {
 
     /**
      * Gets rules in a specific category
-     * @param {string} category - The category name
+     * @param {string} _category - The category name
      * @returns {RuleEntry[]} Array of rule entries in the category
      */
-    getRulesByCategory(category) {
+    getRulesByCategory(_category) {
         // TODO: Implementation
         return [];
     }

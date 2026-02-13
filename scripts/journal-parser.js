@@ -4,7 +4,7 @@
  * @module journal-parser
  */
 
-import { MODULE_ID } from './settings.js';
+import { MODULE_ID as _MODULE_ID } from './settings.js';
 import { Logger } from './logger.js';
 
 /**
@@ -73,6 +73,13 @@ export class JournalParser {
          * @private
          */
         this._keywordIndex = new Map();
+
+        /**
+         * Cached DOM element for HTML parsing to avoid repeated element creation
+         * @type {HTMLDivElement|null}
+         * @private
+         */
+        this._stripHtmlElement = null;
     }
 
     /**
@@ -176,12 +183,19 @@ export class JournalParser {
             return '';
         }
 
-        // Create a temporary DOM element to parse HTML
-        const div = document.createElement('div');
-        div.innerHTML = html;
+        // Lazily create cached DOM element on first use
+        if (!this._stripHtmlElement) {
+            this._stripHtmlElement = document.createElement('div');
+        }
+
+        // Reuse the cached element instead of creating a new one
+        this._stripHtmlElement.innerHTML = html;
 
         // Get text content, handling nested elements
-        let text = div.textContent || div.innerText || '';
+        let text = this._stripHtmlElement.textContent || this._stripHtmlElement.innerText || '';
+
+        // Clear the element after use to prevent state leakage between calls
+        this._stripHtmlElement.innerHTML = '';
 
         // Normalize whitespace
         text = text.replace(/\s+/g, ' ').trim();
@@ -230,7 +244,7 @@ export class JournalParser {
 
         for (const keyword of keywords) {
             const normalizedKeyword = keyword.toLowerCase().trim();
-            if (normalizedKeyword.length < 3) continue;
+            if (normalizedKeyword.length < 3) {continue;}
 
             const key = `${journalId}:${normalizedKeyword}`;
             const pageIds = this._keywordIndex.get(key);
@@ -337,6 +351,7 @@ export class JournalParser {
     clearAllCache() {
         this._cachedContent.clear();
         this._keywordIndex.clear();
+        this._stripHtmlElement = null;
         Logger.debug('Cleared all journal cache', 'JournalParser.clearAllCache');
     }
 
@@ -1177,7 +1192,7 @@ export class JournalParser {
         const terms = [];
 
         // Normalize the scene name
-        let normalized = sceneName.trim();
+        const normalized = sceneName.trim();
 
         // Common separators in scene names
         const separators = [':', '-', '–', '—', '|', '/'];

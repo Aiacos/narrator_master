@@ -109,7 +109,7 @@ function createMockAudioContext() {
         currentTime: 0,
         destination: {},
 
-        createMediaStreamSource(stream) {
+        createMediaStreamSource(_stream) {
             return {
                 connect(destination) {
                     this._destination = destination;

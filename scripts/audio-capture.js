@@ -4,7 +4,7 @@
  * @module audio-capture
  */
 
-import { MODULE_ID } from './settings.js';
+import { MODULE_ID as _MODULE_ID } from './settings.js';
 import { Logger } from './logger.js';
 
 /**
@@ -225,7 +225,7 @@ export class AudioCapture {
      * @returns {number} Duration in ms or 0 if not recording
      */
     get duration() {
-        if (!this._startTime) return 0;
+        if (!this._startTime) {return 0;}
         return Date.now() - this._startTime;
     }
 

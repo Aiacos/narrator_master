@@ -8,8 +8,6 @@ import {
     setupMockGame,
     setupMockDocument,
     cleanupMocks,
-    MockJournalEntry,
-    MockJournalPage,
     assert,
     TestRunner
 } from './test-helper.js';
@@ -76,7 +74,7 @@ function createMockJournalParser() {
 
         getChapterBySceneName: function (journalId, sceneName) {
             // Simulate finding a chapter by scene name
-            if (journalId !== 'journal1') return null;
+            if (journalId !== 'journal1') {return null;}
 
             const sceneNameLower = sceneName.toLowerCase();
             if (sceneNameLower.includes('tavern')) {
@@ -105,7 +103,7 @@ function createMockJournalParser() {
         },
 
         getFlatChapterList: function (journalId) {
-            if (journalId !== 'journal1') return [];
+            if (journalId !== 'journal1') {return [];}
 
             return [
                 {
@@ -148,7 +146,7 @@ function createMockJournalParser() {
         },
 
         extractChapterStructure: function (journalId) {
-            if (journalId !== 'journal1') return null;
+            if (journalId !== 'journal1') {return null;}
 
             return {
                 journalId: 'journal1',
@@ -205,7 +203,7 @@ function createMockJournalParser() {
         },
 
         searchByKeywords: function (journalId, keywords) {
-            if (journalId !== 'journal1') return [];
+            if (journalId !== 'journal1') {return [];}
 
             // Simple keyword matching
             const results = [];
@@ -218,8 +216,8 @@ function createMockJournalParser() {
             return results;
         },
 
-        getChapterAtPosition: function (journalId, pageId, position) {
-            if (journalId !== 'journal1') return null;
+        getChapterAtPosition: function (journalId, pageId, _position) {
+            if (journalId !== 'journal1') {return null;}
 
             if (pageId === 'page2') {
                 return {
@@ -455,7 +453,7 @@ export async function runTests() {
 
         // Scene name doesn't match any chapter
         const scene = createMockScene('scene1', 'Random Unrelated Scene XYZ');
-        const result = tracker.updateFromScene(scene);
+        const _result = tracker.updateFromScene(scene);
 
         // May return null if no keywords match
         assert.equal(tracker._activeSceneId, 'scene1', 'activeSceneId should still be set');

@@ -4,7 +4,7 @@
  * @module chapter-tracker
  */
 
-import { MODULE_ID } from './settings.js';
+import { MODULE_ID as _MODULE_ID } from './settings.js';
 import { Logger } from './logger.js';
 
 /**

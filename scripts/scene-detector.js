@@ -4,7 +4,7 @@
  * @module scene-detector
  */
 
-import { MODULE_ID } from './settings.js';
+import { MODULE_ID as _MODULE_ID } from './settings.js';
 
 /**
  * Scene type constants
@@ -342,10 +342,10 @@ export class SceneDetector {
     /**
      * Detects scene transitions by comparing current text with previous text
      * @param {string} text - The current conversation text
-     * @param {string} [previousText=''] - The previous conversation text for context
+     * @param {string} [_previousText=''] - The previous conversation text for context
      * @returns {SceneTransition} The scene transition detection result
      */
-    detectSceneTransition(text, previousText = '') {
+    detectSceneTransition(text, _previousText = '') {
         if (!text || typeof text !== 'string') {
             return {
                 detected: false,

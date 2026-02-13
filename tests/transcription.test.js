@@ -9,7 +9,6 @@ import {
     setupMockUI,
     cleanupMocks,
     createMockFetch,
-    createMockFetchError,
     createMockBlob,
     assert,
     TestRunner

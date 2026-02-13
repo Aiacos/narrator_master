@@ -4,7 +4,7 @@
  * @module transcription
  */
 
-import { MODULE_ID } from './settings.js';
+import { MODULE_ID as _MODULE_ID } from './settings.js';
 import { OpenAIServiceBase } from './openai-service-base.js';
 import { Logger } from './logger.js';
 
@@ -496,7 +496,7 @@ export class TranscriptionService extends OpenAIServiceBase {
             // Update each segment's speaker label
             for (const segment of result.segments) {
                 const oldSpeaker = segment.speaker;
-                if (labelMappings.hasOwnProperty(oldSpeaker)) {
+                if (Object.hasOwn(labelMappings, oldSpeaker)) {
                     segment.speaker = labelMappings[oldSpeaker];
                     totalUpdated++;
                 }

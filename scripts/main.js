@@ -716,11 +716,11 @@ class NarratorMaster {
      */
     _onAudioStateChange(state) {
         // Suppress UI state changes during cyclic stop/restart
-        if (this._isCyclicRestart) return;
+        if (this._isCyclicRestart) {return;}
 
         Logger.debug(`Audio state changed: ${state}`, 'AudioCapture');
 
-        if (!this.panel) return;
+        if (!this.panel) {return;}
 
         switch (state) {
             case RecordingState.RECORDING:
@@ -792,7 +792,7 @@ class NarratorMaster {
      */
     async _runTranscriptionCycle() {
         // Skip if not recording or already processing
-        if (!this.audioCapture?.isRecording || this._isProcessingCycle) return;
+        if (!this.audioCapture?.isRecording || this._isProcessingCycle) {return;}
 
         // Circuit breaker: stop trying after too many consecutive errors
         if (this._consecutiveTranscriptionErrors >= MAX_CONSECUTIVE_ERRORS) {
@@ -1135,7 +1135,7 @@ class NarratorMaster {
                     await this.audioCapture.start();
                     break;
 
-                case 'stop':
+                case 'stop': {
                     this._stopTranscriptionCycles();
                     const audioBlob = await this.audioCapture.stop();
                     if (audioBlob && audioBlob.size >= MIN_AUDIO_SIZE) {
@@ -1144,6 +1144,7 @@ class NarratorMaster {
                         await this._processFinalAudio(audioBlob);
                     }
                     break;
+                }
 
                 case 'pause':
                     this.audioCapture.pause();
@@ -1339,13 +1340,13 @@ class NarratorMaster {
      */
     _handleKeyboardShortcuts(event) {
         // Only handle shortcuts for GM users
-        if (!game.user.isGM) return;
+        if (!game.user.isGM) {return;}
 
         // Only handle shortcuts if module is initialized
-        if (!this._initialized) return;
+        if (!this._initialized) {return;}
 
         // Check for Ctrl+Shift modifier combination
-        if (!event.ctrlKey || !event.shiftKey) return;
+        if (!event.ctrlKey || !event.shiftKey) {return;}
 
         // Handle specific key combinations
         let action = null;
@@ -1516,7 +1517,7 @@ Hooks.once('ready', async function() {
  */
 Hooks.on('getSceneControlButtons', (controls) => {
     // Only add controls for GM users
-    if (!game.user.isGM) return;
+    if (!game.user.isGM) {return;}
 
     // Foundry v13: controls is Record<string, SceneControl>, tools is Record<string, SceneControlTool>
     controls['narrator-master'] = {

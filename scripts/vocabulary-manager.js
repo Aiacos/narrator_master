@@ -4,7 +4,7 @@
  * @module vocabulary-manager
  */
 
-import { MODULE_ID } from './settings.js';
+import { MODULE_ID as _MODULE_ID } from './settings.js';
 import { DEFAULT_DND_TERMS } from './dnd-terms.js';
 import { Logger } from './logger.js';
 
@@ -164,7 +164,7 @@ export class VocabularyManager {
 
         const trimmedTerm = term.trim();
 
-        if (this._customVocabulary.hasOwnProperty(trimmedTerm)) {
+        if (Object.hasOwn(this._customVocabulary, trimmedTerm)) {
             delete this._customVocabulary[trimmedTerm];
             await this._saveVocabulary();
             return true;

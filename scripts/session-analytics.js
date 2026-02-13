@@ -4,7 +4,7 @@
  * @module session-analytics
  */
 
-import { MODULE_ID } from './settings.js';
+import { MODULE_ID as _MODULE_ID } from './settings.js';
 
 /**
  * Default bucket size for timeline visualization (60 seconds)
