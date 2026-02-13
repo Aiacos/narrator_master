@@ -1125,6 +1125,18 @@ export class NarratorPanel extends Application {
     }
 
     /**
+     * Updates the recording duration display without full re-render
+     * @private
+     */
+    _updateDurationDisplay() {
+        // Only update the duration display without full re-render
+        const durationEl = this.element?.find('.recording-duration');
+        if (durationEl && durationEl.length) {
+            durationEl.text(this._formatDuration(this.recordingDuration));
+        }
+    }
+
+    /**
      * Sets the loading state
      * @param {boolean} loading - Whether loading
      * @param {string} [message] - Loading message
