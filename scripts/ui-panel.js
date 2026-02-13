@@ -1273,8 +1273,13 @@ export class NarratorPanel extends Application {
             newSegments = this.speakerLabelService.applyLabelsToSegments(segments);
         }
 
+        // Add to internal array
         this.transcriptSegments.push(...newSegments);
-        this.render(false);
+
+        // Append each segment to the DOM without full re-render
+        for (const segment of newSegments) {
+            this._appendTranscriptSegment(segment);
+        }
     }
 
     /**
