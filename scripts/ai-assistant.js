@@ -451,8 +451,11 @@ export class AIAssistant extends OpenAIServiceBase {
             // Build the analysis prompt
             const messages = this._buildAnalysisMessages(transcription, includeSuggestions, checkOffTrack, detectedLanguages);
 
-            // Make API request
-            const response = await this._makeApiRequest(messages);
+            // Make API request with retry and queue
+            const response = await this._enqueueRequest(
+                () => this._makeApiRequest(messages),
+                { operationName: 'AI Assistant' }
+            );
 
             // Parse the response
             const analysis = this._parseAnalysisResponse(response);
@@ -514,7 +517,10 @@ export class AIAssistant extends OpenAIServiceBase {
 
         try {
             const messages = this._buildOffTrackMessages(transcription, detectedLanguages);
-            const response = await this._makeApiRequest(messages);
+            const response = await this._enqueueRequest(
+                () => this._makeApiRequest(messages),
+                { operationName: 'AI Assistant' }
+            );
             const result = this._parseOffTrackResponse(response);
 
             this._sessionState.lastOffTrackCheck = new Date();
@@ -551,7 +557,10 @@ export class AIAssistant extends OpenAIServiceBase {
 
         try {
             const messages = this._buildSuggestionMessages(transcription, maxSuggestions, detectedLanguages);
-            const response = await this._makeApiRequest(messages);
+            const response = await this._enqueueRequest(
+                () => this._makeApiRequest(messages),
+                { operationName: 'AI Assistant' }
+            );
             const suggestions = this._parseSuggestionsResponse(response, maxSuggestions);
 
             return suggestions;
@@ -579,7 +588,10 @@ export class AIAssistant extends OpenAIServiceBase {
 
         try {
             const messages = this._buildNarrativeBridgeMessages(currentSituation, targetScene);
-            const response = await this._makeApiRequest(messages);
+            const response = await this._enqueueRequest(
+                () => this._makeApiRequest(messages),
+                { operationName: 'AI Assistant' }
+            );
 
             // Extract the narrative from response
             const content = response.choices?.[0]?.message?.content || '';
@@ -620,7 +632,10 @@ export class AIAssistant extends OpenAIServiceBase {
 
         try {
             const messages = this._buildNPCDialogueMessages(npcName, npcContext, transcription, maxOptions, detectedLanguages);
-            const response = await this._makeApiRequest(messages);
+            const response = await this._enqueueRequest(
+                () => this._makeApiRequest(messages),
+                { operationName: 'AI Assistant' }
+            );
             const dialogueOptions = this._parseNPCDialogueResponse(response, maxOptions);
 
             return dialogueOptions;
