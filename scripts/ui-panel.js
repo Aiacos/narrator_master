@@ -5,6 +5,7 @@
  */
 
 import { MODULE_ID, SettingsManager } from './settings.js';
+import { debounce } from './dom-utils.js';
 
 /**
  * Recording state enumeration
@@ -195,6 +196,16 @@ export class NarratorPanel extends Application {
          * @type {Function|null}
          */
         this.onSubchapterClick = null;
+
+        /**
+         * Debounced version of render() for non-critical updates
+         * Delays rendering by 150ms to batch multiple rapid updates
+         * @type {Function}
+         * @private
+         */
+        this._debouncedRender = debounce(() => {
+            this.render(false);
+        }, 150);
     }
 
     /**
