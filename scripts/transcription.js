@@ -203,8 +203,11 @@ export class TranscriptionService extends OpenAIServiceBase {
             // Build form data for API request
             const formData = this._buildFormData(audioBlob, language, speakerNames);
 
-            // Make API request
-            const response = await this._makeApiRequest(formData);
+            // Make API request with retry and queue
+            const response = await this._enqueueRequest(
+                () => this._makeApiRequest(formData),
+                { operationName: 'Transcription' }
+            );
 
             // Parse and normalize response
             const result = this._parseResponse(response, language);
