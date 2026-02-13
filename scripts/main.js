@@ -17,11 +17,10 @@ import { SpeakerLabelService } from './speaker-labels.js';
 import { Logger } from './logger.js';
 
 /**
- * Interval between transcription cycles in milliseconds
- * The recorder stops/restarts to produce valid WebM blobs with headers
- * @constant {number}
+ * NOTE: Transcription cycle interval is now configured via settings
+ * See SETTINGS.TRANSCRIPTION_BATCH_DURATION in settings.js
+ * Default: 10000ms, Range: 5000-30000ms
  */
-const TRANSCRIPTION_CYCLE_MS = 15000;
 
 /**
  * Minimum audio blob size in bytes required for transcription (~1.5s at 128kbps)
@@ -29,6 +28,14 @@ const TRANSCRIPTION_CYCLE_MS = 15000;
  * @constant {number}
  */
 const MIN_AUDIO_SIZE = 15000;
+
+/**
+ * Silence detection threshold (0.0 to 1.0)
+ * Audio segments with average level below this threshold are considered silent
+ * and will not be sent for transcription to reduce API calls
+ * @constant {number}
+ */
+const SILENCE_THRESHOLD = 0.01;
 
 /**
  * Maximum consecutive transcription errors before circuit breaker activates
@@ -289,6 +296,14 @@ class NarratorMaster {
          * @private
          */
         this._isSilenceRecoveryActive = false;
+
+        /**
+         * Audio levels collected during current transcription cycle
+         * Used for silence detection to skip transcribing silent segments
+         * @type {number[]}
+         * @private
+         */
+        this._cycleAudioLevels = [];
     }
 
     /**
@@ -750,10 +765,11 @@ class NarratorMaster {
      */
     _startTranscriptionCycles() {
         this._stopTranscriptionCycles();
+        const batchDuration = this.settings.getTranscriptionBatchDuration();
         this._transcriptionCycleInterval = setInterval(() => {
             this._runTranscriptionCycle();
-        }, TRANSCRIPTION_CYCLE_MS);
-        Logger.debug(`Transcription cycles started (${TRANSCRIPTION_CYCLE_MS}ms interval)`, 'TranscriptionCycle');
+        }, batchDuration);
+        Logger.debug(`Transcription cycles started (${batchDuration}ms interval)`, 'TranscriptionCycle');
     }
 
     /**
@@ -790,6 +806,16 @@ class NarratorMaster {
         this._isProcessingCycle = true;
 
         try {
+            // Calculate average audio level from samples collected during this cycle
+            let avgAudioLevel = 0;
+            if (this._cycleAudioLevels.length > 0) {
+                const sum = this._cycleAudioLevels.reduce((acc, level) => acc + level, 0);
+                avgAudioLevel = sum / this._cycleAudioLevels.length;
+            }
+
+            // Clear audio levels for next cycle
+            this._cycleAudioLevels = [];
+
             // Suppress UI state changes during the brief stop/restart
             this._isCyclicRestart = true;
 
@@ -804,6 +830,15 @@ class NarratorMaster {
             // Process the blob if large enough
             if (!audioBlob || audioBlob.size < MIN_AUDIO_SIZE) {
                 Logger.debug(`Audio too small (${audioBlob?.size || 0}B), skipping`, 'TranscriptionCycle');
+                return;
+            }
+
+            // Skip silent audio segments to reduce API calls
+            if (avgAudioLevel < SILENCE_THRESHOLD) {
+                Logger.debug(
+                    `Audio too quiet (avg level: ${(avgAudioLevel * 100).toFixed(2)}%), skipping transcription`,
+                    'TranscriptionCycle'
+                );
                 return;
             }
 
@@ -940,9 +975,14 @@ class NarratorMaster {
 
         // Update every 100ms
         this._audioLevelInterval = setInterval(() => {
-            const level = this.audioCapture.getAudioLevel() * 100;
+            const level = this.audioCapture.getAudioLevel();
+
+            // Track level for silence detection (raw 0-1 value)
+            this._cycleAudioLevels.push(level);
+
+            // Update UI with percentage value
             if (this.panel) {
-                this.panel.setAudioLevel(level);
+                this.panel.setAudioLevel(level * 100);
             }
         }, 100);
     }
@@ -1238,6 +1278,28 @@ class NarratorMaster {
 
         // Update panel to reflect configuration status
         this.panel?.render(false);
+    }
+
+    /**
+     * Restarts transcription cycles with new batch duration from settings
+     * Called when the transcription batch duration setting changes
+     * Only takes effect if recording is currently active
+     */
+    restartTranscriptionCycles() {
+        // Only restart if currently recording
+        if (!this.audioCapture?.isRecording) {
+            Logger.debug('Transcription batch duration changed but not recording, will apply on next recording', 'NarratorMaster');
+            return;
+        }
+
+        const newBatchDuration = this.settings.getTranscriptionBatchDuration();
+        Logger.info(`Restarting transcription cycles with new interval: ${newBatchDuration}ms`, 'NarratorMaster');
+
+        // Stop current cycles
+        this._stopTranscriptionCycles();
+
+        // Start cycles with new duration
+        this._startTranscriptionCycles();
     }
 
     /**

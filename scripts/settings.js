@@ -18,6 +18,7 @@ export const SETTINGS = {
     OPENAI_API_KEY: 'openaiApiKey',
     TRANSCRIPTION_LANGUAGE: 'transcriptionLanguage',
     MULTI_LANGUAGE_MODE: 'multiLanguageMode',
+    TRANSCRIPTION_BATCH_DURATION: 'transcriptionBatchDuration',
     PANEL_POSITION: 'panelPosition',
     OFF_TRACK_SENSITIVITY: 'offTrackSensitivity',
     SPEAKER_LABELS: 'speakerLabels',
@@ -73,6 +74,26 @@ export function registerSettings() {
         config: true,
         type: Boolean,
         default: false
+    });
+
+    // Transcription batch duration - Time to accumulate audio before processing
+    game.settings.register(MODULE_ID, SETTINGS.TRANSCRIPTION_BATCH_DURATION, {
+        name: 'NARRATOR.Settings.TranscriptionBatchDurationName',
+        hint: 'NARRATOR.Settings.TranscriptionBatchDurationHint',
+        scope: 'world',
+        config: true,
+        type: Number,
+        default: 10000,
+        range: {
+            min: 5000,
+            max: 30000,
+            step: 1000
+        },
+        onChange: value => {
+            if (window.narratorMaster) {
+                window.narratorMaster.restartTranscriptionCycles();
+            }
+        }
     });
 
     // Panel position settings (stored as JSON string)
@@ -201,6 +222,14 @@ export class SettingsManager {
     }
 
     /**
+     * Gets the transcription batch duration
+     * @returns {number} The batch duration in milliseconds (default: 10000)
+     */
+    getTranscriptionBatchDuration() {
+        return game.settings.get(MODULE_ID, SETTINGS.TRANSCRIPTION_BATCH_DURATION) || 10000;
+    }
+
+    /**
      * Gets the panel position
      * @returns {Object} The panel position {top, left}
      */
@@ -309,6 +338,7 @@ export class SettingsManager {
             apiKey: this.getApiKey(),
             transcriptionLanguage: this.getTranscriptionLanguage(),
             multiLanguageMode: this.getMultiLanguageMode(),
+            transcriptionBatchDuration: this.getTranscriptionBatchDuration(),
             panelPosition: this.getPanelPosition(),
             offTrackSensitivity: this.getOffTrackSensitivity(),
             speakerLabels: this.getSpeakerLabels(),

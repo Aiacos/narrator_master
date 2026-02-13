@@ -8,6 +8,8 @@
             "LanguageHint": "Language for audio transcription (default: English)",
             "MultiLanguageModeName": "Multi-language Mode",
             "MultiLanguageModeHint": "Enable transcription in multiple languages",
+            "TranscriptionBatchDurationName": "Transcription Batch Duration",
+            "TranscriptionBatchDurationHint": "Audio accumulation time before transcription in milliseconds (5-30 seconds). Higher values reduce API calls and improve transcription quality with longer segments",
             "PanelPositionName": "Panel Position",
             "PanelPositionHint": "Saved position of the DM panel",
             "SensitivityName": "Off-Track Detection Sensitivity",
