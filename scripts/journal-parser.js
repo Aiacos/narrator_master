@@ -180,6 +180,7 @@ export class JournalParser {
 
     /**
      * Strips HTML tags from content while preserving text
+     * Uses DOMParser for safe parsing (avoids innerHTML XSS risk)
      * @param {string} html - The HTML content to strip
      * @returns {string} Plain text content
      */
@@ -188,12 +189,9 @@ export class JournalParser {
             return '';
         }
 
-        // Create a temporary DOM element to parse HTML
-        const div = document.createElement('div');
-        div.innerHTML = html;
-
-        // Get text content, handling nested elements
-        let text = div.textContent || div.innerText || '';
+        // Use DOMParser for safe HTML parsing (no script execution)
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        let text = doc.body.textContent || '';
 
         // Normalize whitespace
         text = text.replace(/\s+/g, ' ').trim();
@@ -203,28 +201,42 @@ export class JournalParser {
 
     /**
      * Builds a keyword index for quick content lookup
+     * Uses deduplication and size-bounded insertion to avoid main thread freeze
      * @param {string} journalId - The journal ID
      * @param {ParsedPage[]} pages - The parsed pages
      * @private
      */
     _buildKeywordIndex(journalId, pages) {
         for (const page of pages) {
-            // Extract significant words (3+ characters, not common words)
+            // Extract significant words (3+ characters) and deduplicate per page
             const words = page.text
                 .toLowerCase()
                 .split(/\s+/)
                 .filter(word => word.length >= 3);
+            const uniqueWords = new Set(words);
 
-            for (const word of words) {
+            for (const word of uniqueWords) {
                 const key = `${journalId}:${word}`;
-                // Use bounded index with LRU eviction
-                this._addToKeywordIndex(key, page.id);
+                const existing = this._keywordIndex.get(key);
+
+                if (existing) {
+                    // Word already indexed - just add this page reference
+                    existing.pageIds.add(page.id);
+                } else if (this._keywordIndex.size < this._maxKeywordIndexSize) {
+                    // Only create new entries if below the size limit
+                    this._keywordIndex.set(key, {
+                        pageIds: new Set([page.id]),
+                        lastAccessed: Date.now()
+                    });
+                }
+                // If at limit and key doesn't exist, skip silently
             }
         }
     }
 
     /**
      * Adds a keyword to the bounded keyword index with LRU tracking
+     * Used for runtime additions (not during bulk build)
      * @param {string} key - The keyword index key (format: "journalId:word")
      * @param {string} pageId - The page ID containing this keyword
      * @private
@@ -236,50 +248,49 @@ export class JournalParser {
         if (entry) {
             // Update existing entry
             entry.pageIds.add(pageId);
-            entry.lastAccessed = new Date();
+            entry.lastAccessed = Date.now();
         } else {
+            // Trim before adding if at limit (batch eviction)
+            if (this._keywordIndex.size >= this._maxKeywordIndexSize) {
+                this._trimKeywordIndex();
+            }
+
             // Create new entry
             entry = {
                 pageIds: new Set([pageId]),
-                lastAccessed: new Date()
+                lastAccessed: Date.now()
             };
             this._keywordIndex.set(key, entry);
-        }
-
-        // Trim index if size exceeded
-        if (this._keywordIndex.size > this._maxKeywordIndexSize) {
-            this._trimKeywordIndex();
         }
     }
 
     /**
-     * Trims the bounded keyword index using LRU eviction
-     * Removes oldest accessed entries until size is within limit
+     * Trims the bounded keyword index using batch eviction
+     * Removes 20% of entries (oldest by Map insertion order) to amortize cost
+     * Uses O(n) Map iteration instead of O(n log n) sort
      * @private
      */
     _trimKeywordIndex() {
         const currentSize = this._keywordIndex.size;
-        const targetSize = this._maxKeywordIndexSize;
 
-        if (currentSize <= targetSize) {
+        if (currentSize <= this._maxKeywordIndexSize) {
             return; // No trimming needed
         }
 
-        // Convert to array with keys and sort by lastAccessed (oldest first)
-        const entries = Array.from(this._keywordIndex.entries());
-        entries.sort((a, b) => a[1].lastAccessed - b[1].lastAccessed);
-
-        // Calculate how many entries to remove
+        // Remove 20% of entries to avoid frequent trims
+        const targetSize = Math.floor(this._maxKeywordIndexSize * 0.8);
         const entriesToRemove = currentSize - targetSize;
 
-        // Remove oldest entries
-        for (let i = 0; i < entriesToRemove; i++) {
-            const [key] = entries[i];
+        // Delete oldest entries by Map iteration order (insertion order)
+        let removed = 0;
+        for (const key of this._keywordIndex.keys()) {
+            if (removed >= entriesToRemove) break;
             this._keywordIndex.delete(key);
+            removed++;
         }
 
         Logger.debug(
-            `Trimmed keyword index: removed ${entriesToRemove} entries (${currentSize} → ${targetSize})`,
+            `Trimmed keyword index: removed ${removed} entries (${currentSize} → ${this._keywordIndex.size})`,
             'JournalParser._trimKeywordIndex'
         );
     }
@@ -308,7 +319,7 @@ export class JournalParser {
             const entry = this._keywordIndex.get(key);
             if (entry) {
                 // Update last accessed time for LRU tracking
-                entry.lastAccessed = new Date();
+                entry.lastAccessed = Date.now();
                 for (const pageId of entry.pageIds) {
                     matchingPageIds.add(pageId);
                 }
@@ -464,6 +475,7 @@ export class JournalParser {
 
     /**
      * Parses all journals available in the game
+     * Yields to the event loop between journals to prevent UI freeze
      * @returns {Promise<ParsedJournal[]>} Array of all parsed journals
      */
     async parseAllJournals() {
@@ -477,6 +489,8 @@ export class JournalParser {
             try {
                 const parsed = await this.parseJournal(journal.id);
                 results.push(parsed);
+                // Yield to the event loop between journals to prevent main thread freeze
+                await new Promise(resolve => setTimeout(resolve, 0));
             } catch (error) {
                 Logger.warn(`Failed to parse journal "${journal.name}"`, 'JournalParser.parseAllJournals', error);
             }

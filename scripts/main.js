@@ -479,6 +479,9 @@ class NarratorMaster {
      */
     async _loadAllJournals() {
         try {
+            // Clear stale cache before re-parsing (fixes stale content on journal updates)
+            this.journalParser.clearAllCache();
+
             // Parse journals
             const parsedJournals = await this.journalParser.parseAllJournals();
             const journalContext = this.journalParser.getAllContentForAI();
@@ -1479,8 +1482,8 @@ Hooks.once('init', async function() {
     // Register module settings
     registerSettings();
 
-    // Load Handlebars templates
-    await loadTemplates([
+    // Load Handlebars templates (use namespaced API for v13+)
+    await foundry.applications.handlebars.loadTemplates([
         `modules/${MODULE_ID}/templates/panel.hbs`
     ]);
 

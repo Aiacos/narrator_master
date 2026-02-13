@@ -213,7 +213,7 @@ export class NarratorPanel extends Application {
      * @returns {Object} The default options
      */
     static get defaultOptions() {
-        return mergeObject(super.defaultOptions, {
+        return foundry.utils.mergeObject(super.defaultOptions, {
             id: 'narrator-master-panel',
             title: game.i18n.localize('NARRATOR.PanelTitle'),
             template: `modules/${MODULE_ID}/templates/panel.hbs`,

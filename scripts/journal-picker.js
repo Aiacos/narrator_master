@@ -49,7 +49,7 @@ export class JournalPicker extends FormApplication {
      * @returns {Object} The default options
      */
     static get defaultOptions() {
-        return mergeObject(super.defaultOptions, {
+        return foundry.utils.mergeObject(super.defaultOptions, {
             id: 'narrator-journal-picker',
             title: game.i18n.localize('NARRATOR.Panel.JournalPicker.Title'),
             template: `modules/${MODULE_ID}/templates/journal-picker.hbs`,

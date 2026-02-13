@@ -2,7 +2,7 @@
 
 Tracker dei problemi noti, organizzato per priorità. Aggiornare questo file quando un issue viene risolto (spostare in "Completati") o quando ne vengono trovati di nuovi.
 
-Ultimo audit: 2026-02-07 (branch `autoclaude`, versione 1.0.2)
+Ultimo audit: 2026-02-13 (versione 1.3.1)
 
 ---
 
@@ -39,19 +39,7 @@ Ultimo audit: 2026-02-07 (branch `autoclaude`, versione 1.0.2)
 
 ## MEDI (sicurezza / correttezza)
 
-### 4. `stripHtml()` usa `innerHTML` — potenziale XSS
-- **File**: `scripts/journal-parser.js` righe 155-156
-- **Problema**: `div.innerHTML = html` esegue handler inline (es. `<img onerror="...">`) se il journal contiene contenuto malevolo. Il branch `009` avrebbe dovuto fixare con `DOMParser`, ma il codice attuale usa ancora `innerHTML`.
-- **Fix**: Sostituire con:
-  ```javascript
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  return doc.body.textContent || '';
-  ```
-
-### 5. Cache stale sui journal hooks
-- **File**: `scripts/main.js` righe 369-373, metodo `_loadAllJournals()` righe 342-366
-- **Problema**: I hooks `updateJournalEntry`/`createJournalEntry`/`deleteJournalEntry` chiamano `_loadAllJournals()` ma NON chiamano `journalParser.clearAllCache()` prima. Il parsing interno usa cache, quindi un journal modificato potrebbe restituire contenuto vecchio.
-- **Fix**: Aggiungere `this.journalParser.clearAllCache()` come prima riga di `_loadAllJournals()`.
+(Nessun issue aperto)
 
 ---
 
@@ -75,6 +63,19 @@ Il piano originale diceva "la trascrizione è interna". I merge successivi hanno
 ---
 
 ## COMPLETATI
+
+### 8. Freeze in scena causato da `_trimKeywordIndex` nel journal-parser (CRITICO - performance)
+- **Data risoluzione**: 2026-02-13
+- **File interessati**: `scripts/journal-parser.js`, `scripts/main.js`, `scripts/ui-panel.js`, `scripts/journal-picker.js`
+- **Problema**: `_buildKeywordIndex` processava ogni parola sincronamente, e per ogni parola oltre il limite di 5000, `_trimKeywordIndex` ordinava l'intero indice (O(n log n) per ogni inserimento). Con journal grandi (50k+ parole), questo causava miliardi di comparazioni sul main thread, portando a timeout dello script e freeze della scena.
+- **Soluzione implementata**:
+  - `_buildKeywordIndex`: deduplicazione parole per pagina (`Set`), skip silenzioso per nuove entry quando il limite è raggiunto (nessun sorting)
+  - `_trimKeywordIndex`: eviction batch (20% degli entry) con iterazione O(n) su Map insertion order invece di O(n log n) sort
+  - `_addToKeywordIndex`: `Date.now()` (number) invece di `new Date()` (object) per ogni parola
+  - `parseAllJournals`: yield tra journal (`setTimeout(0)`) per non bloccare il main thread
+  - `stripHtml`: migrato da `innerHTML` a `DOMParser` per sicurezza XSS (fix TODO #4)
+  - `_loadAllJournals`: aggiunto `clearAllCache()` prima del re-parsing (fix TODO #5)
+  - Fix deprecation warnings v13: `foundry.utils.mergeObject` e `foundry.applications.handlebars.loadTemplates`
 
 ### 7. Migrazione da console.log a Logger utility (code quality)
 - **Data risoluzione**: 2026-02-08
