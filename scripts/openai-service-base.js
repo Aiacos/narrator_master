@@ -409,9 +409,49 @@ export class OpenAIServiceBase {
                 this._requestQueue.push(request);
             }
 
-            // Note: Queue processing will be triggered by _processQueue() (implemented in subtask-3-3)
-            // For now, requests are queued but not automatically processed
+            // Start processing the queue if not already processing
+            this._processQueue();
         });
+    }
+
+    /**
+     * Processes the request queue with concurrency control
+     * Executes requests sequentially (one at a time) to avoid rate limiting
+     * @private
+     */
+    async _processQueue() {
+        // Prevent concurrent queue processing
+        if (this._isProcessingQueue) {
+            return;
+        }
+
+        // Mark as processing
+        this._isProcessingQueue = true;
+
+        try {
+            // Process requests one at a time until queue is empty
+            while (this._requestQueue.length > 0) {
+                // Get next request from the front of the queue
+                const request = this._requestQueue.shift();
+
+                try {
+                    // Execute the operation with retry logic
+                    const result = await this._retryWithBackoff(
+                        request.operation,
+                        request.context
+                    );
+
+                    // Resolve the promise with the result
+                    request.resolve(result);
+                } catch (error) {
+                    // Reject the promise with the error
+                    request.reject(error);
+                }
+            }
+        } finally {
+            // Always clear the processing flag when done
+            this._isProcessingQueue = false;
+        }
     }
 
     /**
