@@ -17,11 +17,10 @@ import { SpeakerLabelService } from './speaker-labels.js';
 import { Logger } from './logger.js';
 
 /**
- * Interval between transcription cycles in milliseconds
- * The recorder stops/restarts to produce valid WebM blobs with headers
- * @constant {number}
+ * NOTE: Transcription cycle interval is now configured via settings
+ * See SETTINGS.TRANSCRIPTION_BATCH_DURATION in settings.js
+ * Default: 10000ms, Range: 5000-30000ms
  */
-const TRANSCRIPTION_CYCLE_MS = 15000;
 
 /**
  * Minimum audio blob size in bytes required for transcription (~1.5s at 128kbps)
@@ -766,10 +765,11 @@ class NarratorMaster {
      */
     _startTranscriptionCycles() {
         this._stopTranscriptionCycles();
+        const batchDuration = this.settings.getTranscriptionBatchDuration();
         this._transcriptionCycleInterval = setInterval(() => {
             this._runTranscriptionCycle();
-        }, TRANSCRIPTION_CYCLE_MS);
-        Logger.debug(`Transcription cycles started (${TRANSCRIPTION_CYCLE_MS}ms interval)`, 'TranscriptionCycle');
+        }, batchDuration);
+        Logger.debug(`Transcription cycles started (${batchDuration}ms interval)`, 'TranscriptionCycle');
     }
 
     /**
