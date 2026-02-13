@@ -57,14 +57,7 @@ Ultimo audit: 2026-02-07 (branch `autoclaude`, versione 1.0.2)
 
 ## BASSI (performance / qualità)
 
-### 6. `render(false)` ogni secondo durante la registrazione
-- **File**: `scripts/ui-panel.js` righe 813-816
-- **Problema**: `_durationTimer` chiama `this.render(false)` ogni secondo, ricostruendo l'intero DOM del pannello (262 righe Handlebars) solo per aggiornare il timer. Causa overhead e potenziale flickering.
-- **Fix**: Aggiornare solo l'elemento timer via DOM diretto:
-  ```javascript
-  const el = this.element?.find('.recording-duration');
-  if (el?.length) el.text(formattedDuration);
-  ```
+(Nessun issue aperto)
 
 ---
 
@@ -101,3 +94,23 @@ Il piano originale diceva "la trascrizione è interna". I merge successivi hanno
   - Facilita debugging senza inquinare la console in produzione
 - **Commit principali**: 9a06cc3 (migrazione main.js), 76cea1f (documentazione CLAUDE.md)
 - **Task**: 020-reduce-console-log-usage-in-production-code-per-es
+
+### 6. `render(false)` ogni secondo durante la registrazione (performance)
+- **Data risoluzione**: 2026-02-13
+- **File interessati**: `scripts/ui-panel.js`
+- **Problema**: `_durationTimer` chiamava `this.render(false)` ogni secondo, ricostruendo l'intero DOM del pannello (262 righe Handlebars) solo per aggiornare il timer di registrazione. Causava overhead computazionale e potenziale flickering della UI.
+- **Soluzione implementata**:
+  - Creato metodo `_updateDurationDisplay()` che aggiorna direttamente l'elemento DOM del timer senza re-render completo
+  - Modificato `_startDurationTimer()` per chiamare `_updateDurationDisplay()` invece di `render(false)`
+  - Aggiornato `addTranscriptSegments()` per usare metodo helper `_appendTranscriptSegment()` con manipolazione DOM diretta
+  - Creato `setLoading()` che usa `_updateLoadingState()` per aggiornare solo lo stato di caricamento
+  - Introdotto `renderDebounced()` per batch di aggiornamenti non critici con debounce di 150ms
+  - Mantenuto `render()` esplicito per eventi critici (cambio tab, nuovi suggerimenti, nuove immagini)
+- **Benefici**:
+  - Eliminato re-render completo ogni secondo durante la registrazione (riduzione ~99% delle operazioni DOM)
+  - Migliorata responsività dell'UI con aggiornamenti mirati invece di full re-render
+  - Ridotto overhead CPU e consumo memoria durante sessioni di registrazione lunghe
+  - Prevenuto flickering e stuttering durante l'aggiornamento del timer
+  - Mantenuta reattività per eventi critici con render() esplicito
+- **Commit principali**: 1d73c3e (timer DOM update), a96e5a2 (transcript append), 3c655a9 (loading state), db812ac (debounced render), 7772ea0 (verification)
+- **Task**: 011-reduce-excessive-ui-panel-re-renders-with-debounci
