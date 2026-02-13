@@ -1137,6 +1137,43 @@ export class NarratorPanel extends Application {
     }
 
     /**
+     * Appends a single transcript segment to the DOM without full re-render
+     * @param {Object} segment - Transcript segment to append
+     * @param {string} segment.speaker - Speaker label
+     * @param {string} segment.text - Transcript text
+     * @param {number} segment.timestamp - Timestamp in milliseconds
+     * @private
+     */
+    _appendTranscriptSegment(segment) {
+        if (!segment || !segment.speaker || !segment.text) {
+            return;
+        }
+
+        // Check if the transcript list exists
+        const transcriptList = this.element?.find('.transcript-list');
+        if (!transcriptList || !transcriptList.length) {
+            return;
+        }
+
+        // Format the timestamp
+        const formattedTimestamp = this._formatTimestamp(segment.timestamp);
+
+        // Create the segment DOM element
+        const segmentHtml = `
+            <div class="transcript-segment" data-speaker="${segment.speaker}" data-timestamp="${segment.timestamp}">
+                <div class="segment-header">
+                    <span class="speaker-label">${segment.speaker}</span>
+                    <span class="transcript-timestamp">${formattedTimestamp}</span>
+                </div>
+                <div class="transcript-text">${segment.text}</div>
+            </div>
+        `;
+
+        // Append to the transcript list
+        transcriptList.append(segmentHtml);
+    }
+
+    /**
      * Sets the loading state
      * @param {boolean} loading - Whether loading
      * @param {string} [message] - Loading message
