@@ -12,6 +12,7 @@ Thank you for your interest in contributing to Narrator Master! We welcome contr
   - [Suggesting Features](#suggesting-features)
   - [Contributing Code](#contributing-code)
 - [Development Setup](#development-setup)
+- [Development Workflow](#development-workflow)
 - [Project Structure](#project-structure)
 - [Code Style Guidelines](#code-style-guidelines)
 - [Automated Testing](#automated-testing)
@@ -191,6 +192,292 @@ We welcome feature suggestions! Please:
    - Test all affected functionality
    - Check browser console for errors (F12 → Console)
    - Test with both GM and player accounts if applicable
+
+## Development Workflow
+
+This section describes the complete development cycle from start to finish. Whether you're fixing a bug, adding a feature, or contributing a translation, follow these steps to ensure your contribution is properly tested and ready for review.
+
+### 1. Fork and Clone the Repository
+
+If you haven't already, create your own fork of the repository:
+
+1. Go to https://github.com/Aiacos/narrator_master
+2. Click the **Fork** button in the top-right corner
+3. Clone your fork locally:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/narrator_master.git
+   cd narrator_master
+   ```
+
+4. Add the upstream repository as a remote (to stay updated):
+   ```bash
+   git remote add upstream https://github.com/Aiacos/narrator_master.git
+   ```
+
+### 2. Create a Feature Branch
+
+Always create a new branch for your changes. **Never commit directly to `main`**.
+
+```bash
+# Update your local main branch first
+git checkout main
+git pull upstream main
+
+# Create and switch to a new feature branch
+git checkout -b feature/your-feature-name
+
+# For translations, use a descriptive name:
+git checkout -b localization/german
+
+# For bug fixes:
+git checkout -b fix/audio-capture-firefox
+```
+
+**Branch naming conventions:**
+- `feature/` - New features or enhancements
+- `fix/` - Bug fixes
+- `localization/` - Translation contributions
+- `docs/` - Documentation improvements
+
+### 3. Make Your Changes
+
+Edit the relevant files following the project's code style and patterns:
+
+- **For translations**: Edit or create `lang/xx.json` files and update `module.json`
+- **For code changes**: Modify files in `scripts/`, `styles/`, or `templates/`
+- **For documentation**: Update `README.md`, `CONTRIBUTING.md`, or add to `docs/`
+
+**Best practices:**
+- Make focused, atomic changes (one feature/fix per branch)
+- Follow the [Code Style Guidelines](#code-style-guidelines)
+- Add or update JSDoc comments for code changes
+- Update localization files if you add user-facing strings
+- Keep commits logical and well-organized
+
+### 4. Run Tests Locally
+
+Before committing, ensure your changes pass all automated tests:
+
+```bash
+# Run the full test suite
+npm test
+
+# Run tests in watch mode during development
+npm run test:watch
+
+# Generate a coverage report
+npm run test:coverage
+```
+
+**What to check:**
+- ✓ All existing tests still pass
+- ✓ New features have accompanying tests
+- ✓ Code coverage hasn't decreased significantly
+- ✓ No test failures or errors
+
+If tests fail, fix the issues before proceeding. See [Automated Testing](#automated-testing) for more details.
+
+### 5. Run Linting and Formatting
+
+Ensure your code meets quality standards:
+
+```bash
+# Check for linting errors
+npm run lint
+
+# Automatically fix linting issues
+npm run lint:fix
+
+# Check code formatting
+npm run format:check
+
+# Auto-format all files
+npm run format
+
+# Run all checks at once (recommended)
+npm run validate
+```
+
+**Common linting issues:**
+- Unused variables or imports
+- Missing JSDoc comments
+- Using `console.log()` instead of proper logging
+- Incorrect indentation or formatting
+
+Fix all linting errors before committing. Most formatting issues can be auto-fixed with `npm run format`.
+
+### 6. Commit Your Changes
+
+Write clear, descriptive commit messages that explain **what** and **why**:
+
+```bash
+# Stage your changes
+git add .
+
+# Commit with a meaningful message
+git commit -m "Add German localization for UI strings"
+
+# For multi-line commits:
+git commit -m "Fix audio capture on Firefox" -m "Added MIME type fallback for webm audio. Firefox requires explicit codec specification."
+```
+
+**Good commit message examples:**
+- ✓ `Add French localization (fr.json)`
+- ✓ `Fix microphone permission error on Safari`
+- ✓ `Improve error handling in TranscriptionService`
+- ✓ `Update README with Windows troubleshooting steps`
+- ✓ `Add retry logic for OpenAI rate limiting`
+
+**Bad commit message examples:**
+- ✗ `Fixed stuff`
+- ✗ `Update`
+- ✗ `WIP`
+- ✗ `asdf`
+- ✗ `More changes`
+
+**Commit message tips:**
+- Start with a verb in imperative mood (Add, Fix, Update, Remove)
+- Keep the first line under 72 characters
+- Add details in subsequent lines if needed
+- Reference issue numbers when applicable: `Fix #123: Audio recording fails on mobile`
+
+### 7. Push to Your Fork
+
+Push your feature branch to your GitHub fork:
+
+```bash
+# Push to your remote repository
+git push origin feature/your-feature-name
+
+# If this is your first push for this branch:
+git push -u origin feature/your-feature-name
+```
+
+If you make additional commits after pushing, simply run `git push` again to update the remote branch.
+
+### 8. Create a Pull Request
+
+Once your changes are pushed:
+
+1. **Go to GitHub**: Navigate to https://github.com/Aiacos/narrator_master
+2. **Click "New Pull Request"** (or you'll see a banner for your recently pushed branch)
+3. **Select your branch**: Choose your fork and branch as the source
+4. **Fill out the PR template**: Provide a clear description of your changes
+5. **Add context**: Include screenshots, testing details, and any relevant information
+6. **Submit**: Click "Create Pull Request"
+
+**PR description checklist:**
+- [ ] Clear title summarizing the change
+- [ ] Description of what was changed and why
+- [ ] Type of change (translation, bug fix, feature, docs)
+- [ ] Testing performed (browsers, Foundry versions, test results)
+- [ ] Screenshots (especially for UI changes or translations)
+- [ ] Any breaking changes or special considerations
+
+See [Submitting a Pull Request](#submitting-a-pull-request) for detailed PR templates and examples.
+
+### 9. Address Review Feedback
+
+Maintainers will review your PR and may request changes:
+
+**Responding to feedback:**
+
+1. **Read the review comments carefully** - Reviewers are trying to help improve the code
+2. **Ask questions** if anything is unclear - It's better to ask than guess
+3. **Make the requested changes** in your local branch:
+   ```bash
+   # Make your changes
+   git add .
+   git commit -m "Address review feedback: improve error messages"
+   git push
+   ```
+
+4. **Respond to comments** - Let reviewers know you've addressed their feedback
+5. **Be patient and respectful** - Reviews may take time, especially for complex changes
+
+**Common review requests:**
+- Add missing tests for new functionality
+- Improve error handling or edge cases
+- Update documentation to reflect changes
+- Fix linting or formatting issues
+- Adjust code to follow project patterns
+- Add or improve localization strings
+
+**Updating your PR:**
+```bash
+# Make requested changes
+# ... edit files ...
+
+# Commit changes
+git add .
+git commit -m "Address review: add error handling for network failures"
+
+# Push updates (PR will automatically update)
+git push
+```
+
+**If your branch falls behind main:**
+```bash
+# Update your local main
+git checkout main
+git pull upstream main
+
+# Rebase your feature branch
+git checkout feature/your-feature-name
+git rebase main
+
+# Force push (required after rebase)
+git push --force-with-lease
+```
+
+### Workflow Summary
+
+Here's the complete cycle at a glance:
+
+```bash
+# 1. Fork and clone (one-time setup)
+git clone https://github.com/YOUR_USERNAME/narrator_master.git
+cd narrator_master
+git remote add upstream https://github.com/Aiacos/narrator_master.git
+
+# 2. Create feature branch
+git checkout main
+git pull upstream main
+git checkout -b feature/my-feature
+
+# 3. Make changes
+# ... edit files ...
+
+# 4. Run tests
+npm test
+
+# 5. Run linting
+npm run validate
+
+# 6. Commit
+git add .
+git commit -m "Add feature X"
+
+# 7. Push
+git push -u origin feature/my-feature
+
+# 8. Create PR on GitHub
+
+# 9. Address feedback
+# ... make changes ...
+git add .
+git commit -m "Address review feedback"
+git push
+```
+
+### Tips for Success
+
+- **Start small**: If you're new to the project, start with documentation or translation contributions
+- **Stay updated**: Regularly pull changes from upstream to avoid conflicts
+- **Test thoroughly**: Run tests, lint, and manually test in Foundry VTT before submitting
+- **Communicate**: Ask questions in issues or discussions if you're unsure
+- **Be patient**: Code reviews ensure quality - they're not personal criticism
+- **Follow patterns**: Study existing code to understand the project's style and conventions
 
 ## Project Structure
 
