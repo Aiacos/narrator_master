@@ -18,6 +18,7 @@ Thank you for your interest in contributing to Narrator Master! We welcome contr
 - [Automated Testing](#automated-testing)
 - [Testing Your Changes](#testing-your-changes)
 - [Submitting a Pull Request](#submitting-a-pull-request)
+- [Code Review Process](#code-review-process)
 
 ## Code of Conduct
 
@@ -871,6 +872,309 @@ diff <(jq -S 'keys' lang/template.json) <(jq -S 'keys' lang/xx.json)
 - Respond to review comments promptly
 - Be open to feedback and suggestions
 - Update your PR if requirements change
+
+## Code Review Process
+
+All pull requests undergo a thorough review process to ensure code quality, maintainability, and consistency with project standards. This section outlines what reviewers check and what you should verify before submitting your PR.
+
+### What Reviewers Check
+
+When your PR is submitted, maintainers will evaluate the following criteria:
+
+#### 1. Code Style and Quality
+
+**JavaScript Standards:**
+- [ ] ES6 module syntax (`import`/`export`) used consistently
+- [ ] Naming conventions followed (PascalCase classes, camelCase functions, UPPER_SNAKE_CASE constants)
+- [ ] Private methods prefixed with underscore (`_methodName`)
+- [ ] No `console.log()` debugging statements (use `Logger` utility or remove)
+- [ ] Proper error handling with try-catch blocks
+- [ ] Code is well-organized and follows single-responsibility principle
+
+**JSDoc Documentation:**
+- [ ] All public classes have JSDoc comments
+- [ ] Public methods include `@param` and `@returns` annotations
+- [ ] Complex logic has explanatory comments
+- [ ] Documentation is clear and accurate
+
+**Example of good code style:**
+```javascript
+/**
+ * Manages speaker label assignments for transcription segments
+ */
+class SpeakerLabelService {
+    constructor() {
+        this._labels = new Map();
+    }
+
+    /**
+     * Apply labels to transcription segments
+     * @param {Array<Object>} segments - Raw transcription segments
+     * @returns {Array<Object>} Segments with speaker labels applied
+     */
+    applyLabelsToSegments(segments) {
+        return segments.map(seg => ({
+            ...seg,
+            speaker: this._labels.get(seg.speakerId) || `Speaker ${seg.speakerId}`
+        }));
+    }
+
+    /**
+     * Internal label lookup
+     * @private
+     */
+    _getDefaultLabel(speakerId) {
+        return `Speaker ${speakerId}`;
+    }
+}
+```
+
+#### 2. Test Coverage Requirements
+
+**Required Tests:**
+- [ ] New features have corresponding unit tests
+- [ ] Bug fixes include regression tests
+- [ ] Tests cover both success and error cases
+- [ ] Edge cases are tested (null inputs, empty arrays, etc.)
+- [ ] Async operations are properly awaited in tests
+- [ ] Browser APIs are mocked appropriately
+
+**Coverage Expectations:**
+- New code should maintain or improve overall test coverage
+- Critical paths (API calls, data processing) must have >80% coverage
+- UI components should test event handlers and state changes
+
+**Test Quality Checklist:**
+- [ ] Tests are isolated and don't depend on execution order
+- [ ] External APIs (OpenAI, Foundry) are properly mocked
+- [ ] Test names clearly describe what is being tested
+- [ ] Assertions have meaningful failure messages
+
+#### 3. Breaking Changes Assessment
+
+**Reviewers verify:**
+- [ ] No breaking changes to public APIs without discussion
+- [ ] Settings schema changes are backward-compatible
+- [ ] Existing user configurations won't be lost
+- [ ] Database migrations are handled properly (if applicable)
+- [ ] Version number is bumped appropriately for breaking changes
+
+**If breaking changes are necessary:**
+- [ ] Clearly documented in PR description
+- [ ] Migration path provided for existing users
+- [ ] Discussed in an issue before implementation
+- [ ] Marked with "BREAKING:" prefix in commit message
+
+**Example of acceptable breaking change communication:**
+```markdown
+## Breaking Changes
+
+**Changed:** `TranscriptionService.transcribe()` now returns a Promise instead of using callbacks.
+
+**Migration:**
+```javascript
+// Before (v1.x)
+service.transcribe(blob, (result) => { /* ... */ });
+
+// After (v2.x)
+const result = await service.transcribe(blob);
+```
+
+**Reason:** Modernizes API and improves error handling consistency.
+```
+
+#### 4. Localization Completeness
+
+**All user-facing text must be localized:**
+- [ ] No hardcoded English strings in JavaScript or templates
+- [ ] All new strings added to `lang/it.json` (primary language)
+- [ ] All new strings added to `lang/en.json` (reference language)
+- [ ] Existing translation files updated with new keys (or marked as TODO)
+- [ ] Localization keys follow existing naming conventions
+
+**Translation File Validation:**
+- [ ] JSON files are syntactically valid
+- [ ] Keys match across all language files (run `node verify-translations.js`)
+- [ ] Placeholders (`{count}`, `{name}`) are preserved in translations
+- [ ] Context comments provided for ambiguous strings
+
+**Example localization check:**
+```javascript
+// ❌ BAD - Hardcoded string
+ui.notifications.error("Recording failed");
+
+// ✅ GOOD - Localized string
+ui.notifications.error(game.i18n.localize('NARRATOR.Errors.RecordingFailed'));
+```
+
+**Required language files:**
+- `lang/it.json` - Italian (primary, must be complete)
+- `lang/en.json` - English (reference, must be complete)
+- Other languages - Add keys with placeholder text or mark as TODO
+
+#### 5. Documentation Updates
+
+**Code changes require documentation:**
+- [ ] README.md updated if user-facing features change
+- [ ] CONTRIBUTING.md updated if development workflow changes
+- [ ] JSDoc comments added/updated for new/changed APIs
+- [ ] CLAUDE.md updated if architecture or patterns change
+- [ ] Inline comments explain complex logic
+
+**For new features:**
+- [ ] Usage examples provided
+- [ ] Configuration options documented
+- [ ] Known limitations or gotchas noted
+
+**For bug fixes:**
+- [ ] Root cause explained in commit message
+- [ ] Steps to reproduce documented (in issue or PR)
+- [ ] Fix approach justified
+
+#### 6. Performance Considerations
+
+**Reviewers check for:**
+- [ ] No unnecessary API calls or network requests
+- [ ] Proper debouncing/throttling for frequent operations
+- [ ] Efficient data structures (Map/Set instead of array.find() loops)
+- [ ] Memory leaks prevented (event listeners cleaned up, streams destroyed)
+- [ ] Large data sets handled appropriately (pagination, virtualization)
+
+**Common performance issues:**
+- [ ] Synchronous operations blocking UI
+- [ ] Repeated DOM queries (cache selectors)
+- [ ] Inefficient array operations (`.map().filter().reduce()` chains)
+- [ ] Missing cleanup in destroy/teardown methods
+- [ ] Unbounded cache growth
+
+**Example performance improvements:**
+```javascript
+// ❌ BAD - Repeated DOM queries
+function updateUI() {
+    document.querySelector('.status').textContent = 'Loading';
+    document.querySelector('.status').classList.add('active');
+    document.querySelector('.status').setAttribute('role', 'status');
+}
+
+// ✅ GOOD - Cache selector
+function updateUI() {
+    const statusEl = document.querySelector('.status');
+    statusEl.textContent = 'Loading';
+    statusEl.classList.add('active');
+    statusEl.setAttribute('role', 'status');
+}
+
+// ❌ BAD - Inefficient lookup
+function findUser(id) {
+    return users.find(u => u.id === id); // O(n) every time
+}
+
+// ✅ GOOD - Use Map for O(1) lookup
+const userMap = new Map(users.map(u => [u.id, u]));
+function findUser(id) {
+    return userMap.get(id);
+}
+```
+
+### Self-Review Checklist
+
+Before submitting your PR, review your own code against these criteria:
+
+**Code Quality:**
+- [ ] Ran `npm run validate` and all checks pass
+- [ ] No linting errors or warnings
+- [ ] Code is formatted with Prettier
+- [ ] All tests pass (`npm test`)
+- [ ] No debug statements (`console.log`, commented code)
+
+**Functionality:**
+- [ ] Tested manually in Foundry VTT
+- [ ] Works for both GM and players (if applicable)
+- [ ] Error cases handled gracefully
+- [ ] No browser console errors
+- [ ] Backwards compatible with existing data
+
+**Documentation:**
+- [ ] All new code has JSDoc comments
+- [ ] User-facing changes documented in README
+- [ ] Translation keys added to all required language files
+- [ ] Commit messages are clear and descriptive
+
+**Testing:**
+- [ ] New features have tests
+- [ ] Bug fixes have regression tests
+- [ ] Tests cover error cases
+- [ ] Test coverage maintained or improved
+
+**Polish:**
+- [ ] PR description is complete and clear
+- [ ] Screenshots included for UI changes
+- [ ] Related issues linked
+- [ ] No unrelated changes included
+
+### Common Review Feedback
+
+**Frequently requested changes:**
+
+1. **"Add JSDoc comments"** - Document your public methods
+2. **"Localize this string"** - Move hardcoded text to language files
+3. **"Add error handling"** - Wrap API calls in try-catch
+4. **"Remove console.log"** - Use Logger utility or remove debug code
+5. **"Add tests for this"** - New functionality needs test coverage
+6. **"Update the documentation"** - README or CONTRIBUTING needs updates
+7. **"Follow existing patterns"** - Match the style of similar code in the project
+
+### How to Respond to Review Feedback
+
+**Good responses:**
+- ✓ "Fixed - removed console.log statements"
+- ✓ "Good catch! Added error handling for network failures"
+- ✓ "I've added JSDoc comments and updated the README"
+- ✓ "You're right, I'll refactor this to use the existing pattern"
+
+**What to avoid:**
+- ✗ Defensive or dismissive responses
+- ✗ Ignoring feedback without discussion
+- ✗ "It works for me" (without investigation)
+- ✗ "I'll fix it later" (fix it now before merge)
+
+**If you disagree with feedback:**
+- Explain your reasoning politely
+- Ask clarifying questions
+- Be open to learning new approaches
+- Remember reviewers are trying to help improve the code
+
+**Example constructive discussion:**
+```markdown
+> Reviewer: "This should use a Map instead of an array for better performance"
+
+> You: "Good point! I used an array because the data set is typically <10 items.
+> Would you still recommend Map for consistency with other services, or is the
+> performance difference negligible at this scale?"
+
+> Reviewer: "For <10 items the performance is identical. Array is fine here,
+> I was thinking about the worst-case scenario but it won't apply."
+```
+
+### Review Timeline
+
+**Expected turnaround:**
+- Simple PRs (translations, typo fixes): 1-3 days
+- Medium PRs (bug fixes, small features): 3-7 days
+- Large PRs (major features, refactoring): 1-2 weeks
+
+**Factors affecting review time:**
+- Complexity of changes
+- Test coverage and documentation quality
+- How well it follows existing patterns
+- Number of other PRs in queue
+- Maintainer availability
+
+**If your PR has been waiting >2 weeks:**
+- Politely comment asking for status
+- Check if CI checks are passing
+- Verify you've addressed previous feedback
+- Consider splitting large PRs into smaller ones
 
 ## Questions?
 
