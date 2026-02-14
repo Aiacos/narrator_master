@@ -17,6 +17,7 @@ Thank you for your interest in contributing to Narrator Master! We welcome contr
 - [Code Style Guidelines](#code-style-guidelines)
 - [Automated Testing](#automated-testing)
 - [Testing Your Changes](#testing-your-changes)
+- [Pre-PR Validation Checklist](#pre-pr-validation-checklist)
 - [Submitting a Pull Request](#submitting-a-pull-request)
 - [Code Review Process](#code-review-process)
 
@@ -762,6 +763,197 @@ python3 -c 'import json, sys; json.load(sys.stdin)' < lang/xx.json && echo "Vali
 # Compare your translation file with the template
 diff <(jq -S 'keys' lang/template.json) <(jq -S 'keys' lang/xx.json)
 ```
+
+## Pre-PR Validation Checklist
+
+Before submitting your pull request, run through this comprehensive checklist to ensure your changes meet quality standards and are ready for review. Taking time to validate your work upfront prevents delays and makes the review process smoother.
+
+### Automated Validation
+
+Run the full validation suite to catch common issues:
+
+```bash
+# Run all quality checks at once (lint + format + tests)
+npm run validate
+```
+
+**This single command runs:**
+- ESLint (code quality and style checks)
+- Prettier (code formatting verification)
+- Full test suite (unit and integration tests)
+
+**✅ Validation passes when:**
+- No linting errors or warnings
+- All files are properly formatted
+- All tests pass
+- No new test failures introduced
+
+**❌ Common failures and fixes:**
+
+| Error | Fix |
+|-------|-----|
+| ESLint errors | Run `npm run lint:fix` to auto-fix |
+| Formatting issues | Run `npm run format` to auto-format |
+| Test failures | Debug failing tests, fix the code, re-run `npm test` |
+| Import order warnings | Rearrange imports (builtin → external → internal) |
+
+### Foundry VTT Testing
+
+Test your changes in a live Foundry VTT environment:
+
+**1. No Console Errors**
+- [ ] Open browser DevTools (F12 → Console)
+- [ ] Refresh Foundry VTT (F5)
+- [ ] No errors appear during module initialization
+- [ ] No errors when using your changed functionality
+- [ ] No warnings (unless explicitly documented)
+
+**2. Functionality Works**
+- [ ] Test the specific feature/fix you implemented
+- [ ] Test with both GM and player accounts (if applicable)
+- [ ] Test with API key configured and without (error handling)
+- [ ] Test with minimal configuration (disable other modules)
+- [ ] Verify no regressions in existing features
+
+**3. UI Testing (if applicable)**
+- [ ] UI elements render correctly
+- [ ] Buttons and controls respond to clicks
+- [ ] Modal dialogs open and close properly
+- [ ] No layout issues (text overflow, overlapping elements)
+- [ ] Responsive to window resizing
+
+### Localization Validation
+
+If you added or modified user-facing text:
+
+**Required:**
+- [ ] All new strings added to `lang/it.json` (primary language)
+- [ ] All new strings added to `lang/en.json` (reference language)
+- [ ] No hardcoded English text in JavaScript files
+- [ ] No hardcoded text in Handlebars templates
+- [ ] Placeholders (`{count}`, `{name}`) preserved in all translations
+
+**Verification:**
+```bash
+# Check translation keys match across languages
+node verify-translations.js
+
+# Validate JSON syntax
+python3 -c 'import json; json.load(open("lang/it.json")); json.load(open("lang/en.json")); print("✓ Valid JSON")'
+```
+
+**Test in Foundry:**
+- [ ] Change Foundry language to Italian - all text displays correctly
+- [ ] Change to English - all text displays correctly
+- [ ] No missing translation keys (no "NARRATOR.SomeKey" raw text)
+
+### Documentation Updates
+
+Ensure documentation reflects your changes:
+
+**For Code Changes:**
+- [ ] JSDoc comments added to new classes and public methods
+- [ ] Inline comments explain complex logic
+- [ ] README.md updated if user-facing functionality changed
+- [ ] CLAUDE.md updated if architecture or patterns changed
+
+**For New Features:**
+- [ ] Usage examples provided (in code or README)
+- [ ] Configuration options documented
+- [ ] Known limitations noted
+
+**For Bug Fixes:**
+- [ ] Root cause documented (in commit message or PR description)
+- [ ] Fix approach explained
+
+### Commit Message Quality
+
+Review your commit history:
+
+- [ ] Commit messages are clear and descriptive
+- [ ] Follow imperative mood (Add, Fix, Update, Remove)
+- [ ] First line is concise (<72 characters)
+- [ ] Detailed explanation in body (if needed)
+- [ ] Reference issue numbers if applicable (`Fix #123`)
+
+**Good examples:**
+```
+✓ Add German localization (de.json)
+✓ Fix audio capture failing on Firefox
+✓ Update retry logic to handle rate limiting
+✓ Remove deprecated transcription API calls
+```
+
+**Bad examples:**
+```
+✗ Fixed stuff
+✗ Update
+✗ WIP
+✗ More changes
+```
+
+### Final Pre-Submission Checks
+
+**Complete this checklist before clicking "Create Pull Request":**
+
+- [ ] ✅ `npm run validate` passes with no errors
+- [ ] ✅ All tests pass (`npm test`)
+- [ ] ✅ No console errors in Foundry VTT
+- [ ] ✅ Localization keys added to `it.json` and `en.json`
+- [ ] ✅ Documentation updated (README, JSDoc, or inline comments)
+- [ ] ✅ Commit messages are clear and descriptive
+- [ ] ✅ Tested manually in Foundry VTT (latest version)
+- [ ] ✅ No debug code left behind (`console.log`, commented code)
+- [ ] ✅ Changes follow existing code patterns
+- [ ] ✅ No unrelated changes included
+
+**If any item is unchecked:**
+- Go back and address it before submitting
+- If an item doesn't apply, document why in your PR description
+- When in doubt, ask in GitHub Discussions
+
+### Quick Validation Script
+
+Run all checks in sequence:
+
+```bash
+# 1. Validate code quality
+npm run validate
+
+# 2. Syntax check all JavaScript files
+find scripts -name '*.js' -exec node --check {} \;
+
+# 3. Validate JSON files
+python3 -c 'import json; json.load(open("module.json")); json.load(open("lang/it.json")); json.load(open("lang/en.json")); print("✓ All JSON valid")'
+
+# 4. Check translations
+node verify-translations.js
+
+# If all pass, you're ready to submit! 🎉
+```
+
+**What to do if checks fail:**
+- Read the error messages carefully
+- Fix the issues in your code
+- Re-run the checks
+- Commit the fixes before submitting your PR
+
+### Why This Checklist Matters
+
+**Benefits of thorough pre-PR validation:**
+- ⚡ Faster review process - reviewers can focus on logic, not formatting
+- 🐛 Catch bugs before users encounter them
+- 📚 Maintain documentation accuracy
+- 🌍 Ensure all languages work correctly
+- 🤝 Show respect for reviewers' time
+- ✨ Build confidence in code quality
+
+**Common issues caught by this checklist:**
+- Missing localization keys causing blank UI text
+- Linting errors that break CI builds
+- Console errors that users would see in production
+- Incomplete documentation leaving features unexplained
+- Test regressions breaking existing functionality
 
 ## Submitting a Pull Request
 
