@@ -209,6 +209,13 @@ async function setup() {
 
         globalThis.window = globalThis.window || {};
         globalThis.window.AudioContext = globalThis.AudioContext;
+
+        // Mock window.isSecureContext (default to true for existing tests)
+        Object.defineProperty(globalThis.window, 'isSecureContext', {
+            value: true,
+            writable: true,
+            configurable: true
+        });
     }
 
     // Dynamic import after mocks are set up
@@ -239,6 +246,20 @@ function teardown() {
                 writable: true,
                 configurable: true
             });
+        }
+
+        // Clean up window.isSecureContext mock
+        if (globalThis.window) {
+            try {
+                delete globalThis.window.isSecureContext;
+            } catch (e) {
+                // If deletion fails, try to reset to true
+                Object.defineProperty(globalThis.window, 'isSecureContext', {
+                    value: true,
+                    writable: true,
+                    configurable: true
+                });
+            }
         }
     }
 }
@@ -463,6 +484,108 @@ export async function runTests() {
 
         await assert.throws(() => capture.requestPermission());
         assert.equal(errorCode, 'security', 'Should return security error code');
+
+        teardown();
+    });
+
+    // Test: isSupported returns false when not in secure context
+    runner.test('isSupported returns false when not in secure context', async () => {
+        await setup();
+
+        // Override isSecureContext to false
+        Object.defineProperty(globalThis.window, 'isSecureContext', {
+            value: false,
+            writable: true,
+            configurable: true
+        });
+
+        const capture = new AudioCapture();
+        assert.equal(capture.isSupported, false, 'Should not be supported without secure context');
+
+        teardown();
+    });
+
+    // Test: isSupported returns true when in secure context
+    runner.test('isSupported returns true when in secure context', async () => {
+        await setup();
+
+        // Ensure isSecureContext is true (should be default from setup)
+        Object.defineProperty(globalThis.window, 'isSecureContext', {
+            value: true,
+            writable: true,
+            configurable: true
+        });
+
+        const capture = new AudioCapture();
+        assert.equal(capture.isSupported, true, 'Should be supported with secure context and mocked APIs');
+
+        teardown();
+    });
+
+    // Test: requestPermission throws error when not in secure context
+    runner.test('requestPermission throws error when not in secure context', async () => {
+        await setup();
+
+        // Override isSecureContext to false
+        Object.defineProperty(globalThis.window, 'isSecureContext', {
+            value: false,
+            writable: true,
+            configurable: true
+        });
+
+        const capture = new AudioCapture();
+
+        await assert.throws(
+            () => capture.requestPermission(),
+            'Should throw when not in secure context'
+        );
+
+        teardown();
+    });
+
+    // Test: requestPermission emits ERROR event when not in secure context
+    runner.test('requestPermission emits ERROR event when not in secure context', async () => {
+        await setup();
+
+        // Override isSecureContext to false
+        Object.defineProperty(globalThis.window, 'isSecureContext', {
+            value: false,
+            writable: true,
+            configurable: true
+        });
+
+        const capture = new AudioCapture();
+        let errorEmitted = false;
+        let errorCode = null;
+
+        capture.on(AudioCaptureEvent.ERROR, (error) => {
+            errorEmitted = true;
+            errorCode = error.code;
+        });
+
+        await assert.throws(() => capture.requestPermission());
+        assert.ok(errorEmitted, 'ERROR event should be emitted');
+        assert.equal(errorCode, 'security', 'Should return security error code');
+
+        teardown();
+    });
+
+    // Test: requestPermission works in secure context (existing behavior)
+    runner.test('requestPermission works in secure context (existing behavior)', async () => {
+        await setup();
+
+        // Ensure isSecureContext is true
+        Object.defineProperty(globalThis.window, 'isSecureContext', {
+            value: true,
+            writable: true,
+            configurable: true
+        });
+
+        const capture = new AudioCapture();
+        const stream = await capture.requestPermission();
+
+        assert.ok(stream, 'Should return media stream in secure context');
+        assert.ok(capture._stream, 'Stream should be stored');
 
         teardown();
     });

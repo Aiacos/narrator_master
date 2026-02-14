@@ -213,11 +213,16 @@ export class AudioCapture {
     }
 
     /**
-     * Checks if microphone is available
-     * @returns {boolean} True if microphone API is available
+     * Checks if microphone is available and running in a secure context
+     * Note: Microphone access requires HTTPS in production (localhost is exempt)
+     * @returns {boolean} True if microphone API is available and in secure context
      */
     get isSupported() {
-        return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+        return !!(
+            navigator.mediaDevices &&
+            navigator.mediaDevices.getUserMedia &&
+            window.isSecureContext
+        );
     }
 
     /**
@@ -267,10 +272,20 @@ export class AudioCapture {
     /**
      * Requests microphone permission and starts the audio stream
      * @returns {Promise<MediaStream>} The media stream
-     * @throws {Error} If permission denied or microphone unavailable
+     * @throws {Error} If permission denied, microphone unavailable, or not in secure context
      */
     async requestPermission() {
         Logger.info('Requesting microphone permission', 'AudioCapture');
+
+        // Check for secure context first (HTTPS requirement)
+        if (!window.isSecureContext) {
+            const error = {
+                message: game.i18n.localize('NARRATOR.Errors.MicrophoneSecurityError'),
+                code: 'security'
+            };
+            this._emit(AudioCaptureEvent.ERROR, error);
+            throw new Error(error.message);
+        }
 
         if (!this.isSupported) {
             const error = {
