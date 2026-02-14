@@ -12,10 +12,14 @@ Thank you for your interest in contributing to Narrator Master! We welcome contr
   - [Suggesting Features](#suggesting-features)
   - [Contributing Code](#contributing-code)
 - [Development Setup](#development-setup)
+- [Development Workflow](#development-workflow)
 - [Project Structure](#project-structure)
 - [Code Style Guidelines](#code-style-guidelines)
+- [Automated Testing](#automated-testing)
 - [Testing Your Changes](#testing-your-changes)
+- [Pre-PR Validation Checklist](#pre-pr-validation-checklist)
 - [Submitting a Pull Request](#submitting-a-pull-request)
+- [Code Review Process](#code-review-process)
 
 ## Code of Conduct
 
@@ -191,6 +195,292 @@ We welcome feature suggestions! Please:
    - Check browser console for errors (F12 → Console)
    - Test with both GM and player accounts if applicable
 
+## Development Workflow
+
+This section describes the complete development cycle from start to finish. Whether you're fixing a bug, adding a feature, or contributing a translation, follow these steps to ensure your contribution is properly tested and ready for review.
+
+### 1. Fork and Clone the Repository
+
+If you haven't already, create your own fork of the repository:
+
+1. Go to https://github.com/Aiacos/narrator_master
+2. Click the **Fork** button in the top-right corner
+3. Clone your fork locally:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/narrator_master.git
+   cd narrator_master
+   ```
+
+4. Add the upstream repository as a remote (to stay updated):
+   ```bash
+   git remote add upstream https://github.com/Aiacos/narrator_master.git
+   ```
+
+### 2. Create a Feature Branch
+
+Always create a new branch for your changes. **Never commit directly to `main`**.
+
+```bash
+# Update your local main branch first
+git checkout main
+git pull upstream main
+
+# Create and switch to a new feature branch
+git checkout -b feature/your-feature-name
+
+# For translations, use a descriptive name:
+git checkout -b localization/german
+
+# For bug fixes:
+git checkout -b fix/audio-capture-firefox
+```
+
+**Branch naming conventions:**
+- `feature/` - New features or enhancements
+- `fix/` - Bug fixes
+- `localization/` - Translation contributions
+- `docs/` - Documentation improvements
+
+### 3. Make Your Changes
+
+Edit the relevant files following the project's code style and patterns:
+
+- **For translations**: Edit or create `lang/xx.json` files and update `module.json`
+- **For code changes**: Modify files in `scripts/`, `styles/`, or `templates/`
+- **For documentation**: Update `README.md`, `CONTRIBUTING.md`, or add to `docs/`
+
+**Best practices:**
+- Make focused, atomic changes (one feature/fix per branch)
+- Follow the [Code Style Guidelines](#code-style-guidelines)
+- Add or update JSDoc comments for code changes
+- Update localization files if you add user-facing strings
+- Keep commits logical and well-organized
+
+### 4. Run Tests Locally
+
+Before committing, ensure your changes pass all automated tests:
+
+```bash
+# Run the full test suite
+npm test
+
+# Run tests in watch mode during development
+npm run test:watch
+
+# Generate a coverage report
+npm run test:coverage
+```
+
+**What to check:**
+- ✓ All existing tests still pass
+- ✓ New features have accompanying tests
+- ✓ Code coverage hasn't decreased significantly
+- ✓ No test failures or errors
+
+If tests fail, fix the issues before proceeding. See [Automated Testing](#automated-testing) for more details.
+
+### 5. Run Linting and Formatting
+
+Ensure your code meets quality standards:
+
+```bash
+# Check for linting errors
+npm run lint
+
+# Automatically fix linting issues
+npm run lint:fix
+
+# Check code formatting
+npm run format:check
+
+# Auto-format all files
+npm run format
+
+# Run all checks at once (recommended)
+npm run validate
+```
+
+**Common linting issues:**
+- Unused variables or imports
+- Missing JSDoc comments
+- Using `console.log()` instead of proper logging
+- Incorrect indentation or formatting
+
+Fix all linting errors before committing. Most formatting issues can be auto-fixed with `npm run format`.
+
+### 6. Commit Your Changes
+
+Write clear, descriptive commit messages that explain **what** and **why**:
+
+```bash
+# Stage your changes
+git add .
+
+# Commit with a meaningful message
+git commit -m "Add German localization for UI strings"
+
+# For multi-line commits:
+git commit -m "Fix audio capture on Firefox" -m "Added MIME type fallback for webm audio. Firefox requires explicit codec specification."
+```
+
+**Good commit message examples:**
+- ✓ `Add French localization (fr.json)`
+- ✓ `Fix microphone permission error on Safari`
+- ✓ `Improve error handling in TranscriptionService`
+- ✓ `Update README with Windows troubleshooting steps`
+- ✓ `Add retry logic for OpenAI rate limiting`
+
+**Bad commit message examples:**
+- ✗ `Fixed stuff`
+- ✗ `Update`
+- ✗ `WIP`
+- ✗ `asdf`
+- ✗ `More changes`
+
+**Commit message tips:**
+- Start with a verb in imperative mood (Add, Fix, Update, Remove)
+- Keep the first line under 72 characters
+- Add details in subsequent lines if needed
+- Reference issue numbers when applicable: `Fix #123: Audio recording fails on mobile`
+
+### 7. Push to Your Fork
+
+Push your feature branch to your GitHub fork:
+
+```bash
+# Push to your remote repository
+git push origin feature/your-feature-name
+
+# If this is your first push for this branch:
+git push -u origin feature/your-feature-name
+```
+
+If you make additional commits after pushing, simply run `git push` again to update the remote branch.
+
+### 8. Create a Pull Request
+
+Once your changes are pushed:
+
+1. **Go to GitHub**: Navigate to https://github.com/Aiacos/narrator_master
+2. **Click "New Pull Request"** (or you'll see a banner for your recently pushed branch)
+3. **Select your branch**: Choose your fork and branch as the source
+4. **Fill out the PR template**: Provide a clear description of your changes
+5. **Add context**: Include screenshots, testing details, and any relevant information
+6. **Submit**: Click "Create Pull Request"
+
+**PR description checklist:**
+- [ ] Clear title summarizing the change
+- [ ] Description of what was changed and why
+- [ ] Type of change (translation, bug fix, feature, docs)
+- [ ] Testing performed (browsers, Foundry versions, test results)
+- [ ] Screenshots (especially for UI changes or translations)
+- [ ] Any breaking changes or special considerations
+
+See [Submitting a Pull Request](#submitting-a-pull-request) for detailed PR templates and examples.
+
+### 9. Address Review Feedback
+
+Maintainers will review your PR and may request changes:
+
+**Responding to feedback:**
+
+1. **Read the review comments carefully** - Reviewers are trying to help improve the code
+2. **Ask questions** if anything is unclear - It's better to ask than guess
+3. **Make the requested changes** in your local branch:
+   ```bash
+   # Make your changes
+   git add .
+   git commit -m "Address review feedback: improve error messages"
+   git push
+   ```
+
+4. **Respond to comments** - Let reviewers know you've addressed their feedback
+5. **Be patient and respectful** - Reviews may take time, especially for complex changes
+
+**Common review requests:**
+- Add missing tests for new functionality
+- Improve error handling or edge cases
+- Update documentation to reflect changes
+- Fix linting or formatting issues
+- Adjust code to follow project patterns
+- Add or improve localization strings
+
+**Updating your PR:**
+```bash
+# Make requested changes
+# ... edit files ...
+
+# Commit changes
+git add .
+git commit -m "Address review: add error handling for network failures"
+
+# Push updates (PR will automatically update)
+git push
+```
+
+**If your branch falls behind main:**
+```bash
+# Update your local main
+git checkout main
+git pull upstream main
+
+# Rebase your feature branch
+git checkout feature/your-feature-name
+git rebase main
+
+# Force push (required after rebase)
+git push --force-with-lease
+```
+
+### Workflow Summary
+
+Here's the complete cycle at a glance:
+
+```bash
+# 1. Fork and clone (one-time setup)
+git clone https://github.com/YOUR_USERNAME/narrator_master.git
+cd narrator_master
+git remote add upstream https://github.com/Aiacos/narrator_master.git
+
+# 2. Create feature branch
+git checkout main
+git pull upstream main
+git checkout -b feature/my-feature
+
+# 3. Make changes
+# ... edit files ...
+
+# 4. Run tests
+npm test
+
+# 5. Run linting
+npm run validate
+
+# 6. Commit
+git add .
+git commit -m "Add feature X"
+
+# 7. Push
+git push -u origin feature/my-feature
+
+# 8. Create PR on GitHub
+
+# 9. Address feedback
+# ... make changes ...
+git add .
+git commit -m "Address review feedback"
+git push
+```
+
+### Tips for Success
+
+- **Start small**: If you're new to the project, start with documentation or translation contributions
+- **Stay updated**: Regularly pull changes from upstream to avoid conflicts
+- **Test thoroughly**: Run tests, lint, and manually test in Foundry VTT before submitting
+- **Communicate**: Ask questions in issues or discussions if you're unsure
+- **Be patient**: Code reviews ensure quality - they're not personal criticism
+- **Follow patterns**: Study existing code to understand the project's style and conventions
+
 ## Project Structure
 
 ```
@@ -303,6 +593,121 @@ class TranscriptionService {
 - Use centralized error notification helper when available
 - Always localize error messages
 
+## Automated Testing
+
+Narrator Master uses a comprehensive test suite to ensure code quality and prevent regressions. Before submitting changes, run the automated tests to verify your code meets project standards.
+
+### Running Tests
+
+**Run all tests:**
+```bash
+npm test
+```
+
+This executes the custom test runner (`tests/run-tests.js`) which includes:
+- Unit tests for all service classes
+- Browser API mocking (MediaRecorder, AudioContext, etc.)
+- Foundry VTT API simulation
+- OpenAI API integration tests
+
+**Run tests in watch mode:**
+```bash
+npm run test:watch
+```
+
+Automatically re-runs tests when files change. Useful during active development.
+
+**Run tests with coverage report:**
+```bash
+npm run test:coverage
+```
+
+Generates a detailed coverage report showing which lines/branches are tested. The report is saved to `coverage/` directory and displayed in the terminal.
+
+### Code Quality Checks
+
+**Linting (ESLint):**
+```bash
+npm run lint              # Check for linting errors
+npm run lint:fix          # Automatically fix linting issues
+```
+
+ESLint enforces code style, catches common errors, and ensures consistent patterns. Configuration is in `package.json` under `eslintConfig`.
+
+**Formatting (Prettier):**
+```bash
+npm run format            # Format all JS files
+npm run format:check      # Check if files are formatted correctly
+```
+
+Prettier ensures consistent code formatting (indentation, quotes, line length, etc.). Configuration is in `package.json` under `prettier`.
+
+**Full validation:**
+```bash
+npm run validate
+```
+
+Runs linting, format checking, and tests in sequence. **Run this before committing** to ensure your changes pass all quality gates.
+
+### Test Coverage
+
+Current test coverage includes:
+- ✓ AudioCapture (50 tests) - Browser audio recording, MediaRecorder API, permission handling
+- ✓ AIAssistant (61 tests) - OpenAI GPT integration, suggestions, off-track detection
+- ✓ ImageGenerator (54 tests) - Image generation, caching, gallery management
+- ✓ UI Panel (47 tests) - Foundry Application UI, event handlers, state management
+- ✓ SessionAnalytics (36 tests) - Session tracking, statistics, export
+- ✓ SceneDetector (40 tests) - Scene break detection, narrative analysis
+- ✓ RulesReferenceService (21 tests) - Rules lookup, Q&A management
+
+See `COVERAGE-REPORT.md` for detailed coverage metrics and test suite documentation.
+
+### Writing Tests
+
+When adding new features or fixing bugs, include tests:
+
+**Test file naming:**
+- Place tests in `tests/` directory
+- Name test files `*.test.js` (e.g., `audio-capture.test.js`)
+
+**Test structure:**
+```javascript
+import { TestRunner } from './test-helper.js';
+
+const runner = new TestRunner('YourFeatureName');
+
+// Test initialization
+runner.test('should initialize with default options', () => {
+    const instance = new YourClass();
+    runner.assert(instance !== null, 'Instance should be created');
+});
+
+// Test functionality
+runner.test('should handle errors gracefully', () => {
+    const instance = new YourClass();
+    // ... test code ...
+});
+
+// Run all tests
+runner.run();
+```
+
+**Test best practices:**
+- Test both success and error cases
+- Mock external APIs (OpenAI, Foundry VTT, browser APIs)
+- Use descriptive test names
+- Keep tests focused and isolated
+- Verify error messages are localized
+
+### Continuous Integration
+
+All pull requests automatically run:
+- ✓ ESLint validation
+- ✓ Prettier formatting check
+- ✓ Full test suite
+
+PRs cannot be merged until all checks pass. Fix any failures before requesting review.
+
 ## Testing Your Changes
 
 ### Manual Testing Checklist
@@ -358,6 +763,197 @@ python3 -c 'import json, sys; json.load(sys.stdin)' < lang/xx.json && echo "Vali
 # Compare your translation file with the template
 diff <(jq -S 'keys' lang/template.json) <(jq -S 'keys' lang/xx.json)
 ```
+
+## Pre-PR Validation Checklist
+
+Before submitting your pull request, run through this comprehensive checklist to ensure your changes meet quality standards and are ready for review. Taking time to validate your work upfront prevents delays and makes the review process smoother.
+
+### Automated Validation
+
+Run the full validation suite to catch common issues:
+
+```bash
+# Run all quality checks at once (lint + format + tests)
+npm run validate
+```
+
+**This single command runs:**
+- ESLint (code quality and style checks)
+- Prettier (code formatting verification)
+- Full test suite (unit and integration tests)
+
+**✅ Validation passes when:**
+- No linting errors or warnings
+- All files are properly formatted
+- All tests pass
+- No new test failures introduced
+
+**❌ Common failures and fixes:**
+
+| Error | Fix |
+|-------|-----|
+| ESLint errors | Run `npm run lint:fix` to auto-fix |
+| Formatting issues | Run `npm run format` to auto-format |
+| Test failures | Debug failing tests, fix the code, re-run `npm test` |
+| Import order warnings | Rearrange imports (builtin → external → internal) |
+
+### Foundry VTT Testing
+
+Test your changes in a live Foundry VTT environment:
+
+**1. No Console Errors**
+- [ ] Open browser DevTools (F12 → Console)
+- [ ] Refresh Foundry VTT (F5)
+- [ ] No errors appear during module initialization
+- [ ] No errors when using your changed functionality
+- [ ] No warnings (unless explicitly documented)
+
+**2. Functionality Works**
+- [ ] Test the specific feature/fix you implemented
+- [ ] Test with both GM and player accounts (if applicable)
+- [ ] Test with API key configured and without (error handling)
+- [ ] Test with minimal configuration (disable other modules)
+- [ ] Verify no regressions in existing features
+
+**3. UI Testing (if applicable)**
+- [ ] UI elements render correctly
+- [ ] Buttons and controls respond to clicks
+- [ ] Modal dialogs open and close properly
+- [ ] No layout issues (text overflow, overlapping elements)
+- [ ] Responsive to window resizing
+
+### Localization Validation
+
+If you added or modified user-facing text:
+
+**Required:**
+- [ ] All new strings added to `lang/it.json` (primary language)
+- [ ] All new strings added to `lang/en.json` (reference language)
+- [ ] No hardcoded English text in JavaScript files
+- [ ] No hardcoded text in Handlebars templates
+- [ ] Placeholders (`{count}`, `{name}`) preserved in all translations
+
+**Verification:**
+```bash
+# Check translation keys match across languages
+node verify-translations.js
+
+# Validate JSON syntax
+python3 -c 'import json; json.load(open("lang/it.json")); json.load(open("lang/en.json")); print("✓ Valid JSON")'
+```
+
+**Test in Foundry:**
+- [ ] Change Foundry language to Italian - all text displays correctly
+- [ ] Change to English - all text displays correctly
+- [ ] No missing translation keys (no "NARRATOR.SomeKey" raw text)
+
+### Documentation Updates
+
+Ensure documentation reflects your changes:
+
+**For Code Changes:**
+- [ ] JSDoc comments added to new classes and public methods
+- [ ] Inline comments explain complex logic
+- [ ] README.md updated if user-facing functionality changed
+- [ ] CLAUDE.md updated if architecture or patterns changed
+
+**For New Features:**
+- [ ] Usage examples provided (in code or README)
+- [ ] Configuration options documented
+- [ ] Known limitations noted
+
+**For Bug Fixes:**
+- [ ] Root cause documented (in commit message or PR description)
+- [ ] Fix approach explained
+
+### Commit Message Quality
+
+Review your commit history:
+
+- [ ] Commit messages are clear and descriptive
+- [ ] Follow imperative mood (Add, Fix, Update, Remove)
+- [ ] First line is concise (<72 characters)
+- [ ] Detailed explanation in body (if needed)
+- [ ] Reference issue numbers if applicable (`Fix #123`)
+
+**Good examples:**
+```
+✓ Add German localization (de.json)
+✓ Fix audio capture failing on Firefox
+✓ Update retry logic to handle rate limiting
+✓ Remove deprecated transcription API calls
+```
+
+**Bad examples:**
+```
+✗ Fixed stuff
+✗ Update
+✗ WIP
+✗ More changes
+```
+
+### Final Pre-Submission Checks
+
+**Complete this checklist before clicking "Create Pull Request":**
+
+- [ ] ✅ `npm run validate` passes with no errors
+- [ ] ✅ All tests pass (`npm test`)
+- [ ] ✅ No console errors in Foundry VTT
+- [ ] ✅ Localization keys added to `it.json` and `en.json`
+- [ ] ✅ Documentation updated (README, JSDoc, or inline comments)
+- [ ] ✅ Commit messages are clear and descriptive
+- [ ] ✅ Tested manually in Foundry VTT (latest version)
+- [ ] ✅ No debug code left behind (`console.log`, commented code)
+- [ ] ✅ Changes follow existing code patterns
+- [ ] ✅ No unrelated changes included
+
+**If any item is unchecked:**
+- Go back and address it before submitting
+- If an item doesn't apply, document why in your PR description
+- When in doubt, ask in GitHub Discussions
+
+### Quick Validation Script
+
+Run all checks in sequence:
+
+```bash
+# 1. Validate code quality
+npm run validate
+
+# 2. Syntax check all JavaScript files
+find scripts -name '*.js' -exec node --check {} \;
+
+# 3. Validate JSON files
+python3 -c 'import json; json.load(open("module.json")); json.load(open("lang/it.json")); json.load(open("lang/en.json")); print("✓ All JSON valid")'
+
+# 4. Check translations
+node verify-translations.js
+
+# If all pass, you're ready to submit! 🎉
+```
+
+**What to do if checks fail:**
+- Read the error messages carefully
+- Fix the issues in your code
+- Re-run the checks
+- Commit the fixes before submitting your PR
+
+### Why This Checklist Matters
+
+**Benefits of thorough pre-PR validation:**
+- ⚡ Faster review process - reviewers can focus on logic, not formatting
+- 🐛 Catch bugs before users encounter them
+- 📚 Maintain documentation accuracy
+- 🌍 Ensure all languages work correctly
+- 🤝 Show respect for reviewers' time
+- ✨ Build confidence in code quality
+
+**Common issues caught by this checklist:**
+- Missing localization keys causing blank UI text
+- Linting errors that break CI builds
+- Console errors that users would see in production
+- Incomplete documentation leaving features unexplained
+- Test regressions breaking existing functionality
 
 ## Submitting a Pull Request
 
@@ -468,6 +1064,309 @@ diff <(jq -S 'keys' lang/template.json) <(jq -S 'keys' lang/xx.json)
 - Respond to review comments promptly
 - Be open to feedback and suggestions
 - Update your PR if requirements change
+
+## Code Review Process
+
+All pull requests undergo a thorough review process to ensure code quality, maintainability, and consistency with project standards. This section outlines what reviewers check and what you should verify before submitting your PR.
+
+### What Reviewers Check
+
+When your PR is submitted, maintainers will evaluate the following criteria:
+
+#### 1. Code Style and Quality
+
+**JavaScript Standards:**
+- [ ] ES6 module syntax (`import`/`export`) used consistently
+- [ ] Naming conventions followed (PascalCase classes, camelCase functions, UPPER_SNAKE_CASE constants)
+- [ ] Private methods prefixed with underscore (`_methodName`)
+- [ ] No `console.log()` debugging statements (use `Logger` utility or remove)
+- [ ] Proper error handling with try-catch blocks
+- [ ] Code is well-organized and follows single-responsibility principle
+
+**JSDoc Documentation:**
+- [ ] All public classes have JSDoc comments
+- [ ] Public methods include `@param` and `@returns` annotations
+- [ ] Complex logic has explanatory comments
+- [ ] Documentation is clear and accurate
+
+**Example of good code style:**
+```javascript
+/**
+ * Manages speaker label assignments for transcription segments
+ */
+class SpeakerLabelService {
+    constructor() {
+        this._labels = new Map();
+    }
+
+    /**
+     * Apply labels to transcription segments
+     * @param {Array<Object>} segments - Raw transcription segments
+     * @returns {Array<Object>} Segments with speaker labels applied
+     */
+    applyLabelsToSegments(segments) {
+        return segments.map(seg => ({
+            ...seg,
+            speaker: this._labels.get(seg.speakerId) || `Speaker ${seg.speakerId}`
+        }));
+    }
+
+    /**
+     * Internal label lookup
+     * @private
+     */
+    _getDefaultLabel(speakerId) {
+        return `Speaker ${speakerId}`;
+    }
+}
+```
+
+#### 2. Test Coverage Requirements
+
+**Required Tests:**
+- [ ] New features have corresponding unit tests
+- [ ] Bug fixes include regression tests
+- [ ] Tests cover both success and error cases
+- [ ] Edge cases are tested (null inputs, empty arrays, etc.)
+- [ ] Async operations are properly awaited in tests
+- [ ] Browser APIs are mocked appropriately
+
+**Coverage Expectations:**
+- New code should maintain or improve overall test coverage
+- Critical paths (API calls, data processing) must have >80% coverage
+- UI components should test event handlers and state changes
+
+**Test Quality Checklist:**
+- [ ] Tests are isolated and don't depend on execution order
+- [ ] External APIs (OpenAI, Foundry) are properly mocked
+- [ ] Test names clearly describe what is being tested
+- [ ] Assertions have meaningful failure messages
+
+#### 3. Breaking Changes Assessment
+
+**Reviewers verify:**
+- [ ] No breaking changes to public APIs without discussion
+- [ ] Settings schema changes are backward-compatible
+- [ ] Existing user configurations won't be lost
+- [ ] Database migrations are handled properly (if applicable)
+- [ ] Version number is bumped appropriately for breaking changes
+
+**If breaking changes are necessary:**
+- [ ] Clearly documented in PR description
+- [ ] Migration path provided for existing users
+- [ ] Discussed in an issue before implementation
+- [ ] Marked with "BREAKING:" prefix in commit message
+
+**Example of acceptable breaking change communication:**
+```markdown
+## Breaking Changes
+
+**Changed:** `TranscriptionService.transcribe()` now returns a Promise instead of using callbacks.
+
+**Migration:**
+```javascript
+// Before (v1.x)
+service.transcribe(blob, (result) => { /* ... */ });
+
+// After (v2.x)
+const result = await service.transcribe(blob);
+```
+
+**Reason:** Modernizes API and improves error handling consistency.
+```
+
+#### 4. Localization Completeness
+
+**All user-facing text must be localized:**
+- [ ] No hardcoded English strings in JavaScript or templates
+- [ ] All new strings added to `lang/it.json` (primary language)
+- [ ] All new strings added to `lang/en.json` (reference language)
+- [ ] Existing translation files updated with new keys (or marked as TODO)
+- [ ] Localization keys follow existing naming conventions
+
+**Translation File Validation:**
+- [ ] JSON files are syntactically valid
+- [ ] Keys match across all language files (run `node verify-translations.js`)
+- [ ] Placeholders (`{count}`, `{name}`) are preserved in translations
+- [ ] Context comments provided for ambiguous strings
+
+**Example localization check:**
+```javascript
+// ❌ BAD - Hardcoded string
+ui.notifications.error("Recording failed");
+
+// ✅ GOOD - Localized string
+ui.notifications.error(game.i18n.localize('NARRATOR.Errors.RecordingFailed'));
+```
+
+**Required language files:**
+- `lang/it.json` - Italian (primary, must be complete)
+- `lang/en.json` - English (reference, must be complete)
+- Other languages - Add keys with placeholder text or mark as TODO
+
+#### 5. Documentation Updates
+
+**Code changes require documentation:**
+- [ ] README.md updated if user-facing features change
+- [ ] CONTRIBUTING.md updated if development workflow changes
+- [ ] JSDoc comments added/updated for new/changed APIs
+- [ ] CLAUDE.md updated if architecture or patterns change
+- [ ] Inline comments explain complex logic
+
+**For new features:**
+- [ ] Usage examples provided
+- [ ] Configuration options documented
+- [ ] Known limitations or gotchas noted
+
+**For bug fixes:**
+- [ ] Root cause explained in commit message
+- [ ] Steps to reproduce documented (in issue or PR)
+- [ ] Fix approach justified
+
+#### 6. Performance Considerations
+
+**Reviewers check for:**
+- [ ] No unnecessary API calls or network requests
+- [ ] Proper debouncing/throttling for frequent operations
+- [ ] Efficient data structures (Map/Set instead of array.find() loops)
+- [ ] Memory leaks prevented (event listeners cleaned up, streams destroyed)
+- [ ] Large data sets handled appropriately (pagination, virtualization)
+
+**Common performance issues:**
+- [ ] Synchronous operations blocking UI
+- [ ] Repeated DOM queries (cache selectors)
+- [ ] Inefficient array operations (`.map().filter().reduce()` chains)
+- [ ] Missing cleanup in destroy/teardown methods
+- [ ] Unbounded cache growth
+
+**Example performance improvements:**
+```javascript
+// ❌ BAD - Repeated DOM queries
+function updateUI() {
+    document.querySelector('.status').textContent = 'Loading';
+    document.querySelector('.status').classList.add('active');
+    document.querySelector('.status').setAttribute('role', 'status');
+}
+
+// ✅ GOOD - Cache selector
+function updateUI() {
+    const statusEl = document.querySelector('.status');
+    statusEl.textContent = 'Loading';
+    statusEl.classList.add('active');
+    statusEl.setAttribute('role', 'status');
+}
+
+// ❌ BAD - Inefficient lookup
+function findUser(id) {
+    return users.find(u => u.id === id); // O(n) every time
+}
+
+// ✅ GOOD - Use Map for O(1) lookup
+const userMap = new Map(users.map(u => [u.id, u]));
+function findUser(id) {
+    return userMap.get(id);
+}
+```
+
+### Self-Review Checklist
+
+Before submitting your PR, review your own code against these criteria:
+
+**Code Quality:**
+- [ ] Ran `npm run validate` and all checks pass
+- [ ] No linting errors or warnings
+- [ ] Code is formatted with Prettier
+- [ ] All tests pass (`npm test`)
+- [ ] No debug statements (`console.log`, commented code)
+
+**Functionality:**
+- [ ] Tested manually in Foundry VTT
+- [ ] Works for both GM and players (if applicable)
+- [ ] Error cases handled gracefully
+- [ ] No browser console errors
+- [ ] Backwards compatible with existing data
+
+**Documentation:**
+- [ ] All new code has JSDoc comments
+- [ ] User-facing changes documented in README
+- [ ] Translation keys added to all required language files
+- [ ] Commit messages are clear and descriptive
+
+**Testing:**
+- [ ] New features have tests
+- [ ] Bug fixes have regression tests
+- [ ] Tests cover error cases
+- [ ] Test coverage maintained or improved
+
+**Polish:**
+- [ ] PR description is complete and clear
+- [ ] Screenshots included for UI changes
+- [ ] Related issues linked
+- [ ] No unrelated changes included
+
+### Common Review Feedback
+
+**Frequently requested changes:**
+
+1. **"Add JSDoc comments"** - Document your public methods
+2. **"Localize this string"** - Move hardcoded text to language files
+3. **"Add error handling"** - Wrap API calls in try-catch
+4. **"Remove console.log"** - Use Logger utility or remove debug code
+5. **"Add tests for this"** - New functionality needs test coverage
+6. **"Update the documentation"** - README or CONTRIBUTING needs updates
+7. **"Follow existing patterns"** - Match the style of similar code in the project
+
+### How to Respond to Review Feedback
+
+**Good responses:**
+- ✓ "Fixed - removed console.log statements"
+- ✓ "Good catch! Added error handling for network failures"
+- ✓ "I've added JSDoc comments and updated the README"
+- ✓ "You're right, I'll refactor this to use the existing pattern"
+
+**What to avoid:**
+- ✗ Defensive or dismissive responses
+- ✗ Ignoring feedback without discussion
+- ✗ "It works for me" (without investigation)
+- ✗ "I'll fix it later" (fix it now before merge)
+
+**If you disagree with feedback:**
+- Explain your reasoning politely
+- Ask clarifying questions
+- Be open to learning new approaches
+- Remember reviewers are trying to help improve the code
+
+**Example constructive discussion:**
+```markdown
+> Reviewer: "This should use a Map instead of an array for better performance"
+
+> You: "Good point! I used an array because the data set is typically <10 items.
+> Would you still recommend Map for consistency with other services, or is the
+> performance difference negligible at this scale?"
+
+> Reviewer: "For <10 items the performance is identical. Array is fine here,
+> I was thinking about the worst-case scenario but it won't apply."
+```
+
+### Review Timeline
+
+**Expected turnaround:**
+- Simple PRs (translations, typo fixes): 1-3 days
+- Medium PRs (bug fixes, small features): 3-7 days
+- Large PRs (major features, refactoring): 1-2 weeks
+
+**Factors affecting review time:**
+- Complexity of changes
+- Test coverage and documentation quality
+- How well it follows existing patterns
+- Number of other PRs in queue
+- Maintainer availability
+
+**If your PR has been waiting >2 weeks:**
+- Politely comment asking for status
+- Check if CI checks are passing
+- Verify you've addressed previous feedback
+- Consider splitting large PRs into smaller ones
 
 ## Questions?
 
