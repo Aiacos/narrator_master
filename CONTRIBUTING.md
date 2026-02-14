@@ -14,6 +14,7 @@ Thank you for your interest in contributing to Narrator Master! We welcome contr
 - [Development Setup](#development-setup)
 - [Project Structure](#project-structure)
 - [Code Style Guidelines](#code-style-guidelines)
+- [Automated Testing](#automated-testing)
 - [Testing Your Changes](#testing-your-changes)
 - [Submitting a Pull Request](#submitting-a-pull-request)
 
@@ -302,6 +303,121 @@ class TranscriptionService {
 - Provide helpful error messages
 - Use centralized error notification helper when available
 - Always localize error messages
+
+## Automated Testing
+
+Narrator Master uses a comprehensive test suite to ensure code quality and prevent regressions. Before submitting changes, run the automated tests to verify your code meets project standards.
+
+### Running Tests
+
+**Run all tests:**
+```bash
+npm test
+```
+
+This executes the custom test runner (`tests/run-tests.js`) which includes:
+- Unit tests for all service classes
+- Browser API mocking (MediaRecorder, AudioContext, etc.)
+- Foundry VTT API simulation
+- OpenAI API integration tests
+
+**Run tests in watch mode:**
+```bash
+npm run test:watch
+```
+
+Automatically re-runs tests when files change. Useful during active development.
+
+**Run tests with coverage report:**
+```bash
+npm run test:coverage
+```
+
+Generates a detailed coverage report showing which lines/branches are tested. The report is saved to `coverage/` directory and displayed in the terminal.
+
+### Code Quality Checks
+
+**Linting (ESLint):**
+```bash
+npm run lint              # Check for linting errors
+npm run lint:fix          # Automatically fix linting issues
+```
+
+ESLint enforces code style, catches common errors, and ensures consistent patterns. Configuration is in `package.json` under `eslintConfig`.
+
+**Formatting (Prettier):**
+```bash
+npm run format            # Format all JS files
+npm run format:check      # Check if files are formatted correctly
+```
+
+Prettier ensures consistent code formatting (indentation, quotes, line length, etc.). Configuration is in `package.json` under `prettier`.
+
+**Full validation:**
+```bash
+npm run validate
+```
+
+Runs linting, format checking, and tests in sequence. **Run this before committing** to ensure your changes pass all quality gates.
+
+### Test Coverage
+
+Current test coverage includes:
+- ✓ AudioCapture (50 tests) - Browser audio recording, MediaRecorder API, permission handling
+- ✓ AIAssistant (61 tests) - OpenAI GPT integration, suggestions, off-track detection
+- ✓ ImageGenerator (54 tests) - Image generation, caching, gallery management
+- ✓ UI Panel (47 tests) - Foundry Application UI, event handlers, state management
+- ✓ SessionAnalytics (36 tests) - Session tracking, statistics, export
+- ✓ SceneDetector (40 tests) - Scene break detection, narrative analysis
+- ✓ RulesReferenceService (21 tests) - Rules lookup, Q&A management
+
+See `COVERAGE-REPORT.md` for detailed coverage metrics and test suite documentation.
+
+### Writing Tests
+
+When adding new features or fixing bugs, include tests:
+
+**Test file naming:**
+- Place tests in `tests/` directory
+- Name test files `*.test.js` (e.g., `audio-capture.test.js`)
+
+**Test structure:**
+```javascript
+import { TestRunner } from './test-helper.js';
+
+const runner = new TestRunner('YourFeatureName');
+
+// Test initialization
+runner.test('should initialize with default options', () => {
+    const instance = new YourClass();
+    runner.assert(instance !== null, 'Instance should be created');
+});
+
+// Test functionality
+runner.test('should handle errors gracefully', () => {
+    const instance = new YourClass();
+    // ... test code ...
+});
+
+// Run all tests
+runner.run();
+```
+
+**Test best practices:**
+- Test both success and error cases
+- Mock external APIs (OpenAI, Foundry VTT, browser APIs)
+- Use descriptive test names
+- Keep tests focused and isolated
+- Verify error messages are localized
+
+### Continuous Integration
+
+All pull requests automatically run:
+- ✓ ESLint validation
+- ✓ Prettier formatting check
+- ✓ Full test suite
+
+PRs cannot be merged until all checks pass. Fix any failures before requesting review.
 
 ## Testing Your Changes
 
