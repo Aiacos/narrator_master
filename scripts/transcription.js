@@ -268,13 +268,17 @@ export class TranscriptionService extends OpenAIServiceBase {
 
             formData.append('response_format', 'verbose_json');
 
-            const response = await fetch(`${this._baseUrl}/audio/transcriptions`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this._apiKey}`
+            const response = await this._fetchWithTimeout(
+                `${this._baseUrl}/audio/transcriptions`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${this._apiKey}`
+                    },
+                    body: formData
                 },
-                body: formData
-            });
+                120000
+            );
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -361,13 +365,18 @@ export class TranscriptionService extends OpenAIServiceBase {
         let response;
 
         try {
-            response = await fetch(`${this._baseUrl}/audio/transcriptions`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this._apiKey}`
+            // Use 120s timeout for audio transcription (large files take longer)
+            response = await this._fetchWithTimeout(
+                `${this._baseUrl}/audio/transcriptions`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${this._apiKey}`
+                    },
+                    body: formData
                 },
-                body: formData
-            });
+                120000
+            );
         } catch (networkError) {
             // Handle network errors (no connection, timeout, etc.)
             Logger.error('Network error during transcription', 'TranscriptionService', networkError);

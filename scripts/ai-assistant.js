@@ -1195,19 +1195,22 @@ Rispondi in formato JSON:
         let response;
 
         try {
-            response = await fetch(`${this._baseUrl}/chat/completions`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this._apiKey}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    model: this._model,
-                    messages,
-                    temperature: 0.7,
-                    max_tokens: 1000
-                })
-            });
+            response = await this._fetchWithTimeout(
+                `${this._baseUrl}/chat/completions`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${this._apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: this._model,
+                        messages,
+                        temperature: 0.7,
+                        max_tokens: 1000
+                    })
+                }
+            );
         } catch (networkError) {
             // Handle network errors (no connection, timeout, etc.)
             Logger.error(networkError, 'AIAssistant._makeApiRequest');

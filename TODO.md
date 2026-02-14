@@ -2,7 +2,7 @@
 
 Tracker dei problemi noti, organizzato per priorità. Aggiornare questo file quando un issue viene risolto (spostare in "Completati") o quando ne vengono trovati di nuovi.
 
-Ultimo audit: 2026-02-13 (branch `autoclaude`, versione 1.3.0)
+Ultimo audit: 2026-02-14 (branch `autoclaude`, versione 1.3.2)
 
 ---
 
@@ -143,3 +143,20 @@ Il piano originale diceva "la trascrizione è interna". I merge successivi hanno
   - Facilita debugging senza inquinare la console in produzione
 - **Commit principali**: 9a06cc3 (migrazione main.js), 76cea1f (documentazione CLAUDE.md)
 - **Task**: 020-reduce-console-log-usage-in-production-code-per-es
+
+### 8. Fetch/Promise senza timeout — potenziale UI freeze (performance/stabilità)
+- **Data risoluzione**: 2026-02-14
+- **File interessati**: `scripts/openai-service-base.js`, `scripts/transcription.js`, `scripts/ai-assistant.js`, `scripts/image-generator.js`, `scripts/audio-capture.js`, `scripts/cache-manager.js`
+- **Problema**: Tutte le chiamate `fetch()` alle API OpenAI non avevano timeout. Se il server non rispondeva o la rete era instabile, la Promise restava in sospeso indefinitamente, bloccando il thread UI del browser. Stesso problema per `AudioCapture.stop()` (Promise su `MediaRecorder.onstop`) e `blobToBase64()` (Promise su `FileReader`).
+- **Soluzione implementata**:
+  - Aggiunto metodo `_fetchWithTimeout()` in `OpenAIServiceBase` che usa `AbortController` con timeout configurabile (default 90s)
+  - Aggiornati tutti i `_makeApiRequest()` per usare `_fetchWithTimeout()`: transcription (120s), ai-assistant (90s), image-generator (120s)
+  - Aggiunto timeout alla Promise di `AudioCapture.stop()` (10s) con `Promise.race()` — restituisce audio disponibile se timeout
+  - Aggiunto timeout a `_blobToBase64()` in ImageGenerator e `CacheManager.blobToBase64()` (30s) con `Promise.race()`
+  - Migrati `console.warn` residui in `openai-service-base.js` a `Logger` (erano rimaste 5 chiamate con `MODULE_ID` non definito)
+- **Benefici**:
+  - Eliminato rischio di UI freeze da chiamate API che non rispondono
+  - Timeout differenziati per tipo di operazione (audio 120s, chat 90s, image 120s, blob 30s, recorder stop 10s)
+  - Graceful degradation: `AudioCapture.stop()` restituisce audio accumulato anche se timeout
+  - Errori di timeout sono correttamente classificati come `isNetworkError` e retryable
+  - Fix bonus: `console.warn` con `MODULE_ID` non definito ora usano Logger correttamente

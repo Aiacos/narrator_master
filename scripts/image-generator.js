@@ -399,14 +399,19 @@ export class ImageGenerator extends OpenAIServiceBase {
             let response;
 
             try {
-                response = await fetch(`${this._baseUrl}/images/generations`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${this._apiKey}`,
-                        'Content-Type': 'application/json'
+                // Use 120s timeout for image generation (can take a while)
+                response = await this._fetchWithTimeout(
+                    `${this._baseUrl}/images/generations`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${this._apiKey}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestBody)
                     },
-                    body: JSON.stringify(requestBody)
-                });
+                    120000
+                );
             } catch (networkError) {
                 // Handle network errors (no connection, timeout, etc.)
                 Logger.error('Network error during image generation', 'ImageGenerator', networkError);
@@ -567,8 +572,8 @@ export class ImageGenerator extends OpenAIServiceBase {
         if (!result.url) {return;}
 
         try {
-            // Download the image
-            const response = await fetch(result.url);
+            // Download the image (60s timeout for image download)
+            const response = await this._fetchWithTimeout(result.url, {}, 60000);
             if (!response.ok) {
                 Logger.warn(`Failed to cache image: ${response.status}`, 'ImageGenerator');
                 return;
@@ -616,7 +621,7 @@ export class ImageGenerator extends OpenAIServiceBase {
      * @private
      */
     _blobToBase64(blob) {
-        return new Promise((resolve, reject) => {
+        const readerPromise = new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => {
                 const result = reader.result;
@@ -627,6 +632,13 @@ export class ImageGenerator extends OpenAIServiceBase {
             reader.onerror = reject;
             reader.readAsDataURL(blob);
         });
+
+        // Timeout after 30 seconds for large blobs
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('FileReader timeout after 30s')), 30000);
+        });
+
+        return Promise.race([readerPromise, timeoutPromise]);
     }
 
     /**

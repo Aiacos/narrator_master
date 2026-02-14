@@ -482,7 +482,7 @@ export class AudioCapture {
         this._state = RecordingState.STOPPING;
         this._emit(AudioCaptureEvent.STATE_CHANGE, this._state);
 
-        return new Promise((resolve) => {
+        const stopPromise = new Promise((resolve) => {
             // Wait for final data
             this._recorder.onstop = () => {
                 this._state = RecordingState.INACTIVE;
@@ -493,6 +493,18 @@ export class AudioCapture {
 
             this._recorder.stop();
         });
+
+        // Timeout after 10 seconds - if onstop never fires, return what we have
+        const timeoutPromise = new Promise((resolve) => {
+            setTimeout(() => {
+                Logger.warn('MediaRecorder.onstop timeout after 10s, returning available audio', 'AudioCapture');
+                this._state = RecordingState.INACTIVE;
+                this._emit(AudioCaptureEvent.STATE_CHANGE, this._state);
+                resolve(this.getAudioBlob());
+            }, 10000);
+        });
+
+        return Promise.race([stopPromise, timeoutPromise]);
     }
 
     /**

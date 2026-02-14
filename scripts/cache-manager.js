@@ -335,7 +335,7 @@ export class CacheManager {
      * @static
      */
     static blobToBase64(blob) {
-        return new Promise((resolve, reject) => {
+        const readerPromise = new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => {
                 const result = reader.result;
@@ -346,6 +346,13 @@ export class CacheManager {
             reader.onerror = reject;
             reader.readAsDataURL(blob);
         });
+
+        // Timeout after 30 seconds for large blobs
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('FileReader timeout after 30s')), 30000);
+        });
+
+        return Promise.race([readerPromise, timeoutPromise]);
     }
 
     /**

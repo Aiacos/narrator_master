@@ -5,6 +5,7 @@
  */
 
 import { MODULE_ID as _MODULE_ID } from './settings.js';
+import { Logger } from './logger.js';
 
 /**
  * OpenAIServiceBase - Base class for OpenAI API services
@@ -227,6 +228,39 @@ export class OpenAIServiceBase {
     }
 
     /**
+     * Default timeout for fetch requests in milliseconds (90 seconds)
+     * @type {number}
+     * @private
+     * @static
+     */
+    static _DEFAULT_FETCH_TIMEOUT = 90000;
+
+    /**
+     * Wraps a fetch call with an AbortController timeout to prevent indefinite hangs
+     * @param {string} url - The URL to fetch
+     * @param {Object} options - Fetch options (method, headers, body, etc.)
+     * @param {number} [timeoutMs] - Timeout in milliseconds (default: 90000)
+     * @returns {Promise<Response>} The fetch response
+     * @throws {Error} With isNetworkError flag if timeout or network error occurs
+     * @protected
+     */
+    async _fetchWithTimeout(url, options = {}, timeoutMs) {
+        const timeout = timeoutMs ?? OpenAIServiceBase._DEFAULT_FETCH_TIMEOUT;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+        try {
+            const response = await fetch(url, {
+                ...options,
+                signal: controller.signal
+            });
+            return response;
+        } finally {
+            clearTimeout(timeoutId);
+        }
+    }
+
+    /**
      * Determines if an error should be retried
      * @param {Object} error - The error to check
      * @returns {boolean} True if the error should be retried
@@ -322,7 +356,7 @@ export class OpenAIServiceBase {
 
                 // Log retry success if this wasn't the first attempt
                 if (attempt > 0) {
-                    console.warn(`[${MODULE_ID}] ${operationName} succeeded after ${attempt + 1} attempts`);
+                    Logger.info(`${operationName} succeeded after ${attempt + 1} attempts`, 'OpenAIServiceBase');
                 }
 
                 return result;
@@ -336,9 +370,9 @@ export class OpenAIServiceBase {
                 if (!isRetryable || isLastAttempt) {
                     // Don't retry - either not retryable or out of attempts
                     if (!isRetryable) {
-                        console.warn(`[${MODULE_ID}] ${operationName} failed with non-retryable error:`, error.message);
+                        Logger.warn(`${operationName} failed with non-retryable error: ${error.message}`, 'OpenAIServiceBase');
                     } else {
-                        console.warn(`[${MODULE_ID}] ${operationName} failed after ${maxAttempts} attempts`);
+                        Logger.warn(`${operationName} failed after ${maxAttempts} attempts`, 'OpenAIServiceBase');
                     }
                     throw error;
                 }
@@ -354,9 +388,9 @@ export class OpenAIServiceBase {
                 const jitter = Math.random() * cappedDelay * 0.25;
                 const finalDelay = cappedDelay + jitter;
 
-                console.warn(
-                    `[${MODULE_ID}] ${operationName} failed (attempt ${attempt + 1}/${maxAttempts}), ` +
-                    `retrying in ${Math.round(finalDelay)}ms: ${error.message}`
+                Logger.warn(
+                    `${operationName} failed (attempt ${attempt + 1}/${maxAttempts}), retrying in ${Math.round(finalDelay)}ms: ${error.message}`,
+                    'OpenAIServiceBase'
                 );
 
                 // Wait before retrying
@@ -479,7 +513,7 @@ export class OpenAIServiceBase {
         }
 
         if (queueSize > 0) {
-            console.warn(`[${MODULE_ID}] Cleared ${queueSize} pending request(s) from queue`);
+            Logger.warn(`Cleared ${queueSize} pending request(s) from queue`, 'OpenAIServiceBase');
         }
     }
 
