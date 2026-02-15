@@ -1,3 +1,9 @@
+> **⚠️ DEPRECATED**: Narrator Master has been merged into [VoxChronicle v2.0.0](https://github.com/Aiacos/VoxChronicle). Please install VoxChronicle for all features including real-time DM assistance, session transcription, and Kanka publishing.
+>
+> This repository is archived and will not receive further updates.
+
+---
+
 # Narrator Master
 
 **An AI-powered Dungeon Master assistant for Foundry VTT**
